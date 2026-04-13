@@ -2572,8 +2572,10 @@ function invUpdateTotals(){
   for(var i=0;i<items.length;i++){
     var item = items[i];
     var qtyEl = document.getElementById('inv-qty-'+item.id);
+    var priceEl = document.getElementById('inv-price-'+item.id);
     var qty = parseFloat((qtyEl&&qtyEl.value)||0) || 0;
-    var price = cityPrices[item.id] || 0;
+    // Use editable price input if present, otherwise fall back to stored price
+    var price = priceEl ? (parseFloat(priceEl.value)||0) : (cityPrices[item.id]||0);
     var total = qty * price;
     var lineEl = document.getElementById('inv-line-'+item.id);
     if(lineEl) lineEl.textContent = total > 0 ? '$'+total.toFixed(2) : '—';
@@ -2603,12 +2605,19 @@ function invSaveCount(){
   for(var i=0;i<items.length;i++){
     var item = items[i];
     var qty = parseFloat((document.getElementById('inv-qty-'+item.id)||{}).value||0)||0;
+    var priceEl = document.getElementById('inv-price-'+item.id);
+    var price = priceEl ? (parseFloat(priceEl.value)||0) : (cityPrices[item.id]||0);
+    // Save any price changes back to the price list
+    if(price>0) cityPrices[item.id] = price;
     if(qty>0){
       counts[item.id] = qty;
-      var price = cityPrices[item.id]||0;
       if(item.category in totals) totals[item.category] += qty*price;
     }
   }
+  // Persist updated prices
+  var allPrices = invGetPrices();
+  allPrices[INV.city] = cityPrices;
+  invSavePrices(allPrices);
   var record = {
     id: Date.now().toString(36)+Math.random().toString(36).slice(2),
     city: INV.city, store: store, date: date,
