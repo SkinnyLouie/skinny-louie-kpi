@@ -1454,6 +1454,7 @@ const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_pnl
 
 let _slUser = null;
 let _slRole  = null;
+let _slState = 'all'; // 'all', 'FL', or 'NY'
 
 // Intercept localStorage.setItem — auto-sync SL keys to Supabase
 const _origLS = localStorage.setItem.bind(localStorage);
@@ -1508,7 +1509,7 @@ async function doLogin(){
 
 async function doLogout(){
   await _supa.auth.signOut();
-  _slUser = null; _slRole = null;
+  _slUser = null; _slRole = null; _slState = 'all';
   SL_SYNC_KEYS.forEach(k => localStorage.removeItem(k));
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
@@ -1519,7 +1520,8 @@ async function doLogout(){
 async function _initApp(user){
   _slUser = user;
   const { data: profile } = await _supa.from('profiles').select('role,name').eq('id', user.id).single();
-  _slRole = profile?.role || 'manager'; // authenticated but no profile = treat as manager
+  _slRole  = profile?.role  || 'manager';
+  _slState = profile?.state || 'all';
   await _loadFromCloud();
   try{ const d = localStorage.getItem('sl_v2'); if(d) DB = JSON.parse(d); }catch(e){}
   const loginEl = document.getElementById('pg-login');
@@ -1538,6 +1540,14 @@ function _applyRoleUI(){
   // P&L lock overlay visibility
   const pnlLock = document.getElementById('pnl-lock-overlay');
   if(pnlLock) pnlLock.style.display = (_slRole==='user') ? 'flex' : 'none'; // only locks for explicit 'user' role
+  // State/city filter based on user's allowed state
+  if(_slState && _slState \!== 'all'){
+    // Force state and hide the state toggle buttons
+    if(S.state \!== _slState){ S.state = _slState; S.loc = 'ALL'; }
+    document.querySelectorAll('.state-toggle').forEach(el => el.style.display='none');
+  } else {
+    document.querySelectorAll('.state-toggle').forEach(el => el.style.display='');
+  }
   const canEdit = _slRole === 'admin' || _slRole === 'manager';
   document.querySelectorAll('.edit-only').forEach(el => {
     el.style.display = canEdit ? '' : 'none';
@@ -2153,7 +2163,7 @@ function goPNL(){
   S.page='pnl'; render();
 }
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
-function setState(st){ S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
+function setState(st){ if(_slState && _slState\!=='all' && st\!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=locs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
 function setLoc(l){
   if(S.cmpMode){
@@ -2205,9 +2215,9 @@ function renderNavRight(){
         <button class="yr-pill ${S.year==='2026'?'on':''}" onclick="setYear('2026')">2026</button>
       </div>
       <div class="yr-pills">
-        <button class="yr-pill ${S.state==='FL'?'on':''}" onclick="setState('FL')">🌴 Florida</button>
-        <button class="yr-pill ${S.state==='NY'?'on':''}" onclick="setState('NY')">🗽 New York</button>
-        <button class="yr-pill ${S.state==='ALL'?'on':''}" onclick="setState('ALL')">🌎 All Cities</button>
+        <button class="yr-pill state-toggle ${S.state==='FL'?'on':''}" onclick="setState('FL')">🌴 Florida</button>
+        <button class="yr-pill state-toggle ${S.state==='NY'?'on':''}" onclick="setState('NY')">🗽 New York</button>
+        <button class="yr-pill state-toggle ${S.state==='ALL'?'on':''}" onclick="setState('ALL')">🌎 All Cities</button>
       </div>
       <button class="btn ${S.cmpMode?'act':''}" onclick="toggleCmp()">⇄ Compare</button>`;
   } else if(S.page==='sales'){
