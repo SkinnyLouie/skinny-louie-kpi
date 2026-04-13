@@ -1660,7 +1660,7 @@ async function doLogin(){
 async function doLogout(){
   await _supa.auth.signOut();
   _slUser = null; _slRole = null; _slState = 'all';
-  SL_SYNC_KEYS.forEach(k => localStorage.removeItem(k));
+  // Note: localStorage data intentionally kept so data persists on next login
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Reset DB to empty
