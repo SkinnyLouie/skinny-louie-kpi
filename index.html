@@ -1685,21 +1685,6 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   <div id="inv-pane-setup" class="inv-pane" style="display:none;">
     <div class="inv-setup-section">
       <h3>📋 Product List</h3>
-      <div class="inv-add-form">
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">ITEM NAME</div>
-          <input type="text" id="inv-new-name" placeholder="e.g. Beef Patty 4oz" style="width:220px;" onkeydown="if(event.key==='Enter')invAddItem()">
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">CATEGORY</div>
-          <select id="inv-new-cat">
-            <option value="food">🍔 Food</option>
-            <option value="disp">🧹 Disposable &amp; Cleaning</option>
-            <option value="merch">👕 Merch</option>
-          </select>
-        </div>
-        <button class="inv-add-btn" onclick="invAddItem()">+ Add Item</button>
-      </div>
       <div id="inv-items-list"></div>
     </div>
     <div class="inv-setup-section">
@@ -2823,8 +2808,7 @@ function invRenderItemsList(){
     if(!catItems.length) continue;
     html += '<div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;">'+catLabels[cat]+'</div>';
     html += catItems.map(function(item){
-      return '<div class="inv-item-row"><span style="font-size:13px;font-weight:500;">'+item.name+'</span>'
-        +'<button class="inv-item-del" onclick="invDeleteItem(\''+item.id+'\')">✕ Remove</button></div>';
+      return '<div class="inv-item-row"><span style="font-size:13px;font-weight:500;">'+item.name+'</span></div>';
     }).join('');
   }
   el.innerHTML = html;
