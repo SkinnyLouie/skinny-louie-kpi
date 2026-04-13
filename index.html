@@ -417,7 +417,7 @@ button{font-family:inherit;cursor:pointer;}
 /* ══════════════════════════════════════
    KPI PAGE
 ══════════════════════════════════════ */
-#pg-kpi,#pg-sales,#pg-mix,#pg-pnl{display:none;}
+#pg-kpi,#pg-sales,#pg-mix,#pg-pnl,#pg-inv{display:none;}
 .loc-bar{background:#fcfaf4;border-bottom:1px solid var(--border);padding:0 28px;display:flex;overflow-x:auto;scrollbar-width:none;align-items:center;gap:0;}
 .loc-bar::-webkit-scrollbar{display:none;}
 .loc-tab{padding:14px 15px;border:none;background:transparent;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .15s;}
@@ -1018,9 +1018,9 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hcard.c6 .hcard-desc { color:rgba(255,255,255,.75); }
 .hcard.c6 .hcard-tag  { color:#f0cc60; font-size:12px; }
 .hcard.c6 .hcard-icon { filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
-.hcard.c7        { cursor:default; opacity:.85; }
+.hcard.c7        { cursor:pointer; }
 .hcard.c7::before{ background:linear-gradient(90deg,#b06020,#e07830); }
-.hcard.c7:hover  { transform:none; border-color:transparent; box-shadow:0 4px 20px rgba(33,35,32,.07); }
+.hcard.c7:hover  { border-color:#b06020; transform:translateY(-5px); box-shadow:0 16px 40px rgba(176,96,32,.2); }
 .hcard.c7 .hcard-tag { color:#b06020; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dm-rpt-chip { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:rgba(255,255,255,.9); }
@@ -1154,6 +1154,60 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   .ask-input-wrap{ flex-direction:column; }
   .ask-btn{ width:100%; }
 }
+
+/* ══ INVENTORY PAGE ══════════════════════════════════ */
+#pg-inv { display:none; min-height:calc(100vh - 62px); background:var(--bg); }
+.inv-topbar { background:var(--surf); border-bottom:1px solid var(--brd); padding:0 24px; display:flex; align-items:center; gap:16px; min-height:56px; flex-wrap:wrap; }
+.inv-page-title { font-family:'Oswald',sans-serif; font-weight:600; font-size:16px; color:var(--accent); letter-spacing:.5px; }
+.inv-tabs { display:flex; gap:4px; margin-left:auto; flex-wrap:wrap; }
+.inv-tab-btn { font-size:12px; font-weight:700; padding:6px 14px; border-radius:99px; border:1px solid var(--brd); background:transparent; cursor:pointer; color:var(--muted); transition:all .2s; }
+.inv-tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.inv-pane { padding:24px; max-width:1100px; margin:0 auto; }
+.inv-selectors { display:flex; gap:24px; align-items:flex-end; flex-wrap:wrap; background:var(--surf); border-radius:16px; padding:20px 24px; margin-bottom:24px; border:1px solid var(--brd); }
+.inv-sel-group { display:flex; flex-direction:column; gap:6px; }
+.inv-sel-group label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.inv-count-table { width:100%; border-collapse:collapse; background:var(--surf); border-radius:16px; overflow:hidden; border:1px solid var(--brd); }
+.inv-count-table th { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); padding:10px 16px; text-align:left; background:rgba(155,41,44,.04); border-bottom:1px solid var(--brd); }
+.inv-cat-hdr td { background:var(--bg); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); padding:8px 16px; border-top:1px solid var(--brd); }
+.inv-count-table td { padding:10px 16px; border-bottom:1px solid rgba(0,0,0,.04); font-size:13px; }
+.inv-qty-input { width:80px; text-align:center; border:1px solid var(--brd); border-radius:8px; padding:5px 8px; font-size:13px; font-family:inherit; }
+.inv-qty-input:focus { outline:none; border-color:var(--accent); }
+.inv-total-bar { display:flex; gap:20px; flex-wrap:wrap; background:var(--surf); border:1px solid var(--brd); border-radius:16px; padding:20px 24px; margin-top:16px; align-items:center; }
+.inv-total-chip .inv-tc-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.inv-total-chip .inv-tc-value { font-size:20px; font-weight:800; font-family:'Oswald',sans-serif; color:#212320; margin-top:2px; }
+.inv-total-chip.grand .inv-tc-value { color:var(--accent); font-size:26px; }
+.inv-save-btn { margin-left:auto; background:var(--accent); color:#fff; border:none; border-radius:12px; padding:12px 28px; font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:.5px; cursor:pointer; transition:all .2s; }
+.inv-save-btn:hover { background:#7a1f22; }
+.inv-no-items { text-align:center; padding:48px; color:var(--muted); font-size:14px; }
+.inv-hist-card { background:var(--surf); border:1px solid var(--brd); border-radius:16px; padding:20px; margin-bottom:12px; cursor:pointer; transition:all .2s; }
+.inv-hist-card:hover { border-color:var(--accent); }
+.inv-hist-card-hdr { display:flex; justify-content:space-between; align-items:center; }
+.inv-hist-card-date { font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; color:#212320; }
+.inv-hist-card-store { font-size:13px; color:var(--muted); margin-top:2px; }
+.inv-hist-totals { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
+.inv-hist-chip { font-size:12px; color:var(--muted); background:var(--bg); border-radius:8px; padding:4px 10px; }
+.inv-hist-chip strong { color:#212320; }
+.inv-hist-detail { display:none; margin-top:16px; border-top:1px solid var(--brd); padding-top:16px; }
+.inv-setup-section { background:var(--surf); border:1px solid var(--brd); border-radius:16px; padding:24px; margin-bottom:20px; }
+.inv-setup-section h3 { font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; color:#212320; margin:0 0 16px 0; letter-spacing:.3px; }
+.inv-add-form { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px; }
+.inv-add-form input, .inv-add-form select { padding:8px 12px; border:1px solid var(--brd); border-radius:8px; font-size:13px; font-family:inherit; }
+.inv-add-form input:focus, .inv-add-form select:focus { outline:none; border-color:var(--accent); }
+.inv-add-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:9px 18px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap; }
+.inv-item-row { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-radius:8px; background:var(--bg); margin-bottom:4px; }
+.inv-item-del { color:var(--accent); background:none; border:none; cursor:pointer; font-size:12px; font-weight:700; }
+.inv-price-upload { display:flex; flex-direction:column; gap:12px; }
+.inv-upload-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.inv-upload-label { font-size:13px; font-weight:700; color:#212320; min-width:110px; }
+.inv-pct-pos { color:#22a060; font-weight:700; }
+.inv-pct-neg { color:#dc2626; font-weight:700; }
+@media(max-width:768px){
+  .inv-topbar { padding:12px 14px; }
+  .inv-tabs { margin-left:0; }
+  .inv-pane { padding:14px; }
+  .inv-selectors { flex-direction:column; gap:14px; }
+  .inv-tab-btn { font-size:11px; padding:5px 10px; }
+}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1248,15 +1302,11 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         <span style="font-size:10px;color:rgba(255,255,255,.6);">Managers &amp; Admins only</span>
       </div>
     </div>
-    <div class="hcard c7" style="position:relative;">
+    <div class="hcard c7" onclick="goInv()" style="position:relative;cursor:pointer;">
        <span class="hcard-icon">📦</span>
        <div class="hcard-title">Inventory</div>
-       <div class="hcard-desc">Track stock levels, usage, and waste by location. Manage par levels and get low-stock alerts.</div>
-       <div class="hcard-tag">Coming Soon</div>
-       <div style="position:absolute;inset:0;border-radius:inherit;background:rgba(15,15,15,.45);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
-         <span style="font-size:22px;">🚧</span>
-         <span style="font-size:12px;font-weight:800;color:#fff;letter-spacing:.08em;text-transform:uppercase;">Coming Soon</span>
-       </div>
+       <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
+       <div class="hcard-tag">Active · All Locations</div>
      </div>
     <div class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">📋</span>
@@ -1563,6 +1613,117 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 </div>
 
+<!-- ═══ INVENTORY PAGE ═══ -->
+<div id="pg-inv">
+  <div class="inv-topbar">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);font-weight:700;padding:6px 12px 6px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span class="inv-page-title">📦 INVENTORY</span>
+    <div class="inv-tabs">
+      <button class="inv-tab-btn active" id="inv-t-count" onclick="invShowTab('count')">📝 Count</button>
+      <button class="inv-tab-btn" id="inv-t-history" onclick="invShowTab('history')">📋 History</button>
+      <button class="inv-tab-btn" id="inv-t-analytics" onclick="invShowTab('analytics')">📊 Analytics</button>
+      <button class="inv-tab-btn" id="inv-t-setup" onclick="invShowTab('setup')">⚙️ Setup</button>
+    </div>
+  </div>
+
+  <!-- COUNT PANE -->
+  <div id="inv-pane-count" class="inv-pane">
+    <div class="inv-selectors">
+      <div class="inv-sel-group">
+        <label>City</label>
+        <div class="yr-pills" style="gap:6px;">
+          <button class="yr-pill on" id="inv-city-FL" onclick="invSetCity('FL')">🌴 Florida</button>
+          <button class="yr-pill" id="inv-city-NY" onclick="invSetCity('NY')">🗽 New York</button>
+        </div>
+      </div>
+      <div class="inv-sel-group">
+        <label>Store</label>
+        <select id="inv-store-sel" class="rc-sel" style="min-width:180px;" onchange="invRenderCount()"></select>
+      </div>
+      <div class="inv-sel-group">
+        <label>Date</label>
+        <input type="date" id="inv-date" style="padding:7px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;width:155px;">
+      </div>
+    </div>
+    <div id="inv-count-body"></div>
+    <div id="inv-count-footer"></div>
+  </div>
+
+  <!-- HISTORY PANE -->
+  <div id="inv-pane-history" class="inv-pane" style="display:none;">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:var(--muted);">Filter:</span>
+      <select id="inv-hist-city" class="rc-sel" onchange="invRenderHistory()" style="min-width:140px;">
+        <option value="">All Cities</option>
+        <option value="FL">🌴 Florida</option>
+        <option value="NY">🗽 New York</option>
+      </select>
+      <select id="inv-hist-store" class="rc-sel" onchange="invRenderHistory()" style="min-width:180px;">
+        <option value="">All Stores</option>
+      </select>
+    </div>
+    <div id="inv-history-body"></div>
+  </div>
+
+  <!-- ANALYTICS PANE -->
+  <div id="inv-pane-analytics" class="inv-pane" style="display:none;">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:var(--muted);">Store:</span>
+      <select id="inv-anl-city" class="rc-sel" onchange="invAnalyticsUpdateStores()" style="min-width:140px;">
+        <option value="FL">🌴 Florida</option>
+        <option value="NY">🗽 New York</option>
+      </select>
+      <select id="inv-anl-store" class="rc-sel" onchange="invRenderAnalytics()" style="min-width:180px;"></select>
+    </div>
+    <div id="inv-analytics-body"></div>
+  </div>
+
+  <!-- SETUP PANE -->
+  <div id="inv-pane-setup" class="inv-pane" style="display:none;">
+    <div class="inv-setup-section">
+      <h3>📋 Product List</h3>
+      <div class="inv-add-form">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">ITEM NAME</div>
+          <input type="text" id="inv-new-name" placeholder="e.g. Beef Patty 4oz" style="width:220px;" onkeydown="if(event.key==='Enter')invAddItem()">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">CATEGORY</div>
+          <select id="inv-new-cat">
+            <option value="food">🍔 Food</option>
+            <option value="disp">🧹 Disposable &amp; Cleaning</option>
+            <option value="merch">👕 Merch</option>
+          </select>
+        </div>
+        <button class="inv-add-btn" onclick="invAddItem()">+ Add Item</button>
+      </div>
+      <div id="inv-items-list"></div>
+    </div>
+    <div class="inv-setup-section">
+      <h3>💲 Price Lists</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px 0;">Upload an Excel file (.xlsx) with columns: <strong>item_name</strong> and <strong>price</strong>. Download the template below to get started.</p>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <button onclick="invDownloadTemplate('FL')" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download FL Template</button>
+        <button onclick="invDownloadTemplate('NY')" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download NY Template</button>
+      </div>
+      <div class="inv-price-upload">
+        <div class="inv-upload-row">
+          <span class="inv-upload-label">🌴 Florida</span>
+          <input type="file" id="inv-price-fl" accept=".xlsx,.xls,.csv" onchange="invUploadPrices('FL',this)">
+          <span id="inv-price-fl-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+        <div class="inv-upload-row">
+          <span class="inv-upload-label">🗽 New York</span>
+          <input type="file" id="inv-price-ny" accept=".xlsx,.xls,.csv" onchange="invUploadPrices('NY',this)">
+          <span id="inv-price-ny-status" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+      </div>
+      <div id="inv-price-table" style="margin-top:20px;"></div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 // ══════════════════════════════════════════════════
 //  SUPABASE — Auth & Cloud Sync
@@ -1583,7 +1744,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1'];
 
 let _slUser = null;
 let _slRole  = null;
@@ -2282,6 +2443,455 @@ function askMe(){
 // ══════════════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════
+//  INVENTORY MODULE
+// ══════════════════════════════════════════════════
+function invGetItems(){ try{ return JSON.parse(localStorage.getItem('sl_inv_items_v1')||'[]'); }catch(e){ return []; } }
+function invSaveItems(a){ localStorage.setItem('sl_inv_items_v1', JSON.stringify(a)); }
+function invGetPrices(){ try{ return JSON.parse(localStorage.getItem('sl_inv_prices_v1')||'{"FL":{},"NY":{}}'); }catch(e){ return {FL:{},NY:{}}; } }
+function invSavePrices(o){ localStorage.setItem('sl_inv_prices_v1', JSON.stringify(o)); }
+function invGetCounts(){ try{ return JSON.parse(localStorage.getItem('sl_inv_counts_v1')||'[]'); }catch(e){ return []; } }
+function invSaveCounts(a){ localStorage.setItem('sl_inv_counts_v1', JSON.stringify(a)); }
+
+function invGetStores(city){
+  var stores = {};
+  for(var yr in DB){ for(var loc in (DB[yr]&&DB[yr][city]||{})){ stores[loc]=1; } }
+  return Object.keys(stores).sort();
+}
+
+var INV = { city:'FL', tab:'count' };
+
+function goInv(){ S.page='inv'; invInit(); render(); }
+
+function invInit(){
+  invShowTab('count');
+  invInitCount();
+  invRenderSetup();
+}
+
+function invShowTab(tab){
+  INV.tab = tab;
+  ['count','history','analytics','setup'].forEach(function(t){
+    var pane = document.getElementById('inv-pane-'+t);
+    if(pane) pane.style.display = t===tab ? 'block' : 'none';
+    var btn = document.getElementById('inv-t-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  if(tab==='history') invRenderHistory();
+  if(tab==='analytics'){ invAnalyticsUpdateStores(); invRenderAnalytics(); }
+  if(tab==='setup') invRenderSetup();
+}
+
+function invSetCity(city){
+  INV.city = city;
+  var flBtn = document.getElementById('inv-city-FL');
+  var nyBtn = document.getElementById('inv-city-NY');
+  if(flBtn) flBtn.classList.toggle('on', city==='FL');
+  if(nyBtn) nyBtn.classList.toggle('on', city==='NY');
+  invPopulateStores();
+}
+
+function invInitCount(){
+  var today = new Date().toISOString().slice(0,10);
+  var dateEl = document.getElementById('inv-date');
+  if(dateEl && !dateEl.value) dateEl.value = today;
+  invSetCity('FL');
+}
+
+function invPopulateStores(){
+  var sel = document.getElementById('inv-store-sel');
+  if(!sel) return;
+  var stores = invGetStores(INV.city);
+  sel.innerHTML = stores.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  invRenderCount();
+}
+
+function invRenderCount(){
+  var body = document.getElementById('inv-count-body');
+  var footer = document.getElementById('inv-count-footer');
+  if(!body) return;
+  var items = invGetItems();
+  if(!items.length){
+    body.innerHTML = '<div class="inv-no-items">No items in product list. Go to <strong>⚙️ Setup</strong> to add items.</div>';
+    if(footer) footer.innerHTML = '';
+    return;
+  }
+  var prices = invGetPrices();
+  var cityPrices = prices[INV.city] || {};
+  var cats = [
+    { key:'food', label:'🍔 Food Inventory' },
+    { key:'disp', label:'🧹 Disposable & Cleaning Inventory' },
+    { key:'merch', label:'👕 Merch Inventory' }
+  ];
+  var html = '<table class="inv-count-table"><thead><tr>'
+    +'<th style="width:40%">Item</th>'
+    +'<th style="width:15%;text-align:center;">Qty</th>'
+    +'<th style="width:22%;text-align:right;">Unit Price</th>'
+    +'<th style="width:23%;text-align:right;">Total</th>'
+    +'</tr></thead><tbody>';
+  for(var ci=0;ci<cats.length;ci++){
+    var cat = cats[ci];
+    var catItems = items.filter(function(i){ return i.category===cat.key; });
+    if(!catItems.length) continue;
+    html += '<tr class="inv-cat-hdr"><td colspan="4">'+cat.label+'</td></tr>';
+    for(var ii=0;ii<catItems.length;ii++){
+      var item = catItems[ii];
+      var price = cityPrices[item.id] || 0;
+      var priceStr = price ? ('$'+price.toFixed(2)) : '<span style="color:var(--muted);font-size:11px;">no price</span>';
+      html += '<tr>'
+        +'<td style="font-weight:500;">'+item.name+'</td>'
+        +'<td style="text-align:center;"><input class="inv-qty-input" id="inv-qty-'+item.id+'" type="number" min="0" step="0.01" placeholder="0" oninput="invUpdateTotals()"></td>'
+        +'<td style="text-align:right;">'+priceStr+'</td>'
+        +'<td style="text-align:right;font-weight:700;" id="inv-line-'+item.id+'">—</td>'
+        +'</tr>';
+    }
+  }
+  html += '</tbody></table>';
+  body.innerHTML = html;
+  invUpdateTotals();
+}
+
+function invUpdateTotals(){
+  var items = invGetItems();
+  var prices = invGetPrices();
+  var cityPrices = prices[INV.city] || {};
+  var cats = { food:0, disp:0, merch:0 };
+  for(var i=0;i<items.length;i++){
+    var item = items[i];
+    var qtyEl = document.getElementById('inv-qty-'+item.id);
+    var qty = parseFloat((qtyEl&&qtyEl.value)||0) || 0;
+    var price = cityPrices[item.id] || 0;
+    var total = qty * price;
+    var lineEl = document.getElementById('inv-line-'+item.id);
+    if(lineEl) lineEl.textContent = total > 0 ? '$'+total.toFixed(2) : '—';
+    if(item.category in cats) cats[item.category] += total;
+  }
+  var grand = cats.food + cats.disp + cats.merch;
+  var footer = document.getElementById('inv-count-footer');
+  if(!footer) return;
+  footer.innerHTML = '<div class="inv-total-bar">'
+    +'<div class="inv-total-chip"><div class="inv-tc-label">🍔 Food</div><div class="inv-tc-value">$'+cats.food.toFixed(2)+'</div></div>'
+    +'<div class="inv-total-chip"><div class="inv-tc-label">🧹 Disp &amp; Cleaning</div><div class="inv-tc-value">$'+cats.disp.toFixed(2)+'</div></div>'
+    +'<div class="inv-total-chip"><div class="inv-tc-label">👕 Merch</div><div class="inv-tc-value">$'+cats.merch.toFixed(2)+'</div></div>'
+    +'<div class="inv-total-chip grand"><div class="inv-tc-label">TOTAL INVENTORY</div><div class="inv-tc-value">$'+grand.toFixed(2)+'</div></div>'
+    +'<button class="inv-save-btn" onclick="invSaveCount()">💾 Save Count</button>'
+    +'</div>';
+}
+
+function invSaveCount(){
+  var store = document.getElementById('inv-store-sel')&&document.getElementById('inv-store-sel').value;
+  var date = document.getElementById('inv-date')&&document.getElementById('inv-date').value;
+  if(!store||!date){ alert('Please select a store and date.'); return; }
+  var items = invGetItems();
+  var prices = invGetPrices();
+  var cityPrices = prices[INV.city] || {};
+  var counts = {};
+  var totals = { food:0, disp:0, merch:0 };
+  for(var i=0;i<items.length;i++){
+    var item = items[i];
+    var qty = parseFloat((document.getElementById('inv-qty-'+item.id)||{}).value||0)||0;
+    if(qty>0){
+      counts[item.id] = qty;
+      var price = cityPrices[item.id]||0;
+      if(item.category in totals) totals[item.category] += qty*price;
+    }
+  }
+  var record = {
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2),
+    city: INV.city, store: store, date: date,
+    counts: counts, totals: totals,
+    saved_at: new Date().toISOString()
+  };
+  var all = invGetCounts();
+  all.push(record);
+  invSaveCounts(all);
+  alert('✅ Inventory count saved for '+store+' on '+date);
+}
+
+function invRenderHistory(){
+  var body = document.getElementById('inv-history-body');
+  if(!body) return;
+  var city = (document.getElementById('inv-hist-city')||{}).value||'';
+  var store = (document.getElementById('inv-hist-store')||{}).value||'';
+  var storeSel = document.getElementById('inv-hist-store');
+  if(storeSel){
+    var allC = invGetCounts();
+    var stores = [];
+    var seen = {};
+    allC.filter(function(c){ return !city||c.city===city; }).forEach(function(c){ if(!seen[c.store]){ seen[c.store]=1; stores.push(c.store); } });
+    stores.sort();
+    var curVal = storeSel.value;
+    storeSel.innerHTML = '<option value="">All Stores</option>'+stores.map(function(s){ return '<option value="'+s+'"'+(s===curVal?' selected':'')+'>'+s+'</option>'; }).join('');
+  }
+  var counts = invGetCounts();
+  if(city) counts = counts.filter(function(c){ return c.city===city; });
+  if(store) counts = counts.filter(function(c){ return c.store===store; });
+  counts.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  if(!counts.length){ body.innerHTML='<div class="inv-no-items">No inventory counts saved yet.</div>'; return; }
+  var items = invGetItems();
+  var prices = invGetPrices();
+  body.innerHTML = counts.map(function(c,i){
+    var grand = (c.totals.food||0)+(c.totals.disp||0)+(c.totals.merch||0);
+    var cityPrices = prices[c.city]||{};
+    var itemRows = Object.keys(c.counts).map(function(id){
+      var item = items.filter(function(it){ return it.id===id; })[0];
+      if(!item) return '';
+      var qty = c.counts[id];
+      var price = cityPrices[id]||0;
+      var total = qty*price;
+      return '<tr><td style="padding:6px 12px;font-size:12px;">'+item.name+'</td>'
+        +'<td style="padding:6px 12px;font-size:12px;text-align:center;">'+qty+'</td>'
+        +'<td style="padding:6px 12px;font-size:12px;text-align:right;">$'+price.toFixed(2)+'</td>'
+        +'<td style="padding:6px 12px;font-size:12px;text-align:right;font-weight:700;">$'+total.toFixed(2)+'</td></tr>';
+    }).join('');
+    var cityLabel = c.city==='FL'?'🌴 Florida':'🗽 New York';
+    return '<div class="inv-hist-card" onclick="invToggleHD(\'inv-hd-'+i+'\')">'
+      +'<div class="inv-hist-card-hdr">'
+      +'<div><div class="inv-hist-card-date">'+c.date+' — '+c.store+'</div><div class="inv-hist-card-store">'+cityLabel+'</div></div>'
+      +'<div style="font-family:\'Oswald\',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">$'+grand.toFixed(2)+'</div>'
+      +'</div>'
+      +'<div class="inv-hist-totals">'
+      +'<span class="inv-hist-chip">🍔 Food: <strong>$'+(c.totals.food||0).toFixed(2)+'</strong></span>'
+      +'<span class="inv-hist-chip">🧹 Disp: <strong>$'+(c.totals.disp||0).toFixed(2)+'</strong></span>'
+      +'<span class="inv-hist-chip">👕 Merch: <strong>$'+(c.totals.merch||0).toFixed(2)+'</strong></span>'
+      +'</div>'
+      +'<div class="inv-hist-detail" id="inv-hd-'+i+'">'
+      +'<table style="width:100%;border-collapse:collapse;"><thead><tr>'
+      +'<th style="font-size:11px;color:var(--muted);text-align:left;padding:6px 12px;">Item</th>'
+      +'<th style="font-size:11px;color:var(--muted);text-align:center;padding:6px 12px;">Qty</th>'
+      +'<th style="font-size:11px;color:var(--muted);text-align:right;padding:6px 12px;">Price</th>'
+      +'<th style="font-size:11px;color:var(--muted);text-align:right;padding:6px 12px;">Total</th>'
+      +'</tr></thead><tbody>'+itemRows+'</tbody></table>'
+      +'<div style="margin-top:12px;text-align:right;">'
+      +'<button onclick="event.stopPropagation();invGeneratePDF(\''+c.id+'\')" style="background:rgba(45,106,138,.1);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;margin-right:8px;">📄 PDF</button>'
+       +'<button onclick="event.stopPropagation();invDeleteCount(\''+c.id+'\')" style="background:none;border:1px solid #dc2626;color:#dc2626;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;">🗑 Delete</button>'
+      +'</div></div></div>';
+  }).join('');
+}
+
+function invToggleHD(id){
+  var el = document.getElementById(id);
+  if(el) el.style.display = (el.style.display==='block') ? 'none' : 'block';
+}
+
+function invDeleteCount(id){
+  if(!confirm('Delete this inventory count?')) return;
+  invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
+  invRenderHistory();
+}
+
+function invAnalyticsUpdateStores(){
+  var city = (document.getElementById('inv-anl-city')||{}).value||'FL';
+  var sel = document.getElementById('inv-anl-store');
+  if(!sel) return;
+  var stores = invGetStores(city);
+  sel.innerHTML = stores.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  invRenderAnalytics();
+}
+
+function invRenderAnalytics(){
+  var body = document.getElementById('inv-analytics-body');
+  if(!body) return;
+  var city = (document.getElementById('inv-anl-city')||{}).value||'FL';
+  var store = (document.getElementById('inv-anl-store')||{}).value||'';
+  if(!store){ body.innerHTML='<div class="inv-no-items">Select a store.</div>'; return; }
+  var counts = invGetCounts().filter(function(c){ return c.city===city&&c.store===store; });
+  counts.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  if(counts.length<2){
+    body.innerHTML='<div class="inv-no-items">Need at least <strong>2 saved counts</strong> for '+store+' to show analytics. Currently have '+counts.length+'.</div>';
+    return;
+  }
+  var curr = counts[0], prev = counts[1];
+  var items = invGetItems();
+  var prices = invGetPrices();
+  var cityPrices = prices[city]||{};
+  var cats = [
+    { key:'food', label:'🍔 Food Inventory' },
+    { key:'disp', label:'🧹 Disposable & Cleaning' },
+    { key:'merch', label:'👕 Merch' }
+  ];
+  function fmtPct(p){
+    if(p===null) return '<span style="color:var(--muted);">—</span>';
+    var cls = p>=0?'inv-pct-pos':'inv-pct-neg';
+    return '<span class="'+cls+'">'+(p>=0?'+':'')+p.toFixed(1)+'%</span>';
+  }
+  var html = '<div style="background:var(--surf);border:1px solid var(--brd);border-radius:16px;padding:20px 24px;margin-bottom:20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center;">'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Comparing</div>'
+    +'<div style="font-size:15px;font-weight:700;color:#212320;margin-top:4px;">'+prev.date+' → '+curr.date+'</div></div>'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Store</div>'
+    +'<div style="font-size:15px;font-weight:700;color:#212320;margin-top:4px;">'+store+'</div></div>'
+    +'</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">';
+  for(var ci=0;ci<cats.length;ci++){
+    var cat = cats[ci];
+    var pT = prev.totals[cat.key]||0, cT = curr.totals[cat.key]||0;
+    var pct = pT>0 ? ((cT-pT)/pT*100) : null;
+    html += '<div style="background:var(--surf);border:1px solid var(--brd);border-radius:14px;padding:16px 18px;">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">'+cat.label+'</div>'
+      +'<div style="font-size:22px;font-weight:800;font-family:\'Oswald\',sans-serif;color:var(--accent);">$'+cT.toFixed(2)+'</div>'
+      +'<div style="font-size:12px;margin-top:4px;">vs $'+pT.toFixed(2)+' '+fmtPct(pct)+'</div>'
+      +'</div>';
+  }
+  html += '</div>';
+  html += '<div style="background:var(--surf);border:1px solid var(--brd);border-radius:16px;overflow:hidden;">'
+    +'<table class="inv-count-table"><thead><tr>'
+    +'<th>Item</th>'
+    +'<th style="text-align:center;">Prev Qty</th>'
+    +'<th style="text-align:center;">Curr Qty</th>'
+    +'<th style="text-align:center;">Qty Δ%</th>'
+    +'<th style="text-align:right;">Unit Price</th>'
+    +'<th style="text-align:right;">Prev $</th>'
+    +'<th style="text-align:right;">Curr $</th>'
+    +'<th style="text-align:right;">Value Δ%</th>'
+    +'</tr></thead><tbody>';
+  for(var ci2=0;ci2<cats.length;ci2++){
+    var cat2 = cats[ci2];
+    var catItems = items.filter(function(i){ return i.category===cat2.key; });
+    if(!catItems.length) continue;
+    html += '<tr class="inv-cat-hdr"><td colspan="8">'+cat2.label+'</td></tr>';
+    for(var ii=0;ii<catItems.length;ii++){
+      var item = catItems[ii];
+      var pQty = prev.counts[item.id]||0;
+      var cQty = curr.counts[item.id]||0;
+      if(pQty===0&&cQty===0) continue;
+      var price = cityPrices[item.id]||0;
+      var pVal = pQty*price, cVal = cQty*price;
+      var qPct = pQty>0?((cQty-pQty)/pQty*100):null;
+      var vPct = pVal>0?((cVal-pVal)/pVal*100):null;
+      html += '<tr>'
+        +'<td style="font-weight:500;">'+item.name+'</td>'
+        +'<td style="text-align:center;">'+(pQty||'—')+'</td>'
+        +'<td style="text-align:center;">'+(cQty||'—')+'</td>'
+        +'<td style="text-align:center;">'+fmtPct(qPct)+'</td>'
+        +'<td style="text-align:right;">'+(price?'$'+price.toFixed(2):'—')+'</td>'
+        +'<td style="text-align:right;">'+(pVal?'$'+pVal.toFixed(2):'—')+'</td>'
+        +'<td style="text-align:right;">'+(cVal?'$'+cVal.toFixed(2):'—')+'</td>'
+        +'<td style="text-align:right;">'+fmtPct(vPct)+'</td>'
+        +'</tr>';
+    }
+  }
+  var pG=(prev.totals.food||0)+(prev.totals.disp||0)+(prev.totals.merch||0);
+  var cG=(curr.totals.food||0)+(curr.totals.disp||0)+(curr.totals.merch||0);
+  var gPct=pG>0?((cG-pG)/pG*100):null;
+  html += '</tbody><tfoot><tr style="background:rgba(155,41,44,.05);font-weight:800;">'
+    +'<td colspan="5" style="padding:12px 16px;font-size:13px;">TOTAL</td>'
+    +'<td style="padding:12px 16px;text-align:right;">$'+pG.toFixed(2)+'</td>'
+    +'<td style="padding:12px 16px;text-align:right;">$'+cG.toFixed(2)+'</td>'
+    +'<td style="padding:12px 16px;text-align:right;">'+fmtPct(gPct)+'</td>'
+    +'</tr></tfoot></table></div>';
+  body.innerHTML = html;
+}
+
+function invRenderSetup(){
+  invRenderItemsList();
+  invRenderPriceTable();
+}
+
+function invRenderItemsList(){
+  var el = document.getElementById('inv-items-list');
+  if(!el) return;
+  var items = invGetItems();
+  if(!items.length){ el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:12px 0;">No items yet. Add items above.</div>'; return; }
+  var catLabels = { food:'🍔 Food', disp:'🧹 Disp & Cleaning', merch:'👕 Merch' };
+  var cats = ['food','disp','merch'];
+  var html = '';
+  for(var ci=0;ci<cats.length;ci++){
+    var cat = cats[ci];
+    var catItems = items.filter(function(i){ return i.category===cat; });
+    if(!catItems.length) continue;
+    html += '<div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;">'+catLabels[cat]+'</div>';
+    html += catItems.map(function(item){
+      return '<div class="inv-item-row"><span style="font-size:13px;font-weight:500;">'+item.name+'</span>'
+        +'<button class="inv-item-del" onclick="invDeleteItem(\''+item.id+'\')">✕ Remove</button></div>';
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+
+function invAddItem(){
+  var nameEl = document.getElementById('inv-new-name');
+  var catEl = document.getElementById('inv-new-cat');
+  var name = nameEl ? nameEl.value.trim() : '';
+  var cat = catEl ? catEl.value : 'food';
+  if(!name){ alert('Please enter an item name.'); return; }
+  var items = invGetItems();
+  if(items.filter(function(i){ return i.name.toLowerCase()===name.toLowerCase(); }).length){ alert('Item already exists.'); return; }
+  items.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2), name:name, category:cat });
+  invSaveItems(items);
+  if(nameEl) nameEl.value='';
+  invRenderItemsList();
+  invRenderPriceTable();
+}
+
+function invDeleteItem(id){
+  if(!confirm('Remove this item from the product list?')) return;
+  invSaveItems(invGetItems().filter(function(i){ return i.id!==id; }));
+  invRenderItemsList();
+  invRenderPriceTable();
+}
+
+function invUploadPrices(city, input){
+  var file = input.files[0];
+  if(!file) return;
+  var statusEl = document.getElementById('inv-price-'+city.toLowerCase()+'-status');
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var lines = e.target.result.split('\n').filter(function(l){ return l.trim(); });
+    var items = invGetItems();
+    var prices = invGetPrices();
+    if(!prices[city]) prices[city] = {};
+    var matched=0, skipped=0;
+    for(var i=1;i<lines.length;i++){
+      var parts = lines[i].split(',');
+      if(parts.length<2) continue;
+      var name = parts[0].trim().replace(/^"|"$/g,'');
+      var price = parseFloat(parts[1].trim().replace(/[^0-9.]/g,''));
+      if(isNaN(price)) continue;
+      var item = items.filter(function(it){ return it.name.toLowerCase()===name.toLowerCase(); })[0];
+      if(item){ prices[city][item.id]=price; matched++; }
+      else skipped++;
+    }
+    invSavePrices(prices);
+    if(statusEl) statusEl.textContent = '✅ '+matched+' items matched'+(skipped?' · '+skipped+' not found':'');
+    invRenderPriceTable();
+  };
+  reader.readAsText(file);
+}
+
+function invRenderPriceTable(){
+  var el = document.getElementById('inv-price-table');
+  if(!el) return;
+  var items = invGetItems();
+  var prices = invGetPrices();
+  if(!items.length){ el.innerHTML=''; return; }
+  var cats = [
+    {key:'food',label:'🍔 Food'},
+    {key:'disp',label:'🧹 Disposable & Cleaning'},
+    {key:'merch',label:'👕 Merch'}
+  ];
+  var html = '<table class="inv-count-table"><thead><tr>'
+    +'<th>Item</th><th>Category</th>'
+    +'<th style="text-align:right;">🌴 FL Price</th>'
+    +'<th style="text-align:right;">🗽 NY Price</th>'
+    +'</tr></thead><tbody>';
+  for(var ci=0;ci<cats.length;ci++){
+    var cat = cats[ci];
+    var catItems = items.filter(function(i){ return i.category===cat.key; });
+    if(!catItems.length) continue;
+    html += '<tr class="inv-cat-hdr"><td colspan="4">'+cat.label+'</td></tr>';
+    for(var ii=0;ii<catItems.length;ii++){
+      var item = catItems[ii];
+      var flP = prices.FL&&prices.FL[item.id]!=null ? '$'+prices.FL[item.id].toFixed(2) : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      var nyP = prices.NY&&prices.NY[item.id]!=null ? '$'+prices.NY[item.id].toFixed(2) : '<span style="color:var(--muted);font-size:11px;">—</span>';
+      html += '<tr><td style="font-weight:500;">'+item.name+'</td><td style="font-size:12px;color:var(--muted);">'+cat.label+'</td>'
+        +'<td style="text-align:right;">'+flP+'</td><td style="text-align:right;">'+nyP+'</td></tr>';
+    }
+  }
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
 function goHome(){ S.page='home'; render(); }
 
 // ══════════════════════════════════════════════════
@@ -2372,7 +2982,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl'].forEach(p=>document.getElementById('pg-'+p).style.display='none');
+  ['home','kpi','sales','mix','pnl','inv'].forEach(p=>document.getElementById('pg-'+p).style.display='none');
   document.getElementById('pg-'+S.page).style.display = S.page==='home' ? 'flex' : 'block';
   if(S.page==='home') setTimeout(updatePnLHomeBadge, 50);
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
