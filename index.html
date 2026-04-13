@@ -1449,7 +1449,20 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 // ══════════════════════════════════════════════════
 const _SUPA_URL = 'https://fbphqabzogzeelkzezbt.supabase.co';
 const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZicGhxYWJ6b2d6ZWVsa3plemJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDY4MjAsImV4cCI6MjA5MTY4MjgyMH0.se8ErpL2CFjC9dVI1n6rP-aiZ2SJrI-yGXo5f7bdlwE';
-const _supa = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
+let _supa;
+try {
+  if (!window.supabase) throw new Error('Supabase library not loaded');
+  _supa = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
+} catch(e) {
+  console.error('Supabase init failed:', e);
+  // Fallback: show login with error, app runs in offline/local mode
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginEl = document.getElementById('pg-login');
+    if(loginEl) loginEl.style.display = 'flex';
+    const errEl = document.getElementById('login-error');
+    if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
+  });
+}
 const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1'];
 
 let _slUser = null;
@@ -1495,16 +1508,22 @@ async function doLogin(){
   const pass  = document.getElementById('login-password')?.value || '';
   const errEl = document.getElementById('login-error');
   const btn   = document.getElementById('login-btn');
-  if(!email || !pass){ if(errEl) errEl.textContent = 'Ingresá email y contraseña.'; return; }
+  if(!email || !pass){ if(errEl) errEl.textContent = 'Please enter your email and password.'; return; }
+  if(!_supa){ if(errEl) errEl.textContent = 'Connection error — please refresh the page.'; return; }
   if(btn){ btn.textContent = 'Loading…'; btn.disabled = true; }
   if(errEl) errEl.textContent = '';
-  const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
-  if(error){
-    if(errEl) errEl.textContent = 'Email o contraseña incorrectos.';
+  try {
+    const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
+    if(error){
+      if(errEl) errEl.textContent = 'Incorrect email or password.';
+      if(btn){ btn.textContent = 'LOG IN'; btn.disabled = false; }
+      return;
+    }
+    await _initApp(data.user);
+  } catch(e) {
+    if(errEl) errEl.textContent = 'Connection error — please check your connection and try again.';
     if(btn){ btn.textContent = 'LOG IN'; btn.disabled = false; }
-    return;
   }
-  await _initApp(data.user);
 }
 
 async function doLogout(){
@@ -1519,19 +1538,29 @@ async function doLogout(){
 
 async function _initApp(user){
   _slUser = user;
-  const { data: profile } = await _supa.from('profiles').select('role,name').eq('id', user.id).single();
-  _slRole  = profile?.role  || 'manager';
-  _slState = profile?.state || 'all';
-  await _loadFromCloud();
-  try{ const d = localStorage.getItem('sl_v2'); if(d) DB = JSON.parse(d); }catch(e){}
-  const loginEl = document.getElementById('pg-login');
-  if(loginEl) loginEl.style.display = 'none';
-  const uinfo = document.getElementById('nb-user-info');
-  if(uinfo){
-    const roleLabel = _slRole==='admin'?'👑 Admin':_slRole==='manager'?'✏️ Manager':'👁 Viewer';
-    uinfo.innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,.7);">'+(profile?.name||user.email)+'</span>'
-      +'<span style="font-size:10px;background:rgba(255,255,255,.1);border-radius:99px;padding:1px 7px;margin-left:5px;color:rgba(255,255,255,.55);">'+roleLabel+'</span>';
+  // Fetch profile (role, name, state) — fail gracefully
+  try {
+    const { data: profile } = await _supa.from('profiles').select('role,name,state').eq('id', user.id).single();
+    _slRole  = profile?.role  || 'manager';
+    _slState = profile?.state || 'all';
+    const loginEl = document.getElementById('pg-login');
+    if(loginEl) loginEl.style.display = 'none';
+    const uinfo = document.getElementById('nb-user-info');
+    if(uinfo){
+      const roleLabel = _slRole==='admin'?'👑 Admin':_slRole==='manager'?'✏️ Manager':'👁 Viewer';
+      uinfo.innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,.7);">'+(profile?.name||user.email)+'</span>'
+        +'<span style="font-size:10px;background:rgba(255,255,255,.1);border-radius:99px;padding:1px 7px;margin-left:5px;color:rgba(255,255,255,.55);">'+roleLabel+'</span>';
+    }
+  } catch(e) {
+    console.error('Profile fetch failed:', e);
+    _slRole  = 'manager';
+    _slState = 'all';
+    const loginEl = document.getElementById('pg-login');
+    if(loginEl) loginEl.style.display = 'none';
   }
+  // Load cloud data — fail gracefully, fallback to localStorage
+  try { await _loadFromCloud(); } catch(e){ console.error('Cloud load failed:', e); }
+  try{ const d = localStorage.getItem('sl_v2'); if(d) DB = JSON.parse(d); }catch(e){}
   _applyRoleUI();
   render();
 }
@@ -1541,9 +1570,9 @@ function _applyRoleUI(){
   const pnlLock = document.getElementById('pnl-lock-overlay');
   if(pnlLock) pnlLock.style.display = (_slRole==='user') ? 'flex' : 'none'; // only locks for explicit 'user' role
   // State/city filter based on user's allowed state
-  if(_slState && _slState \!== 'all'){
+  if(_slState && _slState !== 'all'){
     // Force state and hide the state toggle buttons
-    if(S.state \!== _slState){ S.state = _slState; S.loc = 'ALL'; }
+    if(S.state !== _slState){ S.state = _slState; S.loc = 'ALL'; }
     document.querySelectorAll('.state-toggle').forEach(el => el.style.display='none');
   } else {
     document.querySelectorAll('.state-toggle').forEach(el => el.style.display='');
@@ -1557,11 +1586,21 @@ function _applyRoleUI(){
 window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('login-password')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('login-email')?.addEventListener('keydown',    e => { if(e.key==='Enter') document.getElementById('login-password')?.focus(); });
-  const { data: { session } } = await _supa.auth.getSession();
-  if(session){
-    await _initApp(session.user);
-  } else {
-    const loginEl = document.getElementById('pg-login');
+  // Always show login first — hide if session is valid
+  const loginEl = document.getElementById('pg-login');
+  if(!_supa) {
+    if(loginEl) loginEl.style.display = 'flex';
+    return;
+  }
+  try {
+    const { data: { session } } = await _supa.auth.getSession();
+    if(session){
+      await _initApp(session.user);
+    } else {
+      if(loginEl) loginEl.style.display = 'flex';
+    }
+  } catch(e) {
+    console.error('Session check failed:', e);
     if(loginEl) loginEl.style.display = 'flex';
   }
 });
@@ -2163,7 +2202,7 @@ function goPNL(){
   S.page='pnl'; render();
 }
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
-function setState(st){ if(_slState && _slState\!=='all' && st\!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
+function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=locs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
 function setLoc(l){
   if(S.cmpMode){
@@ -2188,11 +2227,23 @@ function render(){
   ['home','kpi','sales','mix','pnl'].forEach(p=>document.getElementById('pg-'+p).style.display='none');
   document.getElementById('pg-'+S.page).style.display = S.page==='home' ? 'flex' : 'block';
   if(S.page==='home') setTimeout(updatePnLHomeBadge, 50);
-  if(S.page==='mix'){ if(typeof renderMixPage!=='undefined') renderMixPage(); }
-  else if(S.page==='sales'){ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }
-  else if(S.page==='pnl'){ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }
+  if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
+  else if(S.page==='sales'){ try{ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }catch(e){ console.error('renderSalesPage',e); } }
+  else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
   renderNavRight();
-  if(S.page==='kpi'){ renderLocBar(); renderCmpOptions(); renderCards(); renderCharts(); renderTable(); renderForecast(); renderAlerts(); renderLeaderboard(); renderLocCompare(); renderRolling12(); renderHeatmap(); }
+  if(S.page==='kpi'){
+    try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
+    try{ renderCmpOptions(); }catch(e){ console.error('renderCmpOptions',e); }
+    try{ renderCards(); }catch(e){ console.error('renderCards',e); }
+    try{ renderCharts(); }catch(e){ console.error('renderCharts',e); }
+    try{ renderTable(); }catch(e){ console.error('renderTable',e); }
+    try{ renderForecast(); }catch(e){ console.error('renderForecast',e); }
+    try{ renderAlerts(); }catch(e){ console.error('renderAlerts',e); }
+    try{ renderLeaderboard(); }catch(e){ console.error('renderLeaderboard',e); }
+    try{ renderLocCompare(); }catch(e){ console.error('renderLocCompare',e); }
+    try{ renderRolling12(); }catch(e){ console.error('renderRolling12',e); }
+    try{ renderHeatmap(); }catch(e){ console.error('renderHeatmap',e); }
+  }
   _applyRoleUI();
 }
 
@@ -2277,6 +2328,7 @@ function renderNavRight(){
 // ══════════════════════════════════════════════════
 function renderLocBar(){
   const bar=document.getElementById('loc-bar');
+  if(!bar) return;
   let h='';
   if(!S.cmpMode){
     h+=`<button class="loc-tab ${S.loc==='ALL'?'on':''}" onclick="setLoc('ALL')">📊 All</button><div class="loc-sep"></div>`;
@@ -2393,6 +2445,7 @@ function updateHWTotal(){
 // ══════════════════════════════════════════════════
 function renderCards(){
   const el=document.getElementById('kpi-cards');
+  if(!el) return;
   if(S.cmpMode){el.innerHTML='';return;}
   const y=S.loc==='ALL'?allYTD():ytdCalc(S.loc);
   if(!y){el.innerHTML='';return;}
@@ -2592,92 +2645,87 @@ function renderLocCompare(){
   const el=document.getElementById('kpi-loc-compare');
   if(!el) return;
   if(S.cmpMode){el.innerHTML='';return;}
-
   const allLocs=locs();
-  if(allLocs.length<2){el.innerHTML='';return;} // Only show when multiple locations
-
+  if(allLocs.length<2){el.innerHTML='';return;}
+  const fmtK=v=>v&&v>0?'$'+(v>=1000000?(v/1000000).toFixed(1)+'M':(v/1000).toFixed(1)+'K'):'—';
   const fmtP=v=>v!=null?v.toFixed(1)+'%':'—';
-  const fmtK=v=>v?'$'+(v/1000).toFixed(1)+'K':'—';
   const fmtAvg=v=>v?'$'+v.toFixed(2):'—';
-  const colorPct=(v,g,y)=>{
-    if(v==null) return 'var(--muted)';
-    return v<=g?'#16a34a':v<=y?'#ca8a04':'#dc2626';
-  };
-  // Prime cost from P&L records
-  const getPrimeCost=(loc)=>{
+  const colCost=(v,g,y)=>v==null?'#999':v<=g?'#16a34a':v<=y?'#ca8a04':'#dc2626';
+  const colProfit=(v,g,y)=>v==null?'#999':v>=g?'#16a34a':v>=y?'#ca8a04':'#dc2626';
+  const getPnLMetrics=(loc)=>{
     try{
-      const pnlRecs=JSON.parse(localStorage.getItem('sl_pnl_v1')||'[]');
-      const locPnl=pnlRecs.filter(r=>r.loc===loc&&String(r.year)===String(S.year));
-      if(!locPnl.length) return null;
-      let totCogs=0,totPay=0,totNs=0;
-      locPnl.forEach(r=>{
-        const ns=r.netSales||r.revenue||0;
-        totNs+=ns; totCogs+=Math.abs(r.cogs||0); totPay+=Math.abs(r.payroll||0);
-      });
-      return totNs>0?((totCogs+totPay)/totNs*100):null;
+      const recs=JSON.parse(localStorage.getItem('sl_pnl_v1')||'[]').filter(r=>r.loc===loc&&String(r.year)===String(S.year));
+      if(!recs.length) return null;
+      let ns=0,gp=0,ni=0,cogs=0,pay=0;
+      recs.forEach(r=>{ ns+=r.netSales||r.revenue||0; gp+=r.grossProfit||0; ni+=r.netIncome||0; cogs+=Math.abs(r.cogs||0); pay+=Math.abs(r.payroll||0); });
+      return{ ns, gp, ni, gpPct:ns>0?(gp/ns*100):null, niPct:ns>0?(ni/ns*100):null, primePct:ns>0?((cogs+pay)/ns*100):null };
     }catch(e){return null;}
   };
-  // Sales avg check from Sales records
   const getSalesMetrics=(loc)=>{
     try{
-      const sRecs=JSON.parse(localStorage.getItem('sl_sales_v1')||'[]');
-      const locS=sRecs.filter(r=>r.loc===loc&&String(r.year)===String(S.year));
-      if(!locS.length) return {avg:null,orders:null};
-      const totOrders=locS.reduce((s,r)=>s+(r.totalOrders||0),0);
-      const totSales=locS.reduce((s,r)=>s+(r.netSales||0),0);
-      return {avg:totOrders>0?totSales/totOrders:null, orders:totOrders};
-    }catch(e){return{avg:null,orders:null};}
+      const recs=JSON.parse(localStorage.getItem('sl_sales_v1')||'[]').filter(r=>r.loc===loc&&String(r.year)===String(S.year));
+      if(!recs.length) return{avg:null,orders:null,ns:null};
+      const orders=recs.reduce((s,r)=>s+(r.totalOrders||0),0);
+      const ns=recs.reduce((s,r)=>s+(r.netSales||0),0);
+      return{avg:orders>0?ns/orders:null,orders,ns};
+    }catch(e){return{avg:null,orders:null,ns:null};}
   };
-
   const rows=allLocs.map(l=>{
-    const ytd=ytdCalc(l);
-    const hs=calcHealthScore(l);
-    const pc=getPrimeCost(l);
-    const sm=getSalesMetrics(l);
+    const ytd=ytdCalc(l); const hs=calcHealthScore(l); const pnl=getPnLMetrics(l); const sm=getSalesMetrics(l);
     const fpPct=ytd&&ytd.fpct!=null?(ytd.fpct*100):null;
     const lpPct=ytd&&ytd.lpct!=null?(ytd.lpct*100):null;
-    const isSelected=l===S.loc;
-    return {l,ytd,hs,pc,sm,fpPct,lpPct,isSelected};
-  }).sort((a,b)=>(b.hs&&b.hs.total||0)-(a.hs&&a.hs.total||0));
-
-  const colHdr='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 12px;text-align:right;';
-  const colVal='font-size:13px;font-weight:700;padding:8px 12px;text-align:right;';
-  const tblRows=rows.map(r=>{
-    const bg=r.isSelected?'background:rgba(30,58,95,.06);':'';
-    const hsCol=r.hs?r.hs.total>=75?'#16a34a':r.hs.total>=50?'#ca8a04':'#dc2626':'var(--muted)';
-    const pcCol=r.pc!=null?r.pc<60?'#16a34a':r.pc<70?'#ca8a04':'#dc2626':'var(--muted)';
-    const safeLocId=r.l.replace(/'/g,"\\'");
-    return `<tr style="border-bottom:1px solid var(--border);${bg}cursor:pointer;" onclick="S.loc='${safeLocId}';S.cmpMode=false;render();">
-      <td style="padding:8px 12px;font-weight:${r.isSelected?'800':'600'};font-size:13px;">${r.isSelected?'→ ':''} ${r.l}</td>
-      <td style="${colVal}">${r.ytd?fmtK(r.ytd.ts):'—'}</td>
-      <td style="${colVal}color:${colorPct(r.fpPct,25,30)};">${fmtP(r.fpPct)}</td>
-      <td style="${colVal}color:${colorPct(r.lpPct,20,28)};">${fmtP(r.lpPct)}</td>
-      <td style="${colVal}color:${pcCol};">${r.pc!=null?r.pc.toFixed(1)+'%':'—'}</td>
-      <td style="${colVal}color:${r.sm.avg?'var(--ink)':'var(--muted)'};">${fmtAvg(r.sm.avg)}</td>
-      <td style="${colVal}color:${hsCol};font-size:15px;">${r.hs?Math.round(r.hs.total):'—'}</td>
-    </tr>`;
+    const ns=sm.ns||(ytd?ytd.ts:null);
+    return{l,ytd,hs,pnl,sm,fpPct,lpPct,ns};
+  }).sort((a,b)=>(b.ns||0)-(a.ns||0));
+  const safeMax=arr=>arr.length?Math.max(...arr):null;
+  const safeMin=arr=>arr.length?Math.min(...arr):null;
+  const bestNS =safeMax(rows.map(r=>r.ns||0));
+  const bestFP =safeMin(rows.filter(r=>r.fpPct!=null).map(r=>r.fpPct));
+  const bestLP =safeMin(rows.filter(r=>r.lpPct!=null).map(r=>r.lpPct));
+  const bestPC =safeMin(rows.filter(r=>r.pnl&&r.pnl.primePct!=null).map(r=>r.pnl.primePct));
+  const bestGP =safeMax(rows.filter(r=>r.pnl&&r.pnl.gpPct!=null).map(r=>r.pnl.gpPct));
+  const bestNI =safeMax(rows.filter(r=>r.pnl&&r.pnl.niPct!=null).map(r=>r.pnl.niPct));
+  const bestAvg=safeMax(rows.filter(r=>r.sm.avg!=null).map(r=>r.sm.avg));
+  const bestHS =safeMax(rows.filter(r=>r.hs!=null).map(r=>r.hs.total||0));
+  const crown=(v,best)=>v!=null&&best!=null&&Math.abs(v-best)<0.01?'<span style="font-size:9px;margin-left:2px;">👑</span>':'';
+  const thS='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px 10px;text-align:right;border-bottom:2px solid var(--border);white-space:nowrap;';
+  const thL='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);';
+  const tblRows=rows.map((r,idx)=>{
+    const rank=idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+    const bg=idx===0?'background:rgba(250,247,245,.8);':'';
+    const bgHover=idx===0?'rgba(250,247,245,.8)':'transparent';
+    const safeId=r.l.replace(/'/g,"\\'");
+    return '<tr style="border-bottom:1px solid var(--border);'+bg+'cursor:pointer;" onclick="S.loc=\''+safeId+'\';S.cmpMode=false;render();">'
+      +'<td style="padding:10px 12px;font-weight:700;font-size:13px;white-space:nowrap;">'+rank+' '+r.l+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;">'+fmtK(r.ns)+crown(r.ns,bestNS)+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;color:'+colCost(r.fpPct,25,30)+';">'+fmtP(r.fpPct)+crown(r.fpPct,bestFP)+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;color:'+colCost(r.lpPct,20,28)+';">'+fmtP(r.lpPct)+crown(r.lpPct,bestLP)+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;color:'+colCost(r.pnl?r.pnl.primePct:null,55,65)+';">'+(r.pnl?fmtP(r.pnl.primePct):'—')+(r.pnl&&r.pnl.primePct!=null?crown(r.pnl.primePct,bestPC):'')+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;color:'+colProfit(r.pnl?r.pnl.gpPct:null,60,50)+';">'+(r.pnl?fmtP(r.pnl.gpPct):'—')+(r.pnl&&r.pnl.gpPct!=null?crown(r.pnl.gpPct,bestGP):'')+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;color:'+colProfit(r.pnl?r.pnl.niPct:null,10,5)+';">'+(r.pnl?fmtP(r.pnl.niPct):'—')+(r.pnl&&r.pnl.niPct!=null?crown(r.pnl.niPct,bestNI):'')+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:13px;font-weight:700;">'+fmtAvg(r.sm.avg)+crown(r.sm.avg,bestAvg)+'</td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:14px;font-weight:800;color:'+(r.hs?r.hs.total>=75?'#16a34a':r.hs.total>=50?'#ca8a04':'#dc2626':'#999')+';">'+(r.hs?Math.round(r.hs.total):'—')+crown(r.hs?r.hs.total:null,bestHS)+'</td>'
+      +'</tr>';
   }).join('');
-
-  el.innerHTML=`<div class="tcard">
-    <div class="thdr"><div class="ttitle">📍 Location Side-by-Side · ${S.year} YTD</div>
-      <div style="font-size:10px;color:var(--muted);">Click a row to view that location's detail</div>
-    </div>
-    <div class="tscroll">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead><tr style="background:var(--paper);">
-          <th style="${colHdr}text-align:left;">Location</th>
-          <th style="${colHdr}">Net Sales YTD</th>
-          <th style="${colHdr}">Food Cost %</th>
-          <th style="${colHdr}">Labor %</th>
-          <th style="${colHdr}">Prime Cost</th>
-          <th style="${colHdr}">Avg Check</th>
-          <th style="${colHdr}">Health Score</th>
-        </tr></thead>
-        <tbody>${tblRows}</tbody>
-      </table>
-    </div>
-    <div style="padding:8px 16px;font-size:10px;color:var(--muted);">Prime Cost & Avg Check require P&L and Sales data to be imported.</div>
-  </div>`;
+  const stateLabel=S.state==='ALL'?'All Locations':S.state==='FL'?'🌴 Florida':'🗽 New York';
+  el.innerHTML='<div class="tcard">'
+    +'<div class="thdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+    +'<div><div class="ttitle">🏆 Store Showdown · '+stateLabel+' · '+S.year+'</div>'
+    +'<div style="font-size:10px;color:var(--muted);margin-top:2px;">Ranked by Net Sales · 👑 best in column · green = good · click row to drill in</div></div></div>'
+    +'<div class="tscroll"><table style="width:100%;border-collapse:collapse;">'
+    +'<thead><tr style="background:var(--paper);">'
+    +'<th style="'+thL+'">Store</th>'
+    +'<th style="'+thS+'">Net Sales YTD</th>'
+    +'<th style="'+thS+'">Food Cost %</th>'
+    +'<th style="'+thS+'">Labor %</th>'
+    +'<th style="'+thS+'">Prime Cost</th>'
+    +'<th style="'+thS+'">Gross Profit %</th>'
+    +'<th style="'+thS+'">Net Income %</th>'
+    +'<th style="'+thS+'">Avg Check</th>'
+    +'<th style="'+thS+'">Health Score</th>'
+    +'</tr></thead>'
+    +'<tbody>'+tblRows+'</tbody></table></div>'
+    +'<div style="padding:8px 16px;font-size:10px;color:var(--muted);">Gross Profit, Net Income & Prime Cost require P&L data · Avg Check requires Sales data</div></div>';
 }
 
 // ══════════════════════════════════════════════════
@@ -3407,7 +3455,9 @@ function renderCharts(){
     if(chPct){chPct.destroy();chPct=null;}
     return;
   }
-  document.getElementById('ch-loc').textContent=S.loc==='ALL'?'All Locations':S.loc;
+  const chLocEl=document.getElementById('ch-loc');
+  if(!chLocEl) return;
+  chLocEl.textContent=S.loc==='ALL'?'All Locations':S.loc;
   if(chSales){chSales.destroy();chSales=null;}
   if(chPct){chPct.destroy();chPct=null;}
   // Sync overlay button state
@@ -3624,11 +3674,12 @@ function renderHeatmap(){
 function renderTable(){
   const wrap=document.getElementById('tbl-wrap');
   const title=document.getElementById('tbl-title');
+  if(!wrap||!title) return;
   // Targets button: always visible — disabled when no specific store is selected
   const tBtn=document.getElementById('btn-tgts');
   const canTarget=S.loc!=='ALL'&&!S.cmpMode;
-  tBtn.disabled=!canTarget;
-  tBtn.title=canTarget?`Set monthly KPI targets for ${S.loc}`:'Select a specific store to set targets';
+  if(tBtn){ tBtn.disabled=!canTarget;
+    tBtn.title=canTarget?`Set monthly KPI targets for ${S.loc}`:'Select a specific store to set targets'; }
 
   if(S.cmpMode){
     if(S.cmpLocs.length===0){
