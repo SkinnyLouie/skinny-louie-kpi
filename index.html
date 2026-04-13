@@ -1685,11 +1685,19 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   <div id="inv-pane-setup" class="inv-pane" style="display:none;">
     <div class="inv-setup-section">
       <h3>📋 Product List</h3>
-      <div id="inv-items-list"></div>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px 0;">Gestioná el listado de productos subiendo un archivo Excel (.xlsx) con las columnas: <strong>item_name</strong> y <strong>category</strong>. Los conteos históricos no se ven afectados al actualizar la lista.</p>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+        <button onclick="invDownloadItemsTemplate()" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download Template</button>
+        <label style="background:rgba(126,32,35,.1);border:1px solid rgba(126,32,35,.3);color:#7e2023;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">
+          ⬆ Upload Product List
+          <input type="file" id="inv-items-upload" accept=".xlsx,.xls,.csv" onchange="invUploadItems(this)" style="display:none;">
+        </label>
+        <span id="inv-items-upload-status" style="font-size:12px;color:var(--muted);"></span>
+      </div>
     </div>
     <div class="inv-setup-section">
       <h3>💲 Price Lists</h3>
-      <p style="font-size:13px;color:var(--muted);margin:0 0 16px 0;">Upload an Excel file (.xlsx) with columns: <strong>item_name</strong> and <strong>price</strong>. Download the template below to get started.</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px 0;">Subí un Excel (.xlsx) con columnas: <strong>item_name</strong> y <strong>price</strong>. Bajá el template con los productos ya cargados y completá los precios.</p>
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
         <button onclick="invDownloadTemplate('FL')" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download FL Template</button>
         <button onclick="invDownloadTemplate('NY')" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download NY Template</button>
@@ -1706,7 +1714,6 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
           <span id="inv-price-ny-status" style="font-size:12px;color:var(--muted);"></span>
         </div>
       </div>
-      <div id="inv-price-table" style="margin-top:20px;"></div>
     </div>
   </div>
 </div>
@@ -2836,32 +2843,128 @@ function invDeleteItem(id){
   invRenderPriceTable();
 }
 
+function _invXlsxDownload(filename, wb){
+  try{
+    var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    var blob = new Blob([wbout], {type:'application/octet-stream'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+    return true;
+  }catch(e){
+    alert('Error al generar el archivo: '+e.message);
+    return false;
+  }
+}
+
+function invDownloadItemsTemplate(){
+  try{
+    var items = invGetItems();
+    var ws_data = [['item_name','category']];
+    items.forEach(function(item){
+      ws_data.push([item.name, item.category||'food']);
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [{wch:50},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    _invXlsxDownload('product_list_template.xlsx', wb);
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+function invDownloadTemplate(city){
+  try{
+    var items = invGetItems();
+    var prices = invGetPrices();
+    var cityPrices = (prices[city]||{});
+    var ws_data = [['item_name','price']];
+    items.forEach(function(item){
+      ws_data.push([item.name, cityPrices[item.id]!==undefined ? cityPrices[item.id] : '']);
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [{wch:50},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Prices_'+city);
+    _invXlsxDownload('price_list_'+city.toLowerCase()+'.xlsx', wb);
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+function invUploadItems(input){
+  var file = input.files[0];
+  if(!file) return;
+  var statusEl = document.getElementById('inv-items-upload-status');
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      var existing = invGetItems();
+      var existingMap = {};
+      existing.forEach(function(it){ existingMap[it.name.toLowerCase()] = it.id; });
+      var newItems = [];
+      var added=0, updated=0;
+      rows.forEach(function(row){
+        var name = (row['item_name']||row['Item Name']||row['name']||'').toString().trim();
+        var cat = (row['category']||row['Category']||'food').toString().trim().toLowerCase();
+        if(!name) return;
+        var validCats = {food:1,disp:1,merch:1};
+        if(!validCats[cat]) cat = 'food';
+        var existId = existingMap[name.toLowerCase()];
+        if(existId){
+          newItems.push({id:existId, name:name, category:cat, unit:'Case'});
+          updated++;
+        } else {
+          newItems.push({id:'item_'+Date.now()+'_'+newItems.length, name:name, category:cat, unit:'Case'});
+          added++;
+        }
+      });
+      if(newItems.length){
+        invSaveItems(newItems);
+        if(statusEl) statusEl.textContent = '✅ '+newItems.length+' productos cargados ('+added+' nuevos, '+updated+' actualizados)';
+      } else {
+        if(statusEl) statusEl.textContent = '⚠️ No se encontraron productos en el archivo';
+      }
+    }catch(err){
+      if(statusEl) statusEl.textContent = '❌ Error al leer el archivo: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function invUploadPrices(city, input){
   var file = input.files[0];
   if(!file) return;
   var statusEl = document.getElementById('inv-price-'+city.toLowerCase()+'-status');
   var reader = new FileReader();
   reader.onload = function(e){
-    var lines = e.target.result.split('\n').filter(function(l){ return l.trim(); });
-    var items = invGetItems();
-    var prices = invGetPrices();
-    if(!prices[city]) prices[city] = {};
-    var matched=0, skipped=0;
-    for(var i=1;i<lines.length;i++){
-      var parts = lines[i].split(',');
-      if(parts.length<2) continue;
-      var name = parts[0].trim().replace(/^"|"$/g,'');
-      var price = parseFloat(parts[1].trim().replace(/[^0-9.]/g,''));
-      if(isNaN(price)) continue;
-      var item = items.filter(function(it){ return it.name.toLowerCase()===name.toLowerCase(); })[0];
-      if(item){ prices[city][item.id]=price; matched++; }
-      else skipped++;
+    try{
+      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      var items = invGetItems();
+      var prices = invGetPrices();
+      if(!prices[city]) prices[city] = {};
+      var matched=0, skipped=0;
+      rows.forEach(function(row){
+        var name = (row['item_name']||row['Item Name']||row['name']||'').toString().trim();
+        var price = parseFloat((row['price']||row['Price']||'').toString().replace(/[^0-9.]/g,''));
+        if(!name) return;
+        if(isNaN(price)){ skipped++; return; }
+        var item = items.filter(function(it){ return it.name.toLowerCase()===name.toLowerCase(); })[0];
+        if(item){ prices[city][item.id]=price; matched++; }
+        else skipped++;
+      });
+      invSavePrices(prices);
+      if(statusEl) statusEl.textContent = '✅ '+matched+' precios cargados'+(skipped?' · '+skipped+' no encontrados':'');
+      invRenderPriceTable();
+    }catch(err){
+      if(statusEl) statusEl.textContent = '❌ Error al leer el archivo';
     }
-    invSavePrices(prices);
-    if(statusEl) statusEl.textContent = '✅ '+matched+' items matched'+(skipped?' · '+skipped+' not found':'');
-    invRenderPriceTable();
   };
-  reader.readAsText(file);
+  reader.readAsArrayBuffer(file);
 }
 
 function invRenderPriceTable(){
