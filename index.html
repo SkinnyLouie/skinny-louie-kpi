@@ -1490,7 +1490,7 @@ async function doLogin(){
   const errEl = document.getElementById('login-error');
   const btn   = document.getElementById('login-btn');
   if(!email || !pass){ if(errEl) errEl.textContent = 'Ingresá email y contraseña.'; return; }
-  if(btn){ btn.textContent = 'Entrando…'; btn.disabled = true; }
+  if(btn){ btn.textContent = 'Loading…'; btn.disabled = true; }
   if(errEl) errEl.textContent = '';
   const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
   if(error){
