@@ -1018,6 +1018,10 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hcard.c6 .hcard-desc { color:rgba(255,255,255,.75); }
 .hcard.c6 .hcard-tag  { color:#f0cc60; font-size:12px; }
 .hcard.c6 .hcard-icon { filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+.hcard.c7        { cursor:default; opacity:.85; }
+.hcard.c7::before{ background:linear-gradient(90deg,#b06020,#e07830); }
+.hcard.c7:hover  { transform:none; border-color:transparent; box-shadow:0 4px 20px rgba(33,35,32,.07); }
+.hcard.c7 .hcard-tag { color:#b06020; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dm-rpt-chip { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:rgba(255,255,255,.9); }
 .ask-input-wrap { display:flex; gap:8px; margin-top:12px; }
@@ -1244,6 +1248,16 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         <span style="font-size:10px;color:rgba(255,255,255,.6);">Managers &amp; Admins only</span>
       </div>
     </div>
+    <div class="hcard c7" style="position:relative;">
+       <span class="hcard-icon">📦</span>
+       <div class="hcard-title">Inventory</div>
+       <div class="hcard-desc">Track stock levels, usage, and waste by location. Manage par levels and get low-stock alerts.</div>
+       <div class="hcard-tag">Coming Soon</div>
+       <div style="position:absolute;inset:0;border-radius:inherit;background:rgba(15,15,15,.45);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+         <span style="font-size:22px;">🚧</span>
+         <span style="font-size:12px;font-weight:800;color:#fff;letter-spacing:.08em;text-transform:uppercase;">Coming Soon</span>
+       </div>
+     </div>
     <div class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">📋</span>
       <div style="flex:1;">
@@ -1596,7 +1610,7 @@ async function _forceSyncToCloud(showAlert){
   if(!_supa || !_slUser){ if(showAlert) alert('You must be logged in to sync.'); return; }
   const btn = document.getElementById('force-sync-btn');
   if(btn){ btn.textContent = '☁ Syncing…'; btn.disabled = true; }
-  let synced = 0, failed = 0;
+  let synced = 0, failed = 0, lastError = '';
   for(const key of SL_SYNC_KEYS){
     const val = localStorage.getItem(key);
     if(val == null) continue;
@@ -1606,13 +1620,13 @@ async function _forceSyncToCloud(showAlert){
       updated_at: new Date().toISOString(),
       updated_by: _slUser.id
     }, { onConflict: 'key' });
-    if(error){ console.error('Force sync error for', key, error.message); failed++; }
+    if(error){ console.error('Force sync error for', key, error.message); failed++; lastError = error.message; }
     else synced++;
   }
   if(btn){ btn.textContent = '☁ Sync Data'; btn.disabled = false; }
   if(showAlert){
     if(failed === 0) alert('✅ Data synced to cloud successfully! All users will now see the data.');
-    else alert('⚠️ Synced ' + synced + ' keys. ' + failed + ' failed — check console for details.');
+    else alert('⚠️ Synced ' + synced + ' keys. ' + failed + ' failed.\n\nError: ' + lastError);
   }
   _showSyncBadge();
 }
