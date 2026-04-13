@@ -1132,6 +1132,11 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-desc">Profit &amp; loss review by location. Upload your P&amp;L reports to track margins and profitability.</div>
       <div class="hcard-tag">Import Data</div>
       <span id="pnl-anomaly-badge" style="display:none;position:absolute;top:12px;right:12px;background:#dc2626;color:white;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;letter-spacing:.02em;"></span>
+      <div id="pnl-lock-overlay" style="display:none;position:absolute;inset:0;border-radius:inherit;background:rgba(15,15,15,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:16px;">
+        <span style="font-size:28px;">🔒</span>
+        <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.05em;text-transform:uppercase;">Restricted Access</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.6);">Managers &amp; Admins only</span>
+      </div>
     </div>
     <div class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">📋</span>
@@ -1530,6 +1535,9 @@ async function _initApp(user){
 }
 
 function _applyRoleUI(){
+  // P&L lock overlay visibility
+  const pnlLock = document.getElementById('pnl-lock-overlay');
+  if(pnlLock) pnlLock.style.display = (_slRole==='user') ? 'flex' : 'none';
   const canEdit = _slRole === 'admin' || _slRole === 'manager';
   document.querySelectorAll('.edit-only').forEach(el => {
     el.style.display = canEdit ? '' : 'none';
@@ -2136,7 +2144,14 @@ function exportSnapshot(){
 function goKPI(){  S.page='kpi'; if(S.loc==='ALL'||!locD(S.loc)){ const ls=locs(); S.loc=ls.length?ls[0]:'ALL'; } render(); }
 function goSales(){S.page='sales';render(); renderSalesPage && renderSalesPage();}
 function goMix(){  S.page='mix';  render(); renderMixPage && renderMixPage(); }
-function goPNL(){  S.page='pnl';  render(); }
+function goPNL(){
+  if(_slRole==='user'){
+    const ol=document.getElementById('pnl-lock-overlay');
+    if(ol){ ol.style.display='flex'; setTimeout(()=>ol.style.display='none',1800); }
+    return;
+  }
+  S.page='pnl'; render();
+}
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=locs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
