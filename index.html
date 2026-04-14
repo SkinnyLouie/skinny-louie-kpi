@@ -1170,8 +1170,13 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .inv-count-table th { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); padding:10px 16px; text-align:left; background:rgba(155,41,44,.04); border-bottom:1px solid var(--brd); }
 .inv-cat-hdr td { background:var(--bg); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); padding:8px 16px; border-top:1px solid var(--brd); }
 .inv-count-table td { padding:10px 16px; border-bottom:1px solid rgba(0,0,0,.04); font-size:13px; }
-.inv-qty-input { width:80px; text-align:center; border:1px solid var(--brd); border-radius:8px; padding:5px 8px; font-size:13px; font-family:inherit; }
-.inv-qty-input:focus { outline:none; border-color:var(--accent); }
+.inv-qty-wrap { display:inline-flex; align-items:center; gap:8px; }
+.inv-qty-btn { width:28px; height:28px; border-radius:50%; background:#7e2023; color:#fff; border:none; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; flex-shrink:0; transition:background .15s,transform .1s; user-select:none; }
+.inv-qty-btn:hover { background:#9e2a2d; }
+.inv-qty-btn:active { transform:scale(.92); }
+.inv-qty-input { width:54px; text-align:center; border:none; background:transparent; font-size:18px; font-weight:700; font-family:inherit; color:#212320; padding:0; -moz-appearance:textfield; }
+.inv-qty-input::-webkit-outer-spin-button,.inv-qty-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.inv-qty-input:focus { outline:none; color:var(--accent); }
 .inv-total-bar { display:flex; gap:20px; flex-wrap:wrap; background:var(--surf); border:1px solid var(--brd); border-radius:16px; padding:20px 24px; margin-top:16px; align-items:center; }
 .inv-total-chip .inv-tc-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
 .inv-total-chip .inv-tc-value { font-size:20px; font-weight:800; font-family:'Oswald',sans-serif; color:#212320; margin-top:2px; }
@@ -2533,7 +2538,11 @@ function invRenderCount(){
       var priceStr = price ? ('$'+price.toFixed(2)) : '<span style="color:var(--muted);font-size:11px;">no price</span>';
       html += '<tr>'
         +'<td style="font-weight:500;">'+item.name+'</td>'
-        +'<td style="text-align:center;"><input class="inv-qty-input" id="inv-qty-'+item.id+'" type="number" min="0" step="0.01" placeholder="0" oninput="invUpdateTotals()"></td>'
+        +'<td style="text-align:center;"><div class="inv-qty-wrap">'
+        +'<button class="inv-qty-btn" onclick="invStepQty(\''+item.id+'\',-1)">−</button>'
+        +'<input class="inv-qty-input" id="inv-qty-'+item.id+'" type="number" min="0" step="1" value="0" oninput="invUpdateTotals()">'
+        +'<button class="inv-qty-btn" onclick="invStepQty(\''+item.id+'\',1)">+</button>'
+        +'</div></td>'
         +'<td style="text-align:right;">'+priceStr+'</td>'
         +'<td style="text-align:right;font-weight:700;" id="inv-line-'+item.id+'">—</td>'
         +'</tr>';
@@ -2541,6 +2550,15 @@ function invRenderCount(){
   }
   html += '</tbody></table>';
   body.innerHTML = html;
+  invUpdateTotals();
+}
+
+function invStepQty(id, delta){
+  var el = document.getElementById('inv-qty-'+id);
+  if(!el) return;
+  var val = parseFloat(el.value)||0;
+  val = Math.max(0, val+delta);
+  el.value = val % 1 === 0 ? val : val.toFixed(2);
   invUpdateTotals();
 }
 
