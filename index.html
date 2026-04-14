@@ -2261,7 +2261,7 @@ function migrate() {
 //  STATE
 // ══════════════════════════════════════════════════
 let S = {
-  page:'home', year:'2025', state:'FL', loc:'ALL',
+  page:'home', year:String(new Date().getFullYear()), state:'FL', loc:'ALL',
   cmpMode:false, cmpLocs:[], cmpKPI:'fp',
   cmpMonth:null, cmpKPIs:['fp','lp','dp'],
   seasonOverlay:false
@@ -2826,6 +2826,102 @@ function invDeleteCount(id){
     invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
     invRenderHistory();
   }, {icon:'🗑️', okLabel:'Delete'});
+}
+
+function invGeneratePDF(id){
+  if(typeof window.jspdf==='undefined' && typeof window.jsPDF==='undefined'){
+    slAlert('PDF library still loading. Please try again in a moment.','warning'); return;
+  }
+  var count = invGetCounts().filter(function(c){ return c.id===id; })[0];
+  if(!count){ slAlert('Count record not found.','warning'); return; }
+  var items = invGetItems();
+  var itemMap = {};
+  items.forEach(function(it){ itemMap[it.id]=it; });
+  var prices = invGetPrices();
+  var cityPrices = prices[count.city]||{};
+
+  var { jsPDF } = window.jspdf || window;
+  var doc = new jsPDF({orientation:'portrait', unit:'mm', format:'letter'});
+  var W=215.9, M=14;
+
+  // Header bar
+  doc.setFillColor(126,32,35);
+  doc.rect(0,0,W,28,'F');
+  // Logo text
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16); doc.setTextColor(252,250,244);
+  doc.text('SKINNY LOUIE',M,13);
+  doc.setFontSize(9); doc.setTextColor(220,180,120);
+  doc.text('INVENTORY COUNT REPORT',M,20);
+  // Store / date header
+  doc.setFontSize(10); doc.setTextColor(252,250,244);
+  doc.text(count.store + '  ·  ' + count.date + '  ·  ' + (count.city==='FL'?'Florida':'New York'), W-M, 13, {align:'right'});
+  doc.setFontSize(8); doc.setTextColor(200,160,100);
+  doc.text('Generated '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}), W-M, 20, {align:'right'});
+
+  var y = 36;
+  var cats = [{key:'food',label:'🍔 Food Inventory'},{key:'disp',label:'🧹 Disposable & Cleaning'},{key:'merch',label:'👕 Merch'}];
+  var grandTotal = 0;
+
+  cats.forEach(function(cat){
+    var catItems = items.filter(function(it){ return it.category===cat.key && count.counts[it.id]; });
+    if(!catItems.length) return;
+
+    // Category header
+    doc.setFillColor(245,240,232);
+    doc.rect(M, y-4, W-M*2, 7, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(126,32,35);
+    doc.text(cat.label.replace(/[^\x00-\x7F]/g,'').trim(), M+2, y);
+    y += 7;
+
+    // Column headers
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(120,120,120);
+    doc.text('Item', M+2, y);
+    doc.text('Unit', M+110, y, {align:'right'});
+    doc.text('Qty', M+130, y, {align:'right'});
+    doc.text('Price', M+152, y, {align:'right'});
+    doc.text('Total', W-M, y, {align:'right'});
+    y += 1;
+    doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y);
+    y += 5;
+
+    var catTotal = 0;
+    catItems.forEach(function(it){
+      var qty = count.counts[it.id]||0;
+      var price = cityPrices[it.id]||0;
+      var total = qty*price;
+      catTotal += total;
+      grandTotal += total;
+
+      // Page break
+      if(y > 255){ doc.addPage(); y=20; }
+
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(33,35,32);
+      doc.text(it.name.length>58?it.name.slice(0,56)+'…':it.name, M+2, y);
+      doc.text(it.unit||'', M+110, y, {align:'right'});
+      doc.text(String(qty), M+130, y, {align:'right'});
+      doc.text(price>0?'$'+price.toFixed(2):'—', M+152, y, {align:'right'});
+      doc.text(total>0?'$'+total.toFixed(2):'—', W-M, y, {align:'right'});
+      y += 6;
+    });
+
+    // Category subtotal
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(80,80,80);
+    doc.text('Subtotal', M+110, y, {align:'right'});
+    doc.text('$'+catTotal.toFixed(2), W-M, y, {align:'right'});
+    y += 8;
+  });
+
+  // Grand total bar
+  if(y > 248){ doc.addPage(); y=20; }
+  doc.setFillColor(126,32,35);
+  doc.rect(M, y-4, W-M*2, 9, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(252,250,244);
+  doc.text('TOTAL INVENTORY VALUE', M+3, y+1);
+  doc.text('$'+grandTotal.toFixed(2), W-M, y+1, {align:'right'});
+
+  var fname = 'Inventory_'+count.store.replace(/\s+/g,'-')+'_'+count.date+'.pdf';
+  doc.save(fname);
 }
 
 function invAnalyticsUpdateStores(){
