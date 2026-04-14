@@ -3847,9 +3847,9 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   const fmtP=v=>v!=null?v.toFixed(1)+'%':'—';
   const fmtD=v=>v!=null?(v>=0?'+':'')+v.toFixed(1)+'%':'';
   const wins=[], concerns=[];
-  if(lastFP!=null){ lastFP<=tgts.fp?wins.push(`Food cost on target: ${fmtP(lastFP)} (≤${tgts.fp}%)`):concerns.push(`Food cost above target: ${fmtP(lastFP)} (target ≤${tgts.fp}%)`); }
-  if(lastLP!=null){ lastLP<=tgts.lp?wins.push(`Labor on target: ${fmtP(lastLP)} (≤${tgts.lp}%)`):concerns.push(`Labor above target: ${fmtP(lastLP)} (target ≤${tgts.lp}%)`); }
-  if(primeCostPct!=null){ primeCostPct<=tgts.pc?wins.push(`Prime cost healthy: ${fmtP(primeCostPct)} (≤${tgts.pc}%)`):concerns.push(`Prime cost elevated: ${fmtP(primeCostPct)} (target ≤${tgts.pc}%)`); }
+  if(lastFP!=null){ lastFP<=tgts.fp?wins.push(`Food cost on target: ${fmtP(lastFP)} (<= ${tgts.fp}%)`):concerns.push(`Food cost above target: ${fmtP(lastFP)} (target <= ${tgts.fp}%)`); }
+  if(lastLP!=null){ lastLP<=tgts.lp?wins.push(`Labor on target: ${fmtP(lastLP)} (<= ${tgts.lp}%)`):concerns.push(`Labor above target: ${fmtP(lastLP)} (target <= ${tgts.lp}%)`); }
+  if(primeCostPct!=null){ primeCostPct<=tgts.pc?wins.push(`Prime cost healthy: ${fmtP(primeCostPct)} (<= ${tgts.pc}%)`):concerns.push(`Prime cost elevated: ${fmtP(primeCostPct)} (target <= ${tgts.pc}%)`); }
   if(latestSX&&prevSX&&prevSX.netSales>0){
     const m=(latestSX.netSales-prevSX.netSales)/prevSX.netSales*100;
     m>0?wins.push(`Net sales up ${m.toFixed(1)}% MoM`):concerns.push(`Net sales down ${Math.abs(m).toFixed(1)}% MoM`);
@@ -3860,7 +3860,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   if(mixData&&mixData.upsellRate>=40) wins.push(`Strong upsell rate: ${mixData.upsellRate.toFixed(0)}% Double+Triple`);
   else if(mixData&&mixData.upsellRate<30) concerns.push(`Low upsell: only ${mixData.upsellRate.toFixed(0)}% Double+Triple`);
   if(topAnomaly) concerns.push(`${topAnomaly.label} spike: +${(topAnomaly.delta*100).toFixed(0)}% above avg`);
-  if(lastDP!=null&&lastDP>tgts.dp) concerns.push(`D&C above target: ${fmtP(lastDP)} (target ≤${tgts.dp}%)`);
+  if(lastDP!=null&&lastDP>tgts.dp) concerns.push(`D&C above target: ${fmtP(lastDP)} (target <= ${tgts.dp}%)`);
   if(mosAmt!=null&&mosAmt>0) wins.push(`Above break-even by $${Math.round(mosAmt).toLocaleString('en-US')}`);
   else if(mosAmt!=null) concerns.push(`Below break-even by $${Math.round(Math.abs(mosAmt)).toLocaleString('en-US')}`);
   const top3wins=wins.slice(0,3), top3concerns=concerns.slice(0,3);
@@ -3937,7 +3937,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   // State badge
   rrect(M+5,22,14,5,1,...SL_RED);
   doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255);
-  doc.text(rcState==='FL'?'🌴 FLORIDA':'🗽 NEW YORK', M+12, 25.8, {align:'center'});
+  doc.text(rcState==='FL'?'FLORIDA':'NEW YORK', M+12, 25.8, {align:'center'});
   y=38;
 
   // ═══════════════════════════════════════════════
@@ -3975,7 +3975,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   if(ytdVsPY){
     const ytdOk=ytdVsPY.delta>=0;
     txt(fmtK(ytdVsPY.cur), ytdX+3, y+15, 12, SL_DARK, 'bold');
-    txt((ytdVsPY.delta>=0?'▲ +':'▼ ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+(Number(rcYear)-1), W-M-2, y+15, 6.5, ytdOk?SL_GREEN:SL_WARN, 'bold', 'right');
+    txt((ytdVsPY.delta>=0?'+ ':'- ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+(Number(rcYear)-1), W-M-2, y+15, 6.5, ytdOk?SL_GREEN:SL_WARN, 'bold', 'right');
   } else {
     txt('No prior year data', ytdX+3, y+12, 8, [180,180,180]);
   }
@@ -3990,15 +3990,15 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   const cols=[M, M+44, M+80, M+112, M+143, M+172];
   // Table header row
   rect(M,y,colW,7,...SL_DARK);
-  ['Metric','Actual','Target','MoM Δ','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+5, 6.5,[255,255,255],'bold'); });
+  ['Metric','Actual','Target','MoM Chg','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+5, 6.5,[255,255,255],'bold'); });
   y+=7;
   const kpiRows=[
-    {label:'Food Cost %',     val:lastFP!=null?fmtP(lastFP):'—', tgt:`≤${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true},
-    {label:'Labor %',         val:lastLP!=null?fmtP(lastLP):'—', tgt:`≤${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
-    {label:'D&C %',           val:lastDP!=null?fmtP(lastDP):'—', tgt:`≤${tgts.dp}%`,  mom:dpMoM, ok:lastDP!=null&&lastDP<=tgts.dp,    na:lastDP==null,  lowerBetter:true},
-    {label:'Prime Cost %',    val:primeCostPct!=null?fmtP(primeCostPct):'—', tgt:`≤${tgts.pc}%`, mom:null, ok:primeCostPct!=null&&primeCostPct<=tgts.pc, na:primeCostPct==null, lowerBetter:true},
-    {label:'Gross Profit %',  val:grossProfitPct!=null?fmtP(grossProfitPct):'—', tgt:'≥65%', mom:null, ok:grossProfitPct!=null&&grossProfitPct>=65, na:grossProfitPct==null, lowerBetter:false},
-    {label:'Net Margin %',    val:netMarginPct!=null?fmtP(netMarginPct):'—',    tgt:'≥10%', mom:null, ok:netMarginPct!=null&&netMarginPct>=10, na:netMarginPct==null, lowerBetter:false},
+    {label:'Food Cost %',     val:lastFP!=null?fmtP(lastFP):'n/a', tgt:`<= ${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true},
+    {label:'Labor %',         val:lastLP!=null?fmtP(lastLP):'n/a', tgt:`<= ${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
+    {label:'D&C %',           val:lastDP!=null?fmtP(lastDP):'n/a', tgt:`<= ${tgts.dp}%`,  mom:dpMoM, ok:lastDP!=null&&lastDP<=tgts.dp,    na:lastDP==null,  lowerBetter:true},
+    {label:'Prime Cost %',    val:primeCostPct!=null?fmtP(primeCostPct):'n/a', tgt:`<= ${tgts.pc}%`, mom:null, ok:primeCostPct!=null&&primeCostPct<=tgts.pc, na:primeCostPct==null, lowerBetter:true},
+    {label:'Gross Profit %',  val:grossProfitPct!=null?fmtP(grossProfitPct):'n/a', tgt:'>= 65%', mom:null, ok:grossProfitPct!=null&&grossProfitPct>=65, na:grossProfitPct==null, lowerBetter:false},
+    {label:'Net Margin %',    val:netMarginPct!=null?fmtP(netMarginPct):'n/a',    tgt:'>= 10%', mom:null, ok:netMarginPct!=null&&netMarginPct>=10, na:netMarginPct==null, lowerBetter:false},
   ];
   kpiRows.forEach((r,i)=>{
     const rowY=y+i*7;
@@ -4007,7 +4007,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     // Left color indicator
     rect(M,rowY,2,7,...(r.na?[200,200,200]:r.ok?[22,163,74]:SL_RED));
     const vc=r.na?SL_MUTED:r.ok?SL_GREEN:SL_WARN;
-    const momVal=r.mom!=null?(r.mom>=0?'+':'')+r.mom.toFixed(1)+'%':'—';
+    const momVal=r.mom!=null?(r.mom>=0?'+':'')+r.mom.toFixed(1)+'%':'n/a';
     const momOk=r.mom==null?null:(r.lowerBetter?r.mom<=0:r.mom>=0);
     const momCol=r.mom==null?SL_MUTED:momOk?SL_GREEN:SL_WARN;
     // trend bar
@@ -4018,7 +4018,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     txt(r.val,    cols[1]+2, rowY+5, 7.5, vc, 'bold');
     txt(r.tgt,    cols[2]+2, rowY+5, 7,   SL_MUTED);
     txt(momVal,   cols[3]+2, rowY+5, 7,   momCol, r.mom!=null?'bold':'normal');
-    txt(r.na?'No data':r.ok?'✓ On target':'✗ Over target', cols[5]+2, rowY+5, 6.5, vc, 'bold');
+    txt(r.na?'No data':r.ok?'ON TARGET':'OVER TARGET', cols[5]+2, rowY+5, 6.5, vc, 'bold');
   });
   y+=kpiRows.length*7+6;
   hr(y,...SL_BORD); y+=5;
@@ -4028,38 +4028,29 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   // ═══════════════════════════════════════════════
   sectionTitle('SALES PERFORMANCE', y, latestSX?`${MSHORT[latestSX.month]} ${latestSX.year}`:'');
   y+=8;
-  const sc4=[M, M+48, M+96, M+144];
-  const sc4w=44, sc4h=18;
-  const salesCards=[
-    { label:'Net Sales', val:latestSX?fmt$(latestSX.netSales):'—', mom:nsMoM, sub:nsMoM!=null?(nsMoM>=0?'▲ +':'▼ ')+Math.abs(nsMoM).toFixed(1)+'% MoM':null },
-    { label:'Avg Check', val:avgCheck?'$'+avgCheck.toFixed(2):'—', mom:avgCheckMoM, sub:avgCheckMoM!=null?(avgCheckMoM>=0?'▲ +':'▼ ')+Math.abs(avgCheckMoM).toFixed(1)+'% MoM':null },
-    { label:'Total Orders', val:latestSX?Math.round(latestSX.totalOrders).toLocaleString('en-US'):'—', mom:latestSX&&prevSX&&prevSX.totalOrders>0?((latestSX.totalOrders-prevSX.totalOrders)/prevSX.totalOrders*100):null, sub:null },
-    { label:'D&C %', val:dcPct!=null?fmtP(dcPct):'—', mom:null, sub:dcPct!=null?(dcPct<=tgts.dp?'✓ On target':'⚠ Over target'):null, ok:dcPct!=null&&dcPct<=tgts.dp },
+  // 5 equal cards: Net Sales, Avg Check, Total Orders, D&C%, Gross Profit
+  const sc5w=Math.floor((W-M*2-8)/5); // 5 cards, 4 gaps of 2mm
+  const sc5h=20;
+  const fmtMoM=(v,lower)=>{ if(v==null) return ''; const ok=lower?v<=0:v>=0; return (ok?'+ ':'- ')+Math.abs(v).toFixed(1)+'% MoM'; };
+  const fmtMoMCol=(v,lower)=>{ if(v==null) return SL_MUTED; return (lower?v<=0:v>=0)?SL_GREEN:SL_WARN; };
+  const sc5Cards=[
+    { label:'Net Sales',    val:latestSX?fmt$(latestSX.netSales):'n/a',    sub:fmtMoM(nsMoM,false), subCol:fmtMoMCol(nsMoM,false), ok:null },
+    { label:'Avg Check',    val:avgCheck?'$'+avgCheck.toFixed(2):'n/a',    sub:fmtMoM(avgCheckMoM,false), subCol:fmtMoMCol(avgCheckMoM,false), ok:null },
+    { label:'Total Orders', val:latestSX?Math.round(latestSX.totalOrders).toLocaleString('en-US'):'n/a', sub:'', subCol:SL_MUTED, ok:null },
+    { label:'D&C %',        val:dcPct!=null?fmtP(dcPct):'n/a',             sub:dcPct!=null?(dcPct<=tgts.dp?'On target':'Over target'):'', subCol:dcPct!=null?(dcPct<=tgts.dp?SL_GREEN:SL_WARN):SL_MUTED, ok:dcPct!=null?dcPct<=tgts.dp:null },
+    { label:'Gross Profit', val:latestPnL?fmt$(latestPnL.grossProfit):'n/a', sub:grossProfitPct!=null?grossProfitPct.toFixed(1)+'% of NS':'', subCol:SL_GREEN, ok:latestPnL?latestPnL.grossProfit>=0:null },
   ];
-  salesCards.forEach((s,i)=>{
-    const x=sc4[i];
-    const momOk=s.mom!=null&&s.mom>=0;
+  sc5Cards.forEach((s,i)=>{
+    const x=M+i*(sc5w+2);
     const topCol=s.ok===false?SL_WARN:s.ok===true?SL_GREEN:SL_RED;
-    rect(x,y,sc4w,sc4h,...SL_CREAM);
-    border(x,y,sc4w,sc4h,...SL_BORD);
-    rect(x,y,sc4w,2.5,...topCol); // top color bar
-    txt(s.label, x+3, y+8, 6.5, SL_MUTED);
-    txt(s.val,   x+3, y+14.5, 11, SL_DARK, 'bold');
-    if(s.sub){ const col=s.ok!=null?(s.ok?SL_GREEN:SL_WARN):(s.mom!=null?(momOk?SL_GREEN:SL_WARN):SL_MUTED); txt(s.sub, x+3, y+sc4h-1, 6.5, col, 'bold'); }
-    else if(s.mom!=null){ txt((momOk?'▲ +':'▼ ')+Math.abs(s.mom).toFixed(1)+'% MoM', x+3, y+sc4h-1, 6.5, momOk?SL_GREEN:SL_WARN, 'bold'); }
+    rect(x,y,sc5w,sc5h,...SL_CREAM);
+    border(x,y,sc5w,sc5h,...SL_BORD);
+    rect(x,y,sc5w,2.5,...topCol);
+    txt(s.label, x+3, y+9, 6.5, SL_MUTED);
+    txt(s.val,   x+3, y+15.5, 10, SL_DARK, 'bold');
+    if(s.sub){ txt(s.sub, x+3, y+sc5h-1, 6, s.subCol, 'bold'); }
   });
-  // Gross Profit card
-  if(latestPnL){
-    const gpX=M+192;
-    const gpW=W-M-gpX;
-    rect(gpX,y,gpW,sc4h,...SL_GREEN_LT);
-    border(gpX,y,gpW,sc4h,134,239,172);
-    rect(gpX,y,gpW,2.5,...SL_GREEN);
-    txt('Gross Profit', gpX+2, y+8, 6.5, SL_GREEN);
-    txt(fmt$(latestPnL.grossProfit), gpX+2, y+14.5, 10, SL_GREEN, 'bold');
-    txt(grossProfitPct!=null?grossProfitPct.toFixed(1)+'% of NS':'', gpX+2, y+sc4h-1, 6.5, SL_GREEN);
-  }
-  y+=sc4h+6;
+  y+=sc5h+6;
   hr(y,...SL_BORD); y+=5;
 
   // ═══════════════════════════════════════════════
@@ -4095,7 +4086,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     border(M,y,W-M*2,8, upsellOk?134:252, upsellOk?239:165, upsellOk?172:165);
     txt('DOUBLE + TRIPLE UPSELL RATE', M+3, y+5.5, 7, [80,80,80], 'bold');
     txt(mixData.upsellRate.toFixed(1)+'%', M+70, y+5.5, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
-    txt(upsellOk?'✓ Strong upsell performance':'⚠ Push Double & Triple more aggressively', M+90, y+5.5, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
+    txt(upsellOk?'Strong upsell performance':'Push Double & Triple more aggressively', M+90, y+5.5, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
     txt(`${(mixData.dQ+mixData.tQ).toLocaleString()} of ${mixData.total.toLocaleString()} orders`, W-M-2, y+5.5, 7, [120,120,120], 'normal', 'right');
     y+=11;
     // Top 3 items
@@ -4137,8 +4128,8 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     const pnlCards=[
       {label:'Net Income',   val:fmt$(latestPnL.netIncome), sub:netMarginPct!=null?netMarginPct.toFixed(1)+'% margin':null, ok:latestPnL.netIncome>=0},
       {label:'Payroll $',    val:fmt$(payrollAbs), sub:latestPnL.netSales>0?((payrollAbs/latestPnL.netSales)*100).toFixed(1)+'% of NS':null, ok:lastLP!=null&&lastLP<=tgts.lp},
-      {label:'Break-Even',   val:bepRevenue!=null?fmt$(bepRevenue):'—', sub:mosAmt!=null?(mosAmt>=0?'▲ Above BEP':'▼ Below BEP'):null, ok:mosAmt!=null&&mosAmt>=0},
-      {label:'Safety Margin',val:mosAmt!=null?fmt$(Math.abs(mosAmt)):'—', sub:mosAmt!=null?(mosAmt>=0?'Cushion':'Deficit'):null, ok:mosAmt!=null&&mosAmt>=0},
+      {label:'Break-Even',   val:bepRevenue!=null?fmt$(bepRevenue):'n/a', sub:mosAmt!=null?(mosAmt>=0?'Above BEP':'Below BEP'):null, ok:mosAmt!=null&&mosAmt>=0},
+      {label:'Safety Margin',val:mosAmt!=null?fmt$(Math.abs(mosAmt)):'n/a', sub:mosAmt!=null?(mosAmt>=0?'Cushion':'Deficit'):null, ok:mosAmt!=null&&mosAmt>=0},
     ];
     pnlCards.forEach((c,i)=>{
       const x=p4[i];
@@ -4159,14 +4150,14 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
       const bg=sevBg[topAnomaly.severity]||sevBg.low;
       rect(M,y,W-M*2,9,...bg);
       doc.setDrawColor(...col); doc.setLineWidth(.4); doc.rect(M,y,W-M*2,9,'S');
-      txt('🚨 TOP EXPENSE ANOMALY:', M+3,y+6,7,[100,60,60],'bold');
+      txt('! TOP EXPENSE ANOMALY:', M+3,y+6,7,[100,60,60],'bold');
       txt(`${topAnomaly.label}  +${(topAnomaly.delta*100).toFixed(0)}% above 3-mo avg  (This month: ${fmt$(topAnomaly.current)}  vs avg: ${fmt$(topAnomaly.avg)})`, M+46,y+6,7,col,'bold');
       if(anomalies.length>1) txt(`+${anomalies.length-1} more`,W-M-2,y+6,6.5,[120,120,120],'normal','right');
       y+=12;
     } else if(pnlLocRecs.length>=3){
       rect(M,y,W-M*2,7,240,253,244);
       border(M,y,W-M*2,7,134,239,172);
-      txt('✓  No expense anomalies detected this month — all line items within normal range.', M+3,y+4.8,7.5,[22,101,52],'bold');
+      txt('OK  No expense anomalies detected this month - all line items within normal range.', M+3,y+4.8,7.5,[22,101,52],'bold');
       y+=10;
     }
   } else {
@@ -4182,34 +4173,34 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   checkPage(36);
   const halfW=(W-M*2-6)/2;
   // Section headers
-  rect(M,y,halfW,6,...SL_GREEN);
-  txt('✓  WINS THIS MONTH', M+3, y+4.5, 7, [255,255,255], 'bold');
-  rect(M+halfW+6,y,halfW,6,...SL_RED);
-  txt('⚠  CONCERNS / ACTION ITEMS', M+halfW+9, y+4.5, 7, [255,255,255], 'bold');
-  y+=6;
-  const itemH=8, minBoxH=12;
-  const wH=Math.max(top3wins.length*itemH+4, minBoxH);
-  const cH=Math.max(top3concerns.length*itemH+4, minBoxH);
+  rect(M,y,halfW,6.5,...SL_GREEN);
+  txt('WINS THIS MONTH', M+3, y+4.8, 7.5, [255,255,255], 'bold');
+  rect(M+halfW+5,y,halfW+1,6.5,...SL_RED);
+  txt('CONCERNS / ACTION ITEMS', M+halfW+8, y+4.8, 7.5, [255,255,255], 'bold');
+  y+=6.5;
+  const itemH=9, minBoxH=14;
+  const wH=Math.max(top3wins.length*itemH+6, minBoxH);
+  const cH=Math.max(top3concerns.length*itemH+6, minBoxH);
   const boxH=Math.max(wH,cH);
   checkPage(boxH+4);
   rect(M,y,halfW,boxH,...SL_GREEN_LT); border(M,y,halfW,boxH,134,239,172);
-  rect(M+halfW+6,y,halfW,boxH,...SL_RED_LT); border(M+halfW+6,y,halfW,boxH,...SL_RED);
+  rect(M+halfW+5,y,halfW+1,boxH,...SL_RED_LT); border(M+halfW+5,y,halfW+1,boxH,220,100,100);
   if(top3wins.length){
     top3wins.forEach((w,i)=>{
-      rect(M,y+i*itemH,2,itemH,...SL_GREEN);
-      const lines=doc.splitTextToSize(w,halfW-10);
-      doc.setFontSize(7.5); doc.setTextColor(...SL_GREEN); doc.setFont('helvetica','bold');
-      doc.text(lines,M+5,y+itemH/2+1+i*itemH);
+      rect(M,y+4+i*itemH,2,itemH-2,...SL_GREEN);
+      const lines=doc.splitTextToSize(w, halfW-10);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...SL_GREEN);
+      doc.text(lines, M+6, y+4+i*itemH+5.5);
     });
-  } else { txt('No data yet.',M+4,y+8,8,SL_MUTED); }
+  } else { txt('No data yet.',M+4,y+9,8,SL_MUTED); }
   if(top3concerns.length){
     top3concerns.forEach((c,i)=>{
-      rect(M+halfW+6,y+i*itemH,2,itemH,...SL_RED);
-      const lines=doc.splitTextToSize(c,halfW-10);
-      doc.setFontSize(7.5); doc.setTextColor(...SL_WARN); doc.setFont('helvetica','bold');
-      doc.text(lines,M+halfW+11,y+itemH/2+1+i*itemH);
+      rect(M+halfW+5,y+4+i*itemH,2,itemH-2,...SL_RED);
+      const lines=doc.splitTextToSize(c, halfW-10);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...SL_WARN);
+      doc.text(lines, M+halfW+10, y+4+i*itemH+5.5);
     });
-  } else { txt('All metrics within targets.',M+halfW+9,y+8,8,SL_MUTED); }
+  } else { txt('All metrics within targets.',M+halfW+8,y+9,8,SL_MUTED); }
   y+=boxH+4;
 
   // ═══════════════════════════════════════════════
