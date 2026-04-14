@@ -3344,7 +3344,7 @@ function setLoc(l){
     const idx=S.cmpLocs.indexOf(l);
     if(idx>-1)S.cmpLocs.splice(idx,1);else S.cmpLocs.push(l);
   } else { S.loc=l; }
-  renderLocBar(); renderCards(); renderCharts(); renderTable();
+  renderLocBar(); renderCards(); renderCharts(); renderTable(); renderHeatmap();
 }
 function toggleCmp(){
   S.cmpMode=!S.cmpMode;
@@ -6885,10 +6885,71 @@ function saveSalesRecords(arr){ localStorage.setItem('sl_sales_v1', JSON.stringi
 
 // Sales state (mirrors MX pattern)
 let SX = { state:'FL', loc:null, year:'2026', month:null, activeTab:'overview',
-           cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null, voidTgt:2.0 };
+           cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null, voidTgt:2.0,
+           rankSort:{col:'netSales',dir:'desc'},
+           viewMode:'month', quarter:0 };
+
+// ── Period view helpers
+function sxSetViewMode(vm){
+  SX.viewMode=vm;
+  // Auto-pick quarter if switching: pick the latest quarter that has data
+  if(vm==='quarter'){
+    const allRecs=getSalesRecords().filter(r=>r.state===SX.state&&r.year===SX.year&&r.loc===SX.loc);
+    const availM=allRecs.map(r=>r.month);
+    const QMONS=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+    const lastQ=[3,2,1,0].find(q=>QMONS[q].some(m=>availM.includes(m)));
+    if(lastQ!=null) SX.quarter=lastQ;
+  }
+  renderSalesPage();
+}
+function sxSetQuarter(q){ SX.quarter=q; renderSalesPage(); }
+
+// ── Aggregate multiple month records into one virtual record
+function sxAggregateRecs(recs){
+  if(!recs||!recs.length) return null;
+  if(recs.length===1) return {...recs[0]};
+  const totalNS=recs.reduce((s,r)=>s+(r.netSales||0),0);
+  const totalOrders=recs.reduce((s,r)=>s+(r.totalOrders||0),0);
+  const aggByProp=prop=>{
+    const map={};
+    for(const r of recs){
+      for(const item of (r[prop]||[])){
+        const k=item.name;
+        if(!map[k]) map[k]={name:k,netSales:0,orders:0,discount:0,items:0,count:0,amount:0};
+        map[k].netSales +=(item.netSales||0);
+        map[k].orders   +=(item.orders  ||0);
+        map[k].discount +=(item.discount||0);
+        map[k].items    +=(item.items   ||0);
+        map[k].count    +=(item.count   ||0);
+        map[k].amount   +=(item.amount  ||0);
+      }
+    }
+    return Object.values(map);
+  };
+  const voidAmount=recs.reduce((s,r)=>s+(r.voidAmount||0),0);
+  const voidOrders=recs.reduce((s,r)=>s+(r.voidOrders||0),0);
+  const voidItems =recs.reduce((s,r)=>s+(r.voidItems ||0),0);
+  const voidPct   =totalNS>0?voidAmount/totalNS*100:0;
+  return {
+    ...recs[recs.length-1],
+    netSales:totalNS, totalOrders,
+    channels:aggByProp('channels'),
+    dayparts:aggByProp('dayparts'),
+    categories:aggByProp('categories'),
+    itemDiscounts:aggByProp('itemDiscounts'),
+    checkDiscounts:aggByProp('checkDiscounts'),
+    voidAmount, voidOrders, voidItems, voidPct,
+    _aggregated:true, _recs:recs
+  };
+}
 let sxDpChart=null, sxAvgChart=null, sxDiscChart=null, sxForecastChart=null;
 function sxSetVoidTgt(v){
   const n=parseFloat(v); if(!isNaN(n)&&n>=0&&n<=100){ SX.voidTgt=+n.toFixed(1); renderSalesDashboard(..._sxCurrentArgs()); }
+}
+function sxSortRank(col){
+  if(SX.rankSort.col===col) SX.rankSort.dir=SX.rankSort.dir==='desc'?'asc':'desc';
+  else { SX.rankSort.col=col; SX.rankSort.dir='desc'; }
+  renderSalesFleetView(getSalesRecords());
 }
 function getSxTopItems(rec){
   try{
@@ -7099,11 +7160,35 @@ function renderSalesPage(){
   uv.style.display='none'; dv.style.display='block';
   if(SX.loc==='ALL'){ renderSalesFleetView(allRecs); return; }
   const locRecs=filtered.filter(r=>r.loc===SX.loc);
+  const sortedLocRecs=[...locRecs].sort((a,b)=>a.month-b.month);
   if(SX.month===null||!locRecs.find(r=>r.month===SX.month)) SX.month=locRecs[locRecs.length-1].month;
-  const rec=locRecs.find(r=>r.month===SX.month);
-  if(!rec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return; }
-  if(SX.cmpMode) renderSalesCompare(rec, allRecs);
-  else renderSalesDashboard(rec, locRecs, allRecs);
+
+  // Build the record to render based on viewMode
+  let renderRec;
+  const QMONS=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  if(SX.viewMode==='year'){
+    renderRec=sxAggregateRecs(sortedLocRecs);
+    if(!renderRec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this year.</div>'; return; }
+    renderRec._label=`Full Year ${SX.year}`;
+    renderRec._sub=`${sortedLocRecs.length} month${sortedLocRecs.length!==1?'s':''} · ${SX.loc}`;
+  } else if(SX.viewMode==='quarter'){
+    const qMons=QMONS[SX.quarter];
+    const qRecs=sortedLocRecs.filter(r=>qMons.includes(r.month));
+    if(!qRecs.length){
+      dv.innerHTML=`<div style="padding:60px;text-align:center;color:var(--muted);">No data for Q${SX.quarter+1} ${SX.year}. Upload the relevant months first.</div>`;
+      return;
+    }
+    renderRec=sxAggregateRecs(qRecs);
+    const qName=['Jan–Mar','Apr–Jun','Jul–Sep','Oct–Dec'][SX.quarter];
+    renderRec._label=`Q${SX.quarter+1} ${SX.year} · ${qName}`;
+    renderRec._sub=`${qRecs.length} of 3 months · ${SX.loc}`;
+  } else {
+    renderRec=locRecs.find(r=>r.month===SX.month);
+    if(!renderRec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return; }
+  }
+
+  if(SX.cmpMode&&SX.viewMode==='month') renderSalesCompare(renderRec, allRecs);
+  else renderSalesDashboard(renderRec, locRecs, allRecs);
 }
 
 function renderSalesLocBar(filteredRecs){
@@ -7202,54 +7287,87 @@ function renderSalesFleetView(allRecs){
     </div>
   </div>`;
 
-  // Store breakdown table
-  const sortedByNS=[...monthRecs].sort((a,b)=>b.netSales-a.netSales);
-  const storeRows=sortedByNS.map((r,idx)=>{
-    const avg=r.totalOrders>0?r.netSales/r.totalOrders:0;
-    const sharePct=fleetNS>0?(r.netSales/fleetNS*100):0;
-    const ue=(r.channels||[]).filter(c=>c.name.toLowerCase().includes('uber')||c.name.toLowerCase().includes('delivery')).reduce((s,c)=>s+c.netSales,0);
-    const uePct=r.netSales>0?(ue/r.netSales*100):0;
-    const vPct=r.voidPct>=0&&r.voidPct<=100?r.voidPct:(r.voidAmount>0&&r.netSales>0?+(r.voidAmount/r.netSales*100).toFixed(2):null);
-    const rankCol=idx===0?'#15803d':idx===sortedByNS.length-1?'#b91c1c':'#374151';
-    return `<tr style="cursor:pointer;" onclick="sxSetLoc('${r.loc}')">
-      <td style="font-weight:700;color:${rankCol};">${idx+1}</td>
-      <td style="font-weight:600;">${r.loc}</td>
-      <td class="num" style="font-weight:700;">${fmt$(r.netSales)}</td>
-      <td class="num">${(r.totalOrders||0).toLocaleString('en-US')}</td>
-      <td class="num">$${avg.toFixed(2)}</td>
-      <td class="num">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <div style="flex:1;background:#e5e7eb;border-radius:99px;height:6px;min-width:60px;">
-            <div style="width:${Math.min(sharePct,100).toFixed(1)}%;height:100%;background:#1e3a5f;border-radius:99px;"></div>
-          </div>
-          <span style="font-size:11px;font-weight:700;color:#1e3a5f;">${sharePct.toFixed(1)}%</span>
-        </div>
-      </td>
-      <td class="num" style="color:${uePct>60?'#b91c1c':'#374151'};">${uePct.toFixed(1)}%</td>
-      <td class="num" style="color:${vPct!=null&&vPct>SX.voidTgt?'#b91c1c':'#374151'}">${vPct!=null?vPct.toFixed(1)+'%':'—'}</td>
-      <td style="text-align:center;"><span style="font-size:10px;background:rgba(30,58,95,.1);color:#1e3a5f;border-radius:99px;padding:2px 8px;">Drill →</span></td>
+  // ── Ranking Table — sortable, with Daypart Dominante + MoM Δ
+  const dpRankColor = name => {
+    const n=(name||'').toLowerCase();
+    if(n.includes('lunch'))  return '#9b292c';
+    if(n.includes('dinner')) return '#1e3a5f';
+    if(n.includes('late')||n.includes('night')) return '#4a1d96';
+    return '#374151';
+  };
+  const getMoMPct = r => {
+    const prevRecs = stateRecs.filter(x=>x.loc===r.loc && x.month<SX.month);
+    if(!prevRecs.length || !r.netSales) return null;
+    const prev = prevRecs.sort((a,b)=>b.month-a.month)[0];
+    if(!prev||!prev.netSales) return null;
+    return (r.netSales - prev.netSales) / Math.abs(prev.netSales) * 100;
+  };
+  const getRankSortVal = r => {
+    const avg = r.totalOrders>0 ? r.netSales/r.totalOrders : 0;
+    const dps = (r.dayparts||[]).filter(d=>d.name.toLowerCase()!=='breakfast').sort((a,b)=>b.netSales-a.netSales);
+    const dpPct = dps[0]&&r.netSales>0 ? dps[0].netSales/r.netSales*100 : 0;
+    const mom = getMoMPct(r);
+    switch(SX.rankSort.col){
+      case 'orders':   return r.totalOrders||0;
+      case 'avgCheck': return avg;
+      case 'daypart':  return dpPct;
+      case 'mom':      return mom!==null ? mom : -999;
+      default:         return r.netSales;
+    }
+  };
+  const sortedRanked = [...monthRecs].sort((a,b)=>
+    SX.rankSort.dir==='desc' ? getRankSortVal(b)-getRankSortVal(a) : getRankSortVal(a)-getRankSortVal(b)
+  );
+  const rankSortHdr = (col,label) => {
+    const active = SX.rankSort.col===col;
+    const arrow  = active ? (SX.rankSort.dir==='desc'?'↓':'↑') : '↕';
+    return `<th style="padding:8px 10px;text-align:right;cursor:pointer;user-select:none;white-space:nowrap;${active?'color:#1e3a5f;font-weight:800;':''}" onclick="sxSortRank('${col}')">${label} <span style="opacity:${active?1:.3};font-size:10px;">${arrow}</span></th>`;
+  };
+  const rankRows = sortedRanked.map((r,idx)=>{
+    const avg = r.totalOrders>0 ? r.netSales/r.totalOrders : 0;
+    const dps = (r.dayparts||[]).filter(d=>d.name.toLowerCase()!=='breakfast').sort((a,b)=>b.netSales-a.netSales);
+    const topDp  = dps[0]||null;
+    const dpPct  = topDp&&r.netSales>0 ? (topDp.netSales/r.netSales*100) : 0;
+    const mom    = getMoMPct(r);
+    const medal  = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`<span style="font-weight:700;color:#6b7280;">${idx+1}</span>`;
+    const momCell= mom!==null
+      ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${mom>=0?'#f0fdf4':'#fff1f2'};color:${mom>=0?'#15803d':'#b91c1c'};">${mom>=0?'↑':'↓'}${Math.abs(mom).toFixed(1)}%</span>`
+      : `<span style="color:var(--muted);font-size:11px;">—</span>`;
+    const dpCell = topDp
+      ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:${dpRankColor(topDp.name)}18;color:${dpRankColor(topDp.name)};white-space:nowrap;">${topDp.name} · ${dpPct.toFixed(0)}%</span>`
+      : `<span style="color:var(--muted);font-size:11px;">—</span>`;
+    return `<tr style="cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04);" onmouseover="this.style.background='rgba(30,58,95,.04)'" onmouseout="this.style.background=''" onclick="sxSetLoc('${r.loc}')">
+      <td style="padding:11px 10px;font-size:14px;">${medal}</td>
+      <td style="padding:11px 10px;font-weight:600;font-size:13px;">${r.loc}</td>
+      <td style="padding:11px 10px;text-align:right;font-weight:700;font-size:13px;font-family:'Oswald',sans-serif;letter-spacing:-.01em;">${fmt$(r.netSales)}</td>
+      <td style="padding:11px 10px;text-align:right;">${momCell}</td>
+      <td style="padding:11px 10px;text-align:right;font-size:13px;">${(r.totalOrders||0).toLocaleString('en-US')}</td>
+      <td style="padding:11px 10px;text-align:right;font-size:13px;">$${avg.toFixed(2)}</td>
+      <td style="padding:11px 10px;text-align:right;">${dpCell}</td>
+      <td style="padding:11px 6px;text-align:center;"><span style="font-size:10px;background:rgba(30,58,95,.1);color:#1e3a5f;border-radius:99px;padding:2px 8px;white-space:nowrap;">Ver →</span></td>
     </tr>`;
   }).join('');
 
   const storeTable=`<div class="tcard" style="margin-bottom:20px;">
-    <div class="thdr"><div class="ttitle">🏪 Store Breakdown — ${MFULL[SX.month]} ${SX.year}</div></div>
+    <div class="thdr" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+      <div class="ttitle">🏆 Location Ranking — ${MFULL[SX.month]} ${SX.year}</div>
+      <div style="font-size:10px;color:var(--muted);">Click column header to sort &nbsp;·&nbsp; Click row to drill in</div>
+    </div>
     <div class="tscroll">
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead><tr style="background:var(--paper);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">
-          <th style="padding:8px 10px;">#</th>
+          <th style="padding:8px 10px;text-align:left;">#</th>
           <th style="padding:8px 10px;text-align:left;">Store</th>
-          <th style="padding:8px 10px;text-align:right;">Net Sales</th>
-          <th style="padding:8px 10px;text-align:right;">Orders</th>
-          <th style="padding:8px 10px;text-align:right;">Avg Check</th>
-          <th style="padding:8px 10px;text-align:right;">Fleet Share</th>
-          <th style="padding:8px 10px;text-align:right;">UberEats %</th>
-          <th style="padding:8px 10px;text-align:right;">Void %</th>
+          ${rankSortHdr('netSales','Net Sales')}
+          ${rankSortHdr('mom','MoM Δ')}
+          ${rankSortHdr('orders','Orders')}
+          ${rankSortHdr('avgCheck','Avg Check')}
+          ${rankSortHdr('daypart','Daypart Dominante')}
           <th style="padding:8px 10px;"></th>
         </tr></thead>
-        <tbody>${storeRows}</tbody>
+        <tbody>${rankRows}</tbody>
       </table>
     </div>
-    <div style="padding:8px 16px;font-size:10px;color:var(--muted);">Click any row to drill into that store's Sales Summary.</div>
   </div>`;
 
   // Channel mix aggregated
@@ -7316,12 +7434,36 @@ function renderSalesDashboard(rec, locRecs, allRecs){
   const fmt$   = v=>'$'+Math.round(v).toLocaleString('en-US');
   const fmtD   = v=>'$'+Math.abs(Math.round(v)).toLocaleString('en-US');
 
-  // Month pills
+  // Period selector — Monthly / Quarterly / Annual
   const availMonths=locRecs.map(r=>r.month).sort((a,b)=>a-b);
-  const monthPills=`
+  const QMONS_DS=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  const vmBtn=(vm,lbl)=>{
+    const on=SX.viewMode===vm;
+    return `<button onclick="sxSetViewMode('${vm}')" style="padding:5px 14px;border-radius:99px;border:1.5px solid ${on?'#7e2023':'#d1c9bc'};background:${on?'#7e2023':'transparent'};color:${on?'#fff':'#64748b'};font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</button>`;
+  };
+  // All years available for this loc across all uploads
+  const allSxLocYears=[...new Set(allRecs.filter(r=>r.state===SX.state&&r.loc===SX.loc).map(r=>r.year))].sort();
+  let subPills='';
+  if(SX.viewMode==='month'){
+    subPills=availMonths.map(m=>`<button class="sx-month-pill ${SX.month===m?'on':''}" onclick="sxSetMonth(${m})">${MSHORT[m]}</button>`).join('');
+  } else if(SX.viewMode==='quarter'){
+    const sxYearBtns=allSxLocYears.map(y=>`<button class="sx-month-pill ${SX.year===y?'on':''}" onclick="sxSetYear('${y}')">${y}</button>`).join('');
+    const sxQBtns=[0,1,2,3].map(q=>{
+      const qMons=QMONS_DS[q];
+      const has=allRecs.filter(r=>r.state===SX.state&&r.loc===SX.loc&&r.year===SX.year).some(r=>qMons.includes(r.month));
+      const on=SX.quarter===q;
+      return `<button class="sx-month-pill ${on?'on':''}" onclick="sxSetQuarter(${q})" ${has?'':'style="opacity:.35;pointer-events:none;"'}>Q${q+1}</button>`;
+    }).join('');
+    subPills=sxYearBtns+`<span style="display:inline-block;width:1px;height:20px;background:#e8e2d8;margin:0 6px;vertical-align:middle;flex-shrink:0;"></span>`+sxQBtns;
+  } else {
+    const sxAnnualBtns=allSxLocYears.map(y=>`<button class="sx-month-pill ${SX.year===y?'on':''}" onclick="sxSetYear('${y}')">${y}</button>`).join('');
+    subPills=sxAnnualBtns;
+  }
+  const periodSelector=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:4px;">Month:</span>
-      ${availMonths.map(m=>`<button class="sx-month-pill ${SX.month===m?'on':''}" onclick="sxSetMonth(${m})">${MSHORT[m]}</button>`).join('')}
+      ${vmBtn('month','Monthly')}${vmBtn('quarter','Quarterly')}${vmBtn('year','Annual')}
+      <span style="width:1px;height:20px;background:#e8e2d8;margin:0 6px;display:inline-block;flex-shrink:0;"></span>
+      ${subPills}
     </div>`;
 
   // Summary cards
@@ -7380,8 +7522,9 @@ function renderSalesDashboard(rec, locRecs, allRecs){
     </svg>`;
   })();
 
-  // ── Peak Month Benchmark
+  // ── Peak Month Benchmark (only in monthly view)
   const peakBenchmarkHtml = (()=>{
+    if(rec._aggregated) return '';
     if(locRecs.length < 2) return '';
     const best = [...locRecs].sort((a,b)=>b.netSales-a.netSales)[0];
     const pct = best.netSales>0 ? (rec.netSales/best.netSales*100) : 0;
@@ -7393,6 +7536,7 @@ function renderSalesDashboard(rec, locRecs, allRecs){
   })();
 
   const momCardHtml = (()=>{
+    if(rec._aggregated) return '';
     if(!prevRec || !prevRec.netSales) return '';
     const m = momDelta(rec.netSales, prevRec.netSales);
     const diffStr = (m.diff>=0?'+':'-')+'$'+Math.abs(Math.round(m.diff)).toLocaleString('en-US');
@@ -7413,7 +7557,7 @@ function renderSalesDashboard(rec, locRecs, allRecs){
       <div class="sx-card accent" style="flex:2;min-width:220px;padding:20px 24px;">
         <div class="sc-lbl">Net Sales</div>
         <div class="sc-val" style="font-size:28px;margin:4px 0;">${fmt$(rec.netSales)}</div>
-        <div class="sc-sub">${MFULL[rec.month]} ${rec.year} · ${rec.loc}</div>
+        <div class="sc-sub">${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</div>
       </div>
       ${momCardHtml}
       <div class="sx-card" style="flex:1;min-width:155px;padding:20px 18px;">
@@ -7653,7 +7797,7 @@ function renderSalesDashboard(rec, locRecs, allRecs){
       </div>`:'<div class="sx-top-items-none" style="margin-top:20px;">Upload more months to see the void rate trend.</div>'}`;
   }
 
-  el.innerHTML=`<div class="sx-page">${voidAlertHtml}${monthPills}${cards}${cardsPeakRow}${tabs}${content}</div>`;
+  el.innerHTML=`<div class="sx-page">${voidAlertHtml}${periodSelector}${cards}${cardsPeakRow}${tabs}${content}</div>`;
 
   // Init charts after DOM is ready
   if(SX.activeTab==='overview'){
@@ -8401,7 +8545,46 @@ function setPnLTgt(field,val){
 
 // ── State
 let PX = { state:'FL', loc:null, year:'2026', month:null,
-           cmpMode:false, cmpType:'month', cmpMonth:null, cmpYear:null, cmpLoc:null };
+           cmpMode:false, cmpType:'month', cmpMonth:null, cmpYear:null, cmpLoc:null,
+           viewMode:'month', quarter:0 };
+
+// ── P&L period view helpers
+function pxSetViewMode(vm){
+  PX.viewMode=vm;
+  if(vm==='quarter'){
+    // Auto-pick latest quarter that has data in the selected year
+    const locRecs=getPnLRecords().filter(r=>r.state===PX.state&&r.loc===PX.loc&&r.year===PX.year);
+    const availM=locRecs.map(r=>r.month);
+    const QMONS=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+    const lastQ=[3,2,1,0].find(q=>QMONS[q].some(m=>availM.includes(m)));
+    if(lastQ!=null) PX.quarter=lastQ;
+  }
+  renderPnLPage();
+}
+function pxSetQuarter(q){ PX.quarter=q; renderPnLPage(); }
+
+// ── Aggregate multiple P&L records into one virtual record
+function pxAggregateRecs(recs){
+  if(!recs||!recs.length) return null;
+  if(recs.length===1) return {...recs[0]};
+  const sumOf=f=>recs.reduce((s,r)=>s+(r[f]||0),0);
+  return {
+    ...recs[recs.length-1],
+    netSales:sumOf('netSales'), grossSales:sumOf('grossSales'),
+    grossProfit:sumOf('grossProfit'), totalExpenses:sumOf('totalExpenses'),
+    netIncome:sumOf('netIncome'), netOperatingIncome:sumOf('netOperatingIncome'),
+    cogs:sumOf('cogs'), payroll:sumOf('payroll'), supplies:sumOf('supplies'),
+    commissions:sumOf('commissions'), insurance:sumOf('insurance'),
+    professionalFees:sumOf('professionalFees'), generalBusiness:sumOf('generalBusiness'),
+    advertising:sumOf('advertising'), utilities:sumOf('utilities'),
+    taxes:sumOf('taxes'), rent:sumOf('rent'),
+    discounts:sumOf('discounts'), refunds:sumOf('refunds'),
+    otherIncome:sumOf('otherIncome'), otherExpenses:sumOf('otherExpenses'),
+    travel:sumOf('travel'), penalties:sumOf('penalties'),
+    totalOrders:sumOf('totalOrders'),
+    _aggregated:true, _recs:recs
+  };
+}
 
 // ── Format helpers (P&L aware of negatives)
 function fmtPnL(v){
@@ -8611,19 +8794,38 @@ function renderPnLPage(){
   if(bar) bar.style.display='flex';
   if(!PX.loc||!statRecs.find(r=>r.loc===PX.loc)) PX.loc=statRecs[0].loc;
   const locRecs=statRecs.filter(r=>r.loc===PX.loc).sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
-  // Auto-select most recent month
+  // Auto-select most recent month (always needed to have PX.month/year valid)
   if(PX.month===null||!locRecs.find(r=>r.month===PX.month&&r.year===PX.year)){
     const last=locRecs[locRecs.length-1];
     if(last){ PX.month=last.month; PX.year=last.year; }
   }
-  const rec=locRecs.find(r=>r.month===PX.month&&r.year===PX.year);
-  if(!rec){
-    uv.style.display='none'; dv.style.display='block';
-    dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return;
-  }
   uv.style.display='none'; dv.style.display='block';
-  if(PX.cmpMode) renderPnLCompare(rec, allRecs);
-  else renderPnLDashboard(rec, locRecs);
+
+  // Build the record to render based on viewMode
+  let renderRec;
+  const PX_QMONS=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  if(PX.viewMode==='year'){
+    const yrRecs=locRecs.filter(r=>r.year===PX.year);
+    renderRec=pxAggregateRecs(yrRecs);
+    if(!renderRec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for '+PX.year+'.</div>'; return; }
+    renderRec._label=`Full Year ${PX.year}`;
+  } else if(PX.viewMode==='quarter'){
+    const qMons=PX_QMONS[PX.quarter];
+    const qRecs=locRecs.filter(r=>r.year===PX.year&&qMons.includes(r.month));
+    if(!qRecs.length){
+      dv.innerHTML=`<div style="padding:60px;text-align:center;color:var(--muted);">No data for Q${PX.quarter+1} ${PX.year}. Upload the relevant months first.</div>`;
+      return;
+    }
+    renderRec=pxAggregateRecs(qRecs);
+    const qName=['Jan–Mar','Apr–Jun','Jul–Sep','Oct–Dec'][PX.quarter];
+    renderRec._label=`Q${PX.quarter+1} ${PX.year} · ${qName}`;
+  } else {
+    renderRec=locRecs.find(r=>r.month===PX.month&&r.year===PX.year);
+    if(!renderRec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return; }
+  }
+
+  if(PX.cmpMode&&PX.viewMode==='month') renderPnLCompare(renderRec, allRecs);
+  else renderPnLDashboard(renderRec, locRecs);
 }
 
 function renderPnLLocBar(filteredRecs){
@@ -8710,15 +8912,40 @@ function renderPnLDashboard(rec, locRecs){
   const ns=rec.netSales||1;
   const MSHORT=MONTHS_SHORT;
 
-  // Month pills — sorted chronologically, split by year
+  // Period selector — Monthly / Quarterly / Annual
   const sortedRecs=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
   const years=[...new Set(sortedRecs.map(r=>r.year))];
-  const pills=`<div style="display:flex;overflow-x:auto;padding:0 28px;scrollbar-width:none;align-items:center;gap:0;">
-    ${years.map(y=>{
+  const yearRecs=sortedRecs.filter(r=>r.year===PX.year);
+  const PX_QMONS2=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  const availMPX=yearRecs.map(r=>r.month);
+  const pxVmBtn=(vm,lbl)=>{
+    const on=PX.viewMode===vm;
+    return `<button onclick="pxSetViewMode('${vm}')" style="padding:5px 14px;border-radius:99px;border:1.5px solid ${on?'#7e2023':'#c9bfb0'};background:${on?'#7e2023':'transparent'};color:${on?'#fff':'#64748b'};font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</button>`;
+  };
+  let pxSubPills='';
+  if(PX.viewMode==='month'){
+    // Chronological month pills with year separators
+    pxSubPills=years.map(y=>{
       const yr=sortedRecs.filter(r=>r.year===y);
-      return `<span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 0 4px;white-space:nowrap;">${y}</span>`+
-      yr.map(r=>`<button class="loc-tab ${r.month===PX.month&&r.year===PX.year?'on':''}" onclick="PX.month=${r.month};PX.year='${r.year}';renderPnLPage();">${MSHORT[r.month]}</button>`).join('');
-    }).join('<div style="width:1px;height:24px;background:var(--border);margin:0 8px;flex-shrink:0;"></div>')}
+      return `<span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px 0 4px;white-space:nowrap;">${y}</span>`+
+        yr.map(r=>`<button class="sx-month-pill ${r.month===PX.month&&r.year===PX.year?'on':''}" onclick="PX.month=${r.month};PX.year='${r.year}';renderPnLPage();">${MSHORT[r.month]}</button>`).join('');
+    }).join('<span style="display:inline-block;width:1px;height:20px;background:#e8e2d8;margin:0 6px;vertical-align:middle;flex-shrink:0;"></span>');
+  } else if(PX.viewMode==='quarter'){
+    const pxYearBtns=years.map(y=>`<button class="sx-month-pill ${PX.year===y?'on':''}" onclick="PX.year='${y}';renderPnLPage();">${y}</button>`).join('');
+    const pxQBtns=[0,1,2,3].map(q=>{
+      const has=PX_QMONS2[q].some(m=>sortedRecs.filter(r=>r.year===PX.year).some(r=>r.month===m));
+      const on=PX.quarter===q;
+      return `<button class="sx-month-pill ${on?'on':''}" onclick="pxSetQuarter(${q})" ${has?'':'style="opacity:.35;pointer-events:none;"'}>Q${q+1}</button>`;
+    }).join('');
+    pxSubPills=pxYearBtns+`<span style="display:inline-block;width:1px;height:20px;background:#e8e2d8;margin:0 6px;vertical-align:middle;flex-shrink:0;"></span>`+pxQBtns;
+  } else {
+    // Annual — show year selector so user can pick 2025 or 2026
+    pxSubPills=years.map(y=>`<button class="sx-month-pill ${PX.year===y?'on':''}" onclick="PX.year='${y}';renderPnLPage();">${y}</button>`).join('');
+  }
+  const pills=`<div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 20px;align-items:center;">
+    ${pxVmBtn('month','Monthly')}${pxVmBtn('quarter','Quarterly')}${pxVmBtn('year','Annual')}
+    <span style="width:1px;height:20px;background:#e8e2d8;margin:0 6px;display:inline-block;flex-shrink:0;"></span>
+    ${pxSubPills}
   </div>`;
 
   // Key ratios
@@ -8749,8 +8976,8 @@ function renderPnLDashboard(rec, locRecs){
   const opLeverage=(beFix+beVar)>0?beFix/(beFix+beVar)*100:null;
   const netCol=netMarginNum>=25?'#15803d':netMarginNum>=10?'#854d0e':'#b91c1c';
 
-  // ── Expense Anomaly Detection
-  const anomalies = detectPnLAnomalies(rec, locRecs);
+  // ── Expense Anomaly Detection (skip for aggregated views)
+  const anomalies = rec._aggregated ? [] : detectPnLAnomalies(rec, locRecs);
   const anomalyPanelHTML = (()=>{
     if(!anomalies.length) return `
       <div class="pnl-anomaly-clear">
@@ -8785,7 +9012,7 @@ function renderPnLDashboard(rec, locRecs){
           <span style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;">Expense Anomalies</span>
         </div>
         <span style="font-size:11px;font-weight:700;background:#dc2626;color:white;border-radius:99px;padding:3px 10px;">${anomalies.length} item${anomalies.length>1?'s':''} above average</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${MFULL[rec.month]} ${rec.year} vs. trailing 3-month average</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${rec._label||MFULL[rec.month]+' '+rec.year} vs. trailing 3-month average</span>
       </div>
       <div class="pnl-anomaly-grid">${cards}</div>
       <div style="font-size:10px;color:var(--muted);margin-top:10px;">⚠ Flags any expense >15% above its trailing average. High = >40%, Medium = 25–40%, Watch = 15–25%.</div>
@@ -8807,7 +9034,7 @@ function renderPnLDashboard(rec, locRecs){
       <div class="ui-card" style="border-top:3px solid var(--accent);">
         <span class="ui-card-label">💰 Net Sales</span>
         <span class="ui-card-val">${fmtPnL(rec.netSales)}</span>
-        <span class="ui-card-sub">${MFULL[rec.month]} ${rec.year}</span>
+        <span class="ui-card-sub">${rec._label||MFULL[rec.month]+' '+rec.year}</span>
       </div>
       <div class="ui-card" style="border-top:3px solid #15803d;">
         <span class="ui-card-label">📊 Gross Profit</span>
@@ -8947,7 +9174,7 @@ function renderPnLDashboard(rec, locRecs){
   const tableHTML=`
     <div class="pnl-tbl-wrap">
       <div class="pnl-tbl-hdr">
-        <span class="pnl-tbl-hdr-title">Profit & Loss · ${MFULL[rec.month]} ${rec.year} · ${rec.loc}</span>
+        <span class="pnl-tbl-hdr-title">Profit & Loss · ${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</span>
       </div>
       <table class="pnl-tbl">
         <thead>
@@ -9089,7 +9316,7 @@ function renderPnLDashboard(rec, locRecs){
       </div>`;
     }).join('');
     return `<div class="pnl-wf-panel">
-      <div class="ui-panel-title">💧 Revenue Waterfall — ${MFULL[rec.month]} ${rec.year}</div>
+      <div class="ui-panel-title">💧 Revenue Waterfall — ${rec._label||MFULL[rec.month]+' '+rec.year}</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:14px;">How Gross Sales flows down to Net Income. % = share of Net Sales.</div>
       <div class="pnl-wf-rows">${rows}</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:10px;color:var(--muted);">
@@ -9125,7 +9352,7 @@ function renderPnLDashboard(rec, locRecs){
   const bePanel=`
     <div class="pnl-be-panel">
       <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:18px;">
-        Break-Even Analysis · ${MFULL[rec.month]} ${rec.year}
+        Break-Even Analysis · ${rec._label||MFULL[rec.month]+' '+rec.year}
         <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:8px;">auto-calculated from imported P&L</span>
       </div>
       <div class="pnl-be-grid">
@@ -9239,9 +9466,9 @@ function renderPnLDashboard(rec, locRecs){
     return '<div class="ui-card" style="padding:24px;margin-bottom:24px;">'
       +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">'
       +'<div class="ui-panel-title" style="margin-bottom:0;">📦 Unit Economics per Order</div>'
-      +'<div class="ui-muted-sm">'+Math.round(curOrders).toLocaleString('en-US')+' orders · '+MFULL[rec.month]+' '+rec.year+'</div>'
+      +'<div class="ui-muted-sm">'+Math.round(curOrders).toLocaleString('en-US')+' orders · '+(rec._label||MFULL[rec.month]+' '+rec.year)+'</div>'
       +'</div>'
-      +'<div class="ui-muted-sm" style="margin-bottom:18px;">Revenue &amp; cost per transaction. Order count from Sales Summary data.</div>'
+      +'<div class="ui-muted-sm" style="margin-bottom:18px;">Revenue &amp; cost per transaction. Order count from Sales Summary data (month-level import).</div>'
       +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">'
       +makeCard('Revenue / Order',revO,'var(--accent)','Gross contribution')
       +makeCard('COGS / Order',cogsO,'#854d0e','Food &amp; beverage cost')
