@@ -1022,6 +1022,10 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hcard.c7::before{ background:linear-gradient(90deg,#b06020,#e07830); }
 .hcard.c7:hover  { border-color:#b06020; transform:translateY(-5px); box-shadow:0 16px 40px rgba(176,96,32,.2); }
 .hcard.c7 .hcard-tag { color:#b06020; }
+.hcard.c8        { cursor:default; opacity:.82; }
+.hcard.c8::before{ background:linear-gradient(90deg,#5a3a7e,#8b5fcf); }
+.hcard.c8:hover  { transform:none; box-shadow:none; border-color:var(--brd); }
+.hcard.c8 .hcard-tag { color:#5a3a7e; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dm-rpt-chip { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:rgba(255,255,255,.9); }
 .ask-input-wrap { display:flex; gap:8px; margin-top:12px; }
@@ -1316,6 +1320,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
        <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
        <div class="hcard-tag">Active · All Locations</div>
      </div>
+    <div class="hcard c8" style="position:relative;">
+      <span class="hcard-icon">🎉</span>
+      <div class="hcard-title">Event Calculator</div>
+      <div class="hcard-desc">Estimate food, beverage, and staffing costs for private events. Set guest count, menu, and get a full cost breakdown instantly.</div>
+      <div class="hcard-tag">Coming Soon</div>
+      <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
+        <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5a3a7e;background:rgba(90,58,126,.12);border:1.5px solid rgba(90,58,126,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
+      </div>
+    </div>
     <div class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">📋</span>
       <div style="flex:1;">
