@@ -3726,6 +3726,10 @@ function rcGenerate(){
 function generateDMReportCard(){ openRCPicker(); }
 
 function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
+  try{ _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth); }
+  catch(e){ alert('Error generando el PDF: '+e.message+'\n\n'+e.stack); console.error(e); }
+}
+function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   if(typeof window.jspdf==='undefined'&&typeof window.jsPDF==='undefined'){
     alert('PDF library still loading. Please try again in a moment.');
     return;
@@ -3861,84 +3865,133 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   else if(mosAmt!=null) concerns.push(`Below break-even by $${Math.round(Math.abs(mosAmt)).toLocaleString('en-US')}`);
   const top3wins=wins.slice(0,3), top3concerns=concerns.slice(0,3);
 
+  // ── Brand colors
+  const SL_RED=[126,32,35], SL_DARK=[33,35,32], SL_CREAM=[245,240,232], SL_GOLD=[196,160,53];
+  const SL_RED_LT=[255,238,238], SL_GREEN=[22,101,52], SL_GREEN_LT=[240,253,244];
+  const SL_WARN=[185,28,28], SL_WARN_LT=[255,241,242];
+  const SL_MUTED=[120,115,108], SL_BORD=[210,205,195];
+
   // ── PDF helpers
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
   const rect=(x,ry,w,h,...rgb)=>{ doc.setFillColor(...rgb); doc.rect(x,ry,w,h,'F'); };
+  const rrect=(x,ry,w,h,r,...rgb)=>{ doc.setFillColor(...rgb); doc.roundedRect(x,ry,w,h,r,r,'F'); };
   const border=(x,ry,w,h,...rgb)=>{ doc.setDrawColor(...rgb); doc.setLineWidth(.3); doc.rect(x,ry,w,h,'S'); };
+  const rborder=(x,ry,w,h,r,...rgb)=>{ doc.setDrawColor(...rgb); doc.setLineWidth(.3); doc.roundedRect(x,ry,w,h,r,r,'S'); };
   const txt=(text,x,ty,size,color,style,align)=>{
-    doc.setFontSize(size); doc.setTextColor(...(color||[30,30,30])); doc.setFont('helvetica',style||'normal');
+    doc.setFontSize(size); doc.setTextColor(...(color||SL_DARK)); doc.setFont('helvetica',style||'normal');
     const opts=align?{align}:{};
     doc.text(String(text??'—'),x,ty,opts);
   };
-  const hr=(ry,...rgb)=>{ doc.setDrawColor(...(rgb.length?rgb:[220,220,220])); doc.setLineWidth(.25); doc.line(M,ry,W-M,ry); };
-  const pill=(text,x,ry,r,g,b,tr,tg,tb)=>{ doc.setFillColor(r,g,b); doc.roundedRect(x,ry,doc.getTextWidth(text)+6,4.5,.8,.8,'F'); txt(text,x+3,ry+3.3,6.5,[tr,tg,tb],'bold'); };
-  const statusDot=(ok,na,x,ry)=>{ const col=na?[180,180,180]:ok?[22,163,74]:[185,28,28]; rect(x,ry+1.5,3,3,...col); };
+  const hr=(ry,...rgb)=>{ doc.setDrawColor(...(rgb.length?rgb:SL_BORD)); doc.setLineWidth(.25); doc.line(M,ry,W-M,ry); };
+  const sectionTitle=(label,ry,sub)=>{
+    // Red left bar + section label
+    rect(M,ry,2.5,5,...SL_RED);
+    txt(label, M+5, ry+4, 7, SL_RED, 'bold');
+    if(sub) txt(sub, W-M, ry+4, 6.5, SL_MUTED, 'normal', 'right');
+  };
   const fmt$=v=>v!=null?'$'+Math.round(Math.abs(v)).toLocaleString('en-US'):'—';
   const fmtK=v=>v!=null?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'—';
 
-  // Page tracker
+  // Page tracker — add branded header/footer on each new page
+  const addPageChrome=()=>{
+    // Thin top brand bar
+    rect(0,0,W,3,...SL_RED);
+    rect(3,0,W-3,3,...SL_DARK);
+    // Footer strip
+    rect(0,H-8,W,8,...SL_DARK);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(...SL_GOLD);
+    doc.text('SKINNY LOUIE  ·  Confidential — Internal Use Only', W/2, H-3, {align:'center'});
+    doc.text(`${loc}  ·  ${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, M+1, H-3);
+    const pg=doc.internal.getCurrentPageInfo().pageNumber;
+    const total=doc.internal.getNumberOfPages();
+    doc.text(`Page ${pg} of ${total}`, W-M-1, H-3, {align:'right'});
+  };
   let y=0;
-  const newPage=()=>{ doc.addPage(); y=18; };
+  const newPage=()=>{ doc.addPage(); addPageChrome(); y=8; };
   const checkPage=(needed)=>{ if(y+needed>H-14) newPage(); };
 
   // ═══════════════════════════════════════════════
   // HEADER
   // ═══════════════════════════════════════════════
-  rect(0,0,W,20, 30,20,15);
-  txt('SKINNY LOUIE', M, 8.5, 17, [255,255,255], 'bold');
-  txt('DM Monthly Report Card', M, 14.5, 8.5, [210,150,90], 'normal');
-  txt(`${loc}  ·  ${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, W-M, 8.5, 8.5, [255,255,255], 'normal', 'right');
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(170,120,70);
-  doc.text(`Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`, W-M, 15, {align:'right'});
-  y=26;
+  // Main background
+  rect(0,0,W,32,...SL_DARK);
+  // Red accent left stripe
+  rect(0,0,5,32,...SL_RED);
+  // Decorative gold bottom line
+  rect(0,30,W,2,...SL_GOLD);
+  // Wordmark
+  doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(255,255,255);
+  doc.text('SKINNY LOUIE', M+5, 13);
+  // Burger icon area (text-based)
+  doc.setFontSize(8); doc.setTextColor(...SL_GOLD);
+  doc.text('🍔', M+5, 20);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...SL_GOLD);
+  doc.text('DM MONTHLY REPORT CARD', M+12, 20);
+  // Right side: location + date
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
+  doc.text(loc, W-M, 12, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...SL_GOLD);
+  doc.text(`${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, W-M, 19, {align:'right'});
+  doc.setFontSize(6.5); doc.setTextColor(160,155,140);
+  doc.text(`Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`, W-M, 25, {align:'right'});
+  // State badge
+  rrect(M+5,22,14,5,1,...SL_RED);
+  doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255);
+  doc.text(rcState==='FL'?'🌴 FLORIDA':'🗽 NEW YORK', M+12, 25.8, {align:'center'});
+  y=38;
 
   // ═══════════════════════════════════════════════
   // TIER 5 — HEALTH SCORE + UBER + YTD vs PY  (top strip)
   // ═══════════════════════════════════════════════
   const hsVal=hs?Math.round(hs.total):null;
   const hsOk=hsVal!=null&&hsVal>=75;
-  const stripH=16;
+  const stripH=18;
   // Health Score box
-  rect(M,y, 58,stripH, hsOk?240:255, hsOk?253:241, hsOk?244:242);
-  border(M,y,58,stripH, hsOk?134:252, hsOk?239:165, hsOk?172:165);
-  txt('HEALTH SCORE', M+3, y+5, 6.5, [100,100,100], 'bold');
-  txt(hsVal!=null?`${hsVal}/100`:'No data', M+3, y+12, 14, hsOk?[22,101,52]:[185,28,28], 'bold');
-  const bx=M+32, bw=22, bh=3.5;
-  rect(bx,y+7,bw,bh, 220,220,220);
-  if(hsVal!=null) rect(bx,y+7,bw*(Math.min(hsVal,100)/100),bh, ...(hsOk?[22,163,74]:[220,38,38]));
-  doc.setDrawColor(120,120,120); doc.setLineWidth(.2); doc.line(bx+bw*.75,y+6,bx+bw*.75,y+7+bh+.5);
+  const hsCol=hsOk?SL_GREEN:SL_WARN;
+  rect(M,y, 58,stripH, ...SL_CREAM);
+  border(M,y,58,stripH, ...SL_BORD);
+  rect(M,y,58,3,...(hsOk?[22,163,74]:SL_RED));
+  txt('HEALTH SCORE', M+3, y+8, 6.5, SL_MUTED, 'bold');
+  txt(hsVal!=null?`${hsVal}/100`:'No data', M+3, y+15, 13, hsCol, 'bold');
+  const bx=M+33, bw=20, bh=3;
+  rect(bx,y+9,bw,bh, 220,215,205);
+  if(hsVal!=null) rect(bx,y+9,bw*(Math.min(hsVal,100)/100),bh, ...(hsOk?[22,163,74]:SL_RED));
   // Uber Rating box
   const ubX=M+62;
-  rect(ubX,y,38,stripH, 248,248,235);
-  border(ubX,y,38,stripH, 200,200,180);
-  txt('UBER RATING', ubX+3, y+5, 6.5, [100,100,100], 'bold');
-  txt(uberVal!=null?uberVal.toFixed(1):'—', ubX+3, y+12, 14, uberVal!=null&&uberVal>=4.5?[22,101,52]:uberVal!=null&&uberVal>=4.0?[133,77,14]:[185,28,28], 'bold');
-  if(uberVal!=null){ txt(uberVal>=4.5?'⭐ Excellent':uberVal>=4.0?'👍 Good':'⚠ Needs work', ubX+14, y+12, 7, [100,100,100]); }
+  rect(ubX,y,38,stripH, ...SL_CREAM);
+  border(ubX,y,38,stripH, ...SL_BORD);
+  rect(ubX,y,38,3,...SL_GOLD);
+  txt('UBER RATING', ubX+3, y+8, 6.5, SL_MUTED, 'bold');
+  const uberCol=uberVal!=null&&uberVal>=4.5?SL_GREEN:uberVal!=null&&uberVal>=4.0?[133,77,14]:SL_WARN;
+  txt(uberVal!=null?uberVal.toFixed(1):'—', ubX+3, y+15, 13, uberCol, 'bold');
+  if(uberVal!=null){ txt(uberVal>=4.5?'Excellent':uberVal>=4.0?'Good':'Needs work', ubX+18, y+15, 6.5, uberCol); }
   // YTD vs PY box
   const ytdX=M+104;
   const ytdW=W-M-ytdX;
-  rect(ytdX,y,ytdW,stripH, 240,246,255);
-  border(ytdX,y,ytdW,stripH, 180,200,240);
-  txt('YTD NET SALES vs PRIOR YEAR', ytdX+3, y+5, 6.5, [80,100,140], 'bold');
+  rect(ytdX,y,ytdW,stripH, ...SL_CREAM);
+  border(ytdX,y,ytdW,stripH, ...SL_BORD);
+  rect(ytdX,y,ytdW,3,...SL_DARK);
+  txt('YTD NET SALES vs PRIOR YEAR', ytdX+3, y+8, 6.5, SL_MUTED, 'bold');
   if(ytdVsPY){
     const ytdOk=ytdVsPY.delta>=0;
-    txt(fmtK(ytdVsPY.cur), ytdX+3, y+12, 13, [30,58,95], 'bold');
-    txt((ytdVsPY.delta>=0?'▲ +':'▼ ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+String(Number(rcYear)-1), ytdX+3, y+stripH-2, 7, ytdOk?[22,101,52]:[185,28,28], 'bold');
+    txt(fmtK(ytdVsPY.cur), ytdX+3, y+15, 12, SL_DARK, 'bold');
+    txt((ytdVsPY.delta>=0?'▲ +':'▼ ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+(Number(rcYear)-1), W-M-2, y+15, 6.5, ytdOk?SL_GREEN:SL_WARN, 'bold', 'right');
   } else {
-    txt('No prior year data', ytdX+3, y+10, 8, [150,150,150]);
+    txt('No prior year data', ytdX+3, y+12, 8, [180,180,180]);
   }
-  y+=stripH+5;
+  y+=stripH+6;
 
   // ═══════════════════════════════════════════════
   // TIER 1+2 — KPI TABLE (6 metrics)
   // ═══════════════════════════════════════════════
-  txt('KEY PERFORMANCE INDICATORS', M, y+4, 7, [80,80,80], 'bold');
-  y+=6;
+  sectionTitle('KEY PERFORMANCE INDICATORS', y);
+  y+=8;
   const colW=W-M*2;
   const cols=[M, M+44, M+80, M+112, M+143, M+172];
-  rect(M,y,colW,6.5, 242,238,228);
-  ['Metric','Actual','Target','MoM Δ','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+1,y+4.5, 6.5,[80,80,80],'bold'); });
-  y+=6.5;
+  // Table header row
+  rect(M,y,colW,7,...SL_DARK);
+  ['Metric','Actual','Target','MoM Δ','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+5, 6.5,[255,255,255],'bold'); });
+  y+=7;
   const kpiRows=[
     {label:'Food Cost %',     val:lastFP!=null?fmtP(lastFP):'—', tgt:`≤${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true},
     {label:'Labor %',         val:lastLP!=null?fmtP(lastLP):'—', tgt:`≤${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
@@ -3949,32 +4002,34 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   ];
   kpiRows.forEach((r,i)=>{
     const rowY=y+i*7;
-    if(i%2===0) rect(M,rowY,colW,7, 252,250,246);
-    const vc=r.na?[150,150,150]:r.ok?[22,101,52]:[185,28,28];
+    if(i%2===0) rect(M,rowY,colW,7,...SL_CREAM);
+    else rect(M,rowY,colW,7,252,250,248);
+    // Left color indicator
+    rect(M,rowY,2,7,...(r.na?[200,200,200]:r.ok?[22,163,74]:SL_RED));
+    const vc=r.na?SL_MUTED:r.ok?SL_GREEN:SL_WARN;
     const momVal=r.mom!=null?(r.mom>=0?'+':'')+r.mom.toFixed(1)+'%':'—';
     const momOk=r.mom==null?null:(r.lowerBetter?r.mom<=0:r.mom>=0);
-    const momCol=r.mom==null?[150,150,150]:momOk?[22,101,52]:[185,28,28];
+    const momCol=r.mom==null?SL_MUTED:momOk?SL_GREEN:SL_WARN;
     // trend bar
+    rect(cols[4],rowY+2,18,3, 220,215,205);
     const barVal=r.ok?85:r.na?0:35;
-    rect(cols[4],rowY+2,18,3, 230,230,230);
-    if(barVal>0) rect(cols[4],rowY+2,barVal/100*18,3, ...(r.ok?[22,163,74]:[220,38,38]));
-    txt(r.label,  cols[0]+1, rowY+5, 7.5, [40,40,40]);
-    txt(r.val,    cols[1]+1, rowY+5, 7.5, vc, 'bold');
-    txt(r.tgt,    cols[2]+1, rowY+5, 7,   [110,110,110]);
-    txt(momVal,   cols[3]+1, rowY+5, 7,   momCol, r.mom!=null?'bold':'normal');
-    txt(r.na?'No data':r.ok?'✓ OK':'✗ Over', cols[5]+1, rowY+5, 7, vc, 'bold');
+    if(barVal>0) rect(cols[4],rowY+2,barVal/100*18,3, ...(r.ok?[22,163,74]:SL_RED));
+    txt(r.label,  cols[0]+3, rowY+5, 7.5, SL_DARK);
+    txt(r.val,    cols[1]+2, rowY+5, 7.5, vc, 'bold');
+    txt(r.tgt,    cols[2]+2, rowY+5, 7,   SL_MUTED);
+    txt(momVal,   cols[3]+2, rowY+5, 7,   momCol, r.mom!=null?'bold':'normal');
+    txt(r.na?'No data':r.ok?'✓ On target':'✗ Over target', cols[5]+2, rowY+5, 6.5, vc, 'bold');
   });
-  y+=kpiRows.length*7+5;
-  hr(y); y+=4;
+  y+=kpiRows.length*7+6;
+  hr(y,...SL_BORD); y+=5;
 
   // ═══════════════════════════════════════════════
   // TIER 2 — SALES PERFORMANCE (4 cards in a row)
   // ═══════════════════════════════════════════════
-  txt('SALES PERFORMANCE', M, y+4, 7, [80,80,80], 'bold');
-  if(latestSX) { txt(`${MSHORT[latestSX.month]} ${latestSX.year}`, W-M, y+4, 7, [150,150,150], 'normal', 'right'); }
-  y+=7;
+  sectionTitle('SALES PERFORMANCE', y, latestSX?`${MSHORT[latestSX.month]} ${latestSX.year}`:'');
+  y+=8;
   const sc4=[M, M+48, M+96, M+144];
-  const sc4w=44, sc4h=17;
+  const sc4w=44, sc4h=18;
   const salesCards=[
     { label:'Net Sales', val:latestSX?fmt$(latestSX.netSales):'—', mom:nsMoM, sub:nsMoM!=null?(nsMoM>=0?'▲ +':'▼ ')+Math.abs(nsMoM).toFixed(1)+'% MoM':null },
     { label:'Avg Check', val:avgCheck?'$'+avgCheck.toFixed(2):'—', mom:avgCheckMoM, sub:avgCheckMoM!=null?(avgCheckMoM>=0?'▲ +':'▼ ')+Math.abs(avgCheckMoM).toFixed(1)+'% MoM':null },
@@ -3984,33 +4039,35 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   salesCards.forEach((s,i)=>{
     const x=sc4[i];
     const momOk=s.mom!=null&&s.mom>=0;
-    const bg=s.ok===false?[255,245,245]:s.ok===true?[245,255,245]:[248,246,240];
-    rect(x,y,sc4w,sc4h, ...bg);
-    border(x,y,sc4w,sc4h, 220,215,200);
-    txt(s.label, x+3, y+5, 6.5, [100,100,100]);
-    txt(s.val,   x+3, y+11, 11, [30,20,15], 'bold');
-    if(s.sub){ const col=s.ok!=null?(s.ok?[22,101,52]:[185,28,28]):(s.mom!=null?(momOk?[22,101,52]:[185,28,28]):[120,120,120]); txt(s.sub, x+3, y+sc4h-1.5, 6.5, col, 'bold'); }
-    else if(s.mom!=null){ txt((momOk?'▲ +':'▼ ')+Math.abs(s.mom).toFixed(1)+'% MoM', x+3, y+sc4h-1.5, 6.5, momOk?[22,101,52]:[185,28,28], 'bold'); }
+    const topCol=s.ok===false?SL_WARN:s.ok===true?SL_GREEN:SL_RED;
+    rect(x,y,sc4w,sc4h,...SL_CREAM);
+    border(x,y,sc4w,sc4h,...SL_BORD);
+    rect(x,y,sc4w,2.5,...topCol); // top color bar
+    txt(s.label, x+3, y+8, 6.5, SL_MUTED);
+    txt(s.val,   x+3, y+14.5, 11, SL_DARK, 'bold');
+    if(s.sub){ const col=s.ok!=null?(s.ok?SL_GREEN:SL_WARN):(s.mom!=null?(momOk?SL_GREEN:SL_WARN):SL_MUTED); txt(s.sub, x+3, y+sc4h-1, 6.5, col, 'bold'); }
+    else if(s.mom!=null){ txt((momOk?'▲ +':'▼ ')+Math.abs(s.mom).toFixed(1)+'% MoM', x+3, y+sc4h-1, 6.5, momOk?SL_GREEN:SL_WARN, 'bold'); }
   });
-  // Gross Profit $ card (fills remaining space)
+  // Gross Profit card
   if(latestPnL){
     const gpX=M+192;
-    rect(gpX,y,W-M-gpX,sc4h, 240,253,244);
-    border(gpX,y,W-M-gpX,sc4h, 134,239,172);
-    txt('Gross Profit', gpX+2, y+5, 6.5, [22,101,52]);
-    txt(fmt$(latestPnL.grossProfit), gpX+2, y+11, 10, [22,101,52], 'bold');
-    txt(grossProfitPct!=null?grossProfitPct.toFixed(1)+'% of NS':'', gpX+2, y+sc4h-1.5, 6.5, [22,101,52]);
+    const gpW=W-M-gpX;
+    rect(gpX,y,gpW,sc4h,...SL_GREEN_LT);
+    border(gpX,y,gpW,sc4h,134,239,172);
+    rect(gpX,y,gpW,2.5,...SL_GREEN);
+    txt('Gross Profit', gpX+2, y+8, 6.5, SL_GREEN);
+    txt(fmt$(latestPnL.grossProfit), gpX+2, y+14.5, 10, SL_GREEN, 'bold');
+    txt(grossProfitPct!=null?grossProfitPct.toFixed(1)+'% of NS':'', gpX+2, y+sc4h-1, 6.5, SL_GREEN);
   }
-  y+=sc4h+5;
-  hr(y); y+=4;
+  y+=sc4h+6;
+  hr(y,...SL_BORD); y+=5;
 
   // ═══════════════════════════════════════════════
   // TIER 3 — BURGER INTELLIGENCE
   // ═══════════════════════════════════════════════
   checkPage(48);
-  txt('BURGER INTELLIGENCE  ·  Single / Double / Triple', M, y+4, 7, [155,41,44], 'bold');
-  if(mixData) { txt(`Mix data: ${MSHORT[mixData.month]} ${mixData.year}`, W-M, y+4, 7, [150,150,150], 'normal', 'right'); }
-  y+=7;
+  sectionTitle('BURGER INTELLIGENCE  ·  Single / Double / Triple', y, mixData?`Mix data: ${MSHORT[mixData.month]} ${mixData.year}`:'');
+  y+=8;
   if(mixData){
     const bColW=(W-M*2)/3-3;
     const pattyData=[
@@ -4043,13 +4100,13 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
     y+=11;
     // Top 3 items
     if(mixData.top3.length){
-      txt('TOP ITEMS BY REVENUE', M, y+4, 7, [80,80,80], 'bold');
+      txt('TOP ITEMS BY REVENUE', M, y+4, 7, SL_RED, 'bold');
       if(mixData.topItemMoM!=null){ const c=mixData.topItemMoM>=0?[22,101,52]:[185,28,28]; txt(`Top item MoM: ${mixData.topItemMoM>=0?'+':''}${mixData.topItemMoM.toFixed(1)}%`, W-M, y+4, 7, c, 'bold', 'right'); }
       y+=6;
       const itemW=(W-M*2)/3-3;
       mixData.top3.forEach((it,i)=>{
         const ix=M+i*(itemW+3);
-        rect(ix,y,itemW,14, 248,245,238);
+        rect(ix,y,itemW,14,...SL_CREAM);
         border(ix,y,itemW,14, 220,215,200);
         const lines=doc.splitTextToSize(it.name,itemW-5);
         txt(lines[0], ix+3, y+5.5, 7.5, [30,20,15], 'bold');
@@ -4072,12 +4129,11 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   // TIER 4 — P&L SNAPSHOT
   // ═══════════════════════════════════════════════
   checkPage(36);
-  txt('P&L SNAPSHOT', M, y+4, 7, [80,80,80], 'bold');
-  if(latestPnL){ txt(`${MSHORT[latestPnL.month]} ${latestPnL.year}`, W-M, y+4, 7, [150,150,150], 'normal', 'right'); }
-  y+=7;
+  sectionTitle('P&L SNAPSHOT', y, latestPnL?`${MSHORT[latestPnL.month]} ${latestPnL.year}`:'');
+  y+=8;
   if(latestPnL){
     const p4=[M, M+48, M+96, M+144];
-    const p4w=44, p4h=16;
+    const p4w=44, p4h=18;
     const pnlCards=[
       {label:'Net Income',   val:fmt$(latestPnL.netIncome), sub:netMarginPct!=null?netMarginPct.toFixed(1)+'% margin':null, ok:latestPnL.netIncome>=0},
       {label:'Payroll $',    val:fmt$(payrollAbs), sub:latestPnL.netSales>0?((payrollAbs/latestPnL.netSales)*100).toFixed(1)+'% of NS':null, ok:lastLP!=null&&lastLP<=tgts.lp},
@@ -4086,14 +4142,15 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
     ];
     pnlCards.forEach((c,i)=>{
       const x=p4[i];
-      const bg=c.ok===false?[255,245,245]:c.ok===true?[245,255,250]:[248,246,240];
-      rect(x,y,p4w,p4h,...bg);
-      border(x,y,p4w,p4h,220,215,200);
-      txt(c.label,x+3,y+5,6.5,[100,100,100]);
-      txt(c.val,x+3,y+11,10,c.ok===false?[185,28,28]:c.ok===true?[22,101,52]:[30,20,15],'bold');
-      if(c.sub){ txt(c.sub,x+3,y+p4h-1.5,6.5,c.ok===false?[185,28,28]:c.ok===true?[22,101,52]:[120,120,120],'bold'); }
+      const cardCol=c.ok===false?SL_WARN:c.ok===true?SL_GREEN:SL_DARK;
+      rect(x,y,p4w,p4h,...SL_CREAM);
+      border(x,y,p4w,p4h,...SL_BORD);
+      rect(x,y,p4w,2.5,...cardCol);
+      txt(c.label,x+3,y+8,6.5,SL_MUTED);
+      txt(c.val,x+3,y+15,10,cardCol,'bold');
+      if(c.sub){ txt(c.sub,x+3,y+p4h-1,6.5,cardCol,'bold'); }
     });
-    y+=p4h+3;
+    y+=p4h+4;
     // Top anomaly callout
     if(topAnomaly){
       const sev={high:[220,38,38],med:[217,119,6],low:[202,138,4]};
@@ -4124,45 +4181,52 @@ function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   // ═══════════════════════════════════════════════
   checkPage(36);
   const halfW=(W-M*2-6)/2;
-  txt('WINS THIS MONTH', M, y+4, 7, [22,101,52], 'bold');
-  txt('CONCERNS / ACTION ITEMS', M+halfW+6, y+4, 7, [185,28,28], 'bold');
-  y+=7;
-  const itemH=8, minBoxH=10;
+  // Section headers
+  rect(M,y,halfW,6,...SL_GREEN);
+  txt('✓  WINS THIS MONTH', M+3, y+4.5, 7, [255,255,255], 'bold');
+  rect(M+halfW+6,y,halfW,6,...SL_RED);
+  txt('⚠  CONCERNS / ACTION ITEMS', M+halfW+9, y+4.5, 7, [255,255,255], 'bold');
+  y+=6;
+  const itemH=8, minBoxH=12;
   const wH=Math.max(top3wins.length*itemH+4, minBoxH);
   const cH=Math.max(top3concerns.length*itemH+4, minBoxH);
   const boxH=Math.max(wH,cH);
   checkPage(boxH+4);
-  rect(M,y,halfW,boxH, 240,253,244); border(M,y,halfW,boxH, 134,239,172);
-  rect(M+halfW+6,y,halfW,boxH, 255,241,242); border(M+halfW+6,y,halfW,boxH, 252,165,165);
+  rect(M,y,halfW,boxH,...SL_GREEN_LT); border(M,y,halfW,boxH,134,239,172);
+  rect(M+halfW+6,y,halfW,boxH,...SL_RED_LT); border(M+halfW+6,y,halfW,boxH,...SL_RED);
   if(top3wins.length){
     top3wins.forEach((w,i)=>{
-      txt('✓',M+3,y+itemH/2+2+i*itemH,8,[22,101,52],'bold');
-      const lines=doc.splitTextToSize(w,halfW-12);
-      doc.setFontSize(7.5); doc.setTextColor(20,83,45); doc.setFont('helvetica','normal');
-      doc.text(lines,M+9,y+itemH/2+2+i*itemH);
+      rect(M,y+i*itemH,2,itemH,...SL_GREEN);
+      const lines=doc.splitTextToSize(w,halfW-10);
+      doc.setFontSize(7.5); doc.setTextColor(...SL_GREEN); doc.setFont('helvetica','bold');
+      doc.text(lines,M+5,y+itemH/2+1+i*itemH);
     });
-  } else { txt('No data yet.',M+4,y+8,8,[150,150,150]); }
+  } else { txt('No data yet.',M+4,y+8,8,SL_MUTED); }
   if(top3concerns.length){
     top3concerns.forEach((c,i)=>{
-      txt('⚠',M+halfW+9,y+itemH/2+2+i*itemH,8,[185,28,28],'bold');
-      const lines=doc.splitTextToSize(c,halfW-12);
-      doc.setFontSize(7.5); doc.setTextColor(127,29,29); doc.setFont('helvetica','normal');
-      doc.text(lines,M+halfW+15,y+itemH/2+2+i*itemH);
+      rect(M+halfW+6,y+i*itemH,2,itemH,...SL_RED);
+      const lines=doc.splitTextToSize(c,halfW-10);
+      doc.setFontSize(7.5); doc.setTextColor(...SL_WARN); doc.setFont('helvetica','bold');
+      doc.text(lines,M+halfW+11,y+itemH/2+1+i*itemH);
     });
-  } else { txt('All metrics within targets.',M+halfW+9,y+8,8,[150,150,150]); }
+  } else { txt('All metrics within targets.',M+halfW+9,y+8,8,SL_MUTED); }
   y+=boxH+4;
 
   // ═══════════════════════════════════════════════
-  // FOOTER (on last page)
+  // FOOTER (stamp on all pages)
   // ═══════════════════════════════════════════════
   const totalPages=doc.internal.getNumberOfPages();
   for(let pg=1;pg<=totalPages;pg++){
     doc.setPage(pg);
-    rect(0,H-9,W,9, 30,20,15);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(180,130,80);
-    doc.text('Skinny Louie Operations Dashboard  ·  Confidential — Internal Use Only', W/2, H-3.5, {align:'center'});
-    doc.text(`${loc}  ·  ${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, M, H-3.5);
-    doc.text(`Page ${pg} of ${totalPages}`, W-M, H-3.5, {align:'right'});
+    // Footer strip
+    rect(0,H-8,W,8,...SL_DARK);
+    // Gold accent line above footer
+    rect(0,H-9,W,1,...SL_GOLD);
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...SL_GOLD);
+    doc.text('SKINNY LOUIE', M+1, H-3.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(180,175,165);
+    doc.text('Operations Dashboard  ·  Confidential — Internal Use Only', W/2, H-3.5, {align:'center'});
+    doc.text(`Page ${pg} of ${totalPages}`, W-M-1, H-3.5, {align:'right'});
   }
 
   // ── Save
