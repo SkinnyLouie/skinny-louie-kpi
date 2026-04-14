@@ -392,8 +392,8 @@ button{font-family:inherit;cursor:pointer;}
 ══════════════════════════════════════ */
 #pg-home{min-height:calc(100vh - 62px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:var(--bg);}
 .home-hero{text-align:center;margin-bottom:48px;}
-.home-hero h1{font-family:'Ultra',serif;font-size:38px;font-weight:400;letter-spacing:-.5px;color:#212320;margin-bottom:8px;}
-.home-hero p{font-size:15px;color:var(--muted);}
+.home-hero h1{font-family:'Oswald',sans-serif;font-size:56px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#7e2023;margin-bottom:10px;line-height:1.05;}
+.home-hero p{font-size:15px;color:var(--muted);letter-spacing:.3px;}
 .home-tagline{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:3px;color:var(--accent);margin-bottom:10px;}
 .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;width:100%;}
 .hcard{background:var(--surf);border-radius:20px;padding:40px 32px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s;box-shadow:0 4px 20px rgba(33,35,32,.07);position:relative;overflow:hidden;}
@@ -1010,14 +1010,14 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hcard.c5::before{ background:linear-gradient(90deg,#2d5a3d,#4a9a68); }
 .hcard.c5 .hcard-tag { color:#2d5a3d; }
 .hcard.c5:hover { border-color:#2d5a3d; }
-/* DM Report Card home card */
-.hcard.c6        { background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 100%); border:2px solid #1e3a5f; cursor:pointer; }
-.hcard.c6::before{ background:linear-gradient(90deg,#c4a035,#f0cc60); }
-.hcard.c6:hover  { border-color:#c4a035; transform:translateY(-5px); box-shadow:0 16px 40px rgba(30,58,95,.3); }
-.hcard.c6 .hcard-title{ color:#fff; }
-.hcard.c6 .hcard-desc { color:rgba(255,255,255,.75); }
-.hcard.c6 .hcard-tag  { color:#f0cc60; font-size:12px; }
-.hcard.c6 .hcard-icon { filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+/* DM Performance Scorecard home card */
+.hcard.c6        { background:linear-gradient(135deg,#f5d0bf 0%,#fce9df 100%); border:2px solid rgba(126,32,35,.2); cursor:pointer; }
+.hcard.c6::before{ background:linear-gradient(90deg,#7e2023,#c4a035); }
+.hcard.c6:hover  { border-color:rgba(126,32,35,.45); transform:translateY(-5px); box-shadow:0 16px 40px rgba(126,32,35,.18); }
+.hcard.c6 .hcard-title{ color:#7e2023; }
+.hcard.c6 .hcard-desc { color:#5a3530; }
+.hcard.c6 .hcard-tag  { color:#7e2023; font-size:12px; }
+.hcard.c6 .hcard-icon { filter:drop-shadow(0 2px 6px rgba(126,32,35,.2)); }
 .hcard.c7        { cursor:pointer; }
 .hcard.c7::before{ background:linear-gradient(90deg,#b06020,#e07830); }
 .hcard.c7:hover  { border-color:#b06020; transform:translateY(-5px); box-shadow:0 16px 40px rgba(176,96,32,.2); }
@@ -1027,7 +1027,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hcard.c8:hover  { transform:none; box-shadow:none; border-color:var(--brd); }
 .hcard.c8 .hcard-tag { color:#5a3a7e; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
-.dm-rpt-chip { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:rgba(255,255,255,.9); }
+.dm-rpt-chip { background:rgba(126,32,35,.1); border:1px solid rgba(126,32,35,.2); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:#7e2023; }
 .ask-input-wrap { display:flex; gap:8px; margin-top:12px; }
 .ask-input      { flex:1; border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:14px; font-family:inherit; background:#fff; color:var(--text); outline:none; }
 .ask-input:focus { border-color:#4a9a68; box-shadow:0 0 0 3px rgba(74,154,104,.12); }
@@ -1069,7 +1069,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
   /* Home hero */
   .home-hero{ margin-bottom:32px; }
-  .home-hero h1{ font-size:28px; }
+  .home-hero h1{ font-size:40px; letter-spacing:3px; }
   .home-hero p{ font-size:13px; }
 
   /* Home cards */
@@ -1114,7 +1114,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   /* Home page */
   #pg-home{ padding:20px 14px; }
   .home-hero{ margin-bottom:22px; }
-  .home-hero h1{ font-size:22px; letter-spacing:-.3px; }
+  .home-hero h1{ font-size:30px; letter-spacing:2px; }
   .home-hero p{ font-size:12px; }
   .home-grid{ gap:12px; }
   .hcard{ padding:20px 16px; border-radius:14px; }
@@ -1280,8 +1280,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 <!-- ═══ HOME PAGE ═══ -->
 <div id="pg-home">
   <div class="home-hero">
-    <h1>Louie's <span style="color:var(--accent);">Performance Hub</span></h1>
-    <p>Track performance across all Skinny Louie locations</p>
+    <h1>LOUIE'S HOUSE</h1>
+    <p>Better data. Better decisions. Better stores.</p>
   </div>
   <div class="home-grid">
     <div class="hcard c1" onclick="goKPI()">
@@ -1332,7 +1332,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <div class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">📋</span>
       <div style="flex:1;">
-        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">DM Monthly Report Card</div>
+        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">DM Performance Scorecard</div>
         <div class="hcard-desc">One click → professional PDF with all 19 KPIs. Food cost, labor, prime cost, avg check, Single/Double/Triple split, top items, break-even, anomalies, and wins &amp; concerns — auto-generated for your location.</div>
         <div class="dm-rpt-meta">
           <span class="dm-rpt-chip">📊 19 Metrics</span>
@@ -1343,8 +1343,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:center;">
-        <div style="background:linear-gradient(135deg,#c4a035,#f0cc60);color:#1e3a5f;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;box-shadow:0 4px 16px rgba(196,160,53,.4);">Generate PDF →</div>
-        <div style="color:rgba(255,255,255,.5);font-size:10px;margin-top:8px;">Requires data imported</div>
+        <div style="background:linear-gradient(135deg,#7e2023,#b03030);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;box-shadow:0 4px 16px rgba(126,32,35,.3);">Generate PDF →</div>
+        <div style="color:rgba(126,32,35,.55);font-size:10px;margin-top:8px;">Requires data imported</div>
       </div>
     </div>
     <div class="hcard c5" style="grid-column:1/-1;text-align:left;">
@@ -1398,14 +1398,34 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
           </div>
           <button class="btn btn-orange edit-only" onclick="openDataModal()">+ Add / Edit Data</button>
           <button class="btn-tgt edit-only" onclick="openTargetsModal()" id="btn-tgts" title="Set monthly KPI targets for the selected store">🎯 Set Targets</button>
-          <button class="btn-tgt" onclick="openReportModal()" id="btn-rpt" title="Generate monthly PDF report" style="border-color:#1e3a5f;color:#1e3a5f;">📄 Monthly Report</button>
-          <button class="btn-tgt" id="btn-leaderboard" onclick="toggleKpiLeaderboard()" style="border-color:#6d28d9;color:#6d28d9;">🏆 Leaderboard</button>
+          <button class="btn-tgt edit-only" onclick="openReportModal()" id="btn-rpt" title="Generate monthly PDF report" style="border-color:#1e3a5f;color:#1e3a5f;">📄 Monthly Report</button>
+          <button class="btn-tgt edit-only" id="btn-leaderboard" onclick="toggleKpiLeaderboard()" style="border-color:#6d28d9;color:#6d28d9;">🏆 Leaderboard</button>
           <button class="btn-tgt edit-only" id="btn-alert-rules" onclick="openAlertRulesModal()" style="border-color:#b91c1c;color:#b91c1c;">🔔 Alert Rules</button>
         </div>
       </div>
       <div class="tscroll" id="tbl-wrap"></div>
     </div>
     <div id="kpi-leaderboard" style="display:none;margin-top:20px;"></div>
+  </div>
+</div>
+
+<!-- ═══ CUSTOM ALERT / CONFIRM MODALS ═══ -->
+<div id="sl-alert-modal" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:40px 44px;max-width:380px;width:88%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
+    <div id="sl-alert-icon" style="font-size:42px;margin-bottom:14px;line-height:1;"></div>
+    <div id="sl-alert-msg" style="font-size:15px;color:#212320;line-height:1.55;margin-bottom:28px;font-weight:500;font-family:inherit;"></div>
+    <button onclick="slAlertClose()" style="background:#7e2023;color:#fff;border:none;border-radius:10px;padding:12px 40px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;">OK</button>
+  </div>
+</div>
+
+<div id="sl-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:40px 44px;max-width:380px;width:88%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
+    <div id="sl-confirm-icon" style="font-size:38px;margin-bottom:14px;line-height:1;"></div>
+    <div id="sl-confirm-msg" style="font-size:15px;color:#212320;line-height:1.55;margin-bottom:28px;font-weight:500;font-family:inherit;"></div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button onclick="slConfirmCancel()" style="background:#f5f0e8;border:1.5px solid #ddd;color:#555;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button id="sl-confirm-ok-btn" onclick="slConfirmOk()" style="background:#7e2023;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Confirm</button>
+    </div>
   </div>
 </div>
 
@@ -1703,22 +1723,51 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   <div id="inv-pane-setup" class="inv-pane" style="display:none;">
     <div class="inv-setup-section">
       <h3>⚙️ Products &amp; Prices</h3>
-      <p style="font-size:13px;color:var(--muted);margin:0 0 16px 0;">Bajá el template con todos los productos, completá las columnas <strong>category</strong>, <strong>price_fl</strong> y <strong>price_ny</strong>, y subilo por ciudad. El historial de conteos no se ve afectado al actualizar.</p>
-      <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;">
-        <button onclick="invDownloadMasterTemplate()" style="background:rgba(45,106,138,.12);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download Master Template</button>
-        <span style="font-size:12px;color:var(--muted);">Columnas: item_name · category · price_fl · price_ny</span>
-      </div>
-      <div class="inv-price-upload">
-        <div class="inv-upload-row">
-          <span class="inv-upload-label">🌴 Florida</span>
-          <input type="file" id="inv-price-fl" accept=".xlsx,.xls,.csv" onchange="invUploadMaster('FL',this)">
-          <span id="inv-price-fl-status" style="font-size:12px;color:var(--muted);"></span>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 20px 0;">Download the template for each location, fill in <strong>category</strong> and <strong>price</strong>, then upload it. Count history is not affected when you update prices.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <!-- Florida Card -->
+        <div style="border:1.5px solid rgba(126,32,35,.15);border-radius:14px;padding:20px;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:18px;">🌴</span>
+            <span style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#212320;letter-spacing:.5px;text-transform:uppercase;">Florida</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <button onclick="invDownloadTemplate('FL')" style="background:rgba(45,106,138,.1);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download Template</button>
+            <span style="font-size:11px;color:var(--muted);align-self:center;">item_name · category · price_fl</span>
+          </div>
+          <div style="background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:12px;min-height:36px;display:flex;align-items:center;gap:6px;">
+            <span id="inv-price-fl-filename" style="flex:1;">No file uploaded</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="document.getElementById('inv-price-fl').click()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬆ Upload File</button>
+            <button id="inv-price-fl-del" onclick="invDeletePrices('FL')" style="display:none;background:rgba(185,28,28,.1);border:1px solid rgba(185,28,28,.3);color:#b91c1c;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;">🗑 Delete</button>
+          </div>
+          <input type="file" id="inv-price-fl" accept=".xlsx,.xls,.csv" style="display:none;" onchange="invUploadMaster('FL',this)">
+          <div id="inv-price-fl-status" style="font-size:12px;margin-top:10px;"></div>
         </div>
-        <div class="inv-upload-row">
-          <span class="inv-upload-label">🗽 New York</span>
-          <input type="file" id="inv-price-ny" accept=".xlsx,.xls,.csv" onchange="invUploadMaster('NY',this)">
-          <span id="inv-price-ny-status" style="font-size:12px;color:var(--muted);"></span>
+
+        <!-- New York Card -->
+        <div style="border:1.5px solid rgba(126,32,35,.15);border-radius:14px;padding:20px;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:18px;">🗽</span>
+            <span style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#212320;letter-spacing:.5px;text-transform:uppercase;">New York</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <button onclick="invDownloadTemplate('NY')" style="background:rgba(45,106,138,.1);border:1px solid rgba(45,106,138,.3);color:#2d6a8a;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">⬇ Download Template</button>
+            <span style="font-size:11px;color:var(--muted);align-self:center;">item_name · category · price_ny</span>
+          </div>
+          <div style="background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:12px;min-height:36px;display:flex;align-items:center;gap:6px;">
+            <span id="inv-price-ny-filename" style="flex:1;">No file uploaded</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="document.getElementById('inv-price-ny').click()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">⬆ Upload File</button>
+            <button id="inv-price-ny-del" onclick="invDeletePrices('NY')" style="display:none;background:rgba(185,28,28,.1);border:1px solid rgba(185,28,28,.3);color:#b91c1c;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;">🗑 Delete</button>
+          </div>
+          <input type="file" id="inv-price-ny" accept=".xlsx,.xls,.csv" style="display:none;" onchange="invUploadMaster('NY',this)">
+          <div id="inv-price-ny-status" style="font-size:12px;margin-top:10px;"></div>
         </div>
+
       </div>
     </div>
   </div>
@@ -1726,6 +1775,55 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
 
 <script>
+// ══════════════════════════════════════════════════
+//  SUPABASE — Auth & Cloud Sync
+// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+//  CUSTOM ALERT / CONFIRM MODALS
+// ══════════════════════════════════════════════════
+var _slConfirmCb = null;
+
+function slAlert(msg, type){
+  var icons = {success:'✅', error:'❌', warning:'⚠️', info:'ℹ️'};
+  var el = document.getElementById('sl-alert-modal');
+  var iconEl = document.getElementById('sl-alert-icon');
+  var msgEl  = document.getElementById('sl-alert-msg');
+  if(!el){ alert(msg); return; }
+  if(iconEl) iconEl.textContent = icons[type||'info']||'';
+  if(msgEl)  msgEl.textContent  = msg;
+  el.style.display = 'flex';
+}
+function slAlertClose(){
+  var el = document.getElementById('sl-alert-modal');
+  if(el) el.style.display = 'none';
+}
+
+function slConfirm(msg, onOk, opts){
+  var icon = (opts && opts.icon) || '🗑️';
+  var okLabel = (opts && opts.okLabel) || 'Confirm';
+  var el    = document.getElementById('sl-confirm-modal');
+  var iconEl = document.getElementById('sl-confirm-icon');
+  var msgEl = document.getElementById('sl-confirm-msg');
+  var okBtn = document.getElementById('sl-confirm-ok-btn');
+  if(!el){ if(confirm(msg)) onOk && onOk(); return; }
+  if(iconEl) iconEl.textContent = icon;
+  if(msgEl)  msgEl.textContent  = msg;
+  if(okBtn)  okBtn.textContent  = okLabel;
+  _slConfirmCb = onOk || null;
+  el.style.display = 'flex';
+}
+function slConfirmOk(){
+  var el = document.getElementById('sl-confirm-modal');
+  if(el) el.style.display = 'none';
+  var cb = _slConfirmCb; _slConfirmCb = null;
+  if(cb) cb();
+}
+function slConfirmCancel(){
+  var el = document.getElementById('sl-confirm-modal');
+  if(el) el.style.display = 'none';
+  _slConfirmCb = null;
+}
+
 // ══════════════════════════════════════════════════
 //  SUPABASE — Auth & Cloud Sync
 // ══════════════════════════════════════════════════
@@ -2607,7 +2705,7 @@ function invUpdateTotals(){
 function invSaveCount(){
   var store = document.getElementById('inv-store-sel')&&document.getElementById('inv-store-sel').value;
   var date = document.getElementById('inv-date')&&document.getElementById('inv-date').value;
-  if(!store||!date){ alert('Please select a store and date.'); return; }
+  if(!store||!date){ slAlert('Please select a store and date.', 'warning'); return; }
   var items = invGetItems();
   var prices = invGetPrices();
   var cityPrices = prices[INV.city] || {};
@@ -2638,7 +2736,7 @@ function invSaveCount(){
   var all = invGetCounts();
   all.push(record);
   invSaveCounts(all);
-  alert('✅ Inventory count saved for '+store+' on '+date);
+  slAlert('Inventory count saved for '+store+' on '+date, 'success');
 }
 
 function invRenderHistory(){
@@ -2708,9 +2806,10 @@ function invToggleHD(id){
 }
 
 function invDeleteCount(id){
-  if(!confirm('Delete this inventory count?')) return;
-  invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
-  invRenderHistory();
+  slConfirm('Delete this inventory count? This cannot be undone.', function(){
+    invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
+    invRenderHistory();
+  }, {icon:'🗑️', okLabel:'Delete'});
 }
 
 function invAnalyticsUpdateStores(){
@@ -2818,6 +2917,7 @@ function invRenderAnalytics(){
 function invRenderSetup(){
   invRenderItemsList();
   invRenderPriceTable();
+  invRefreshSetupStatus();
 }
 
 function invRenderItemsList(){
@@ -2845,9 +2945,9 @@ function invAddItem(){
   var catEl = document.getElementById('inv-new-cat');
   var name = nameEl ? nameEl.value.trim() : '';
   var cat = catEl ? catEl.value : 'food';
-  if(!name){ alert('Please enter an item name.'); return; }
+  if(!name){ slAlert('Please enter an item name.', 'warning'); return; }
   var items = invGetItems();
-  if(items.filter(function(i){ return i.name.toLowerCase()===name.toLowerCase(); }).length){ alert('Item already exists.'); return; }
+  if(items.filter(function(i){ return i.name.toLowerCase()===name.toLowerCase(); }).length){ slAlert('An item with this name already exists.', 'warning'); return; }
   items.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2), name:name, category:cat });
   invSaveItems(items);
   if(nameEl) nameEl.value='';
@@ -2856,10 +2956,11 @@ function invAddItem(){
 }
 
 function invDeleteItem(id){
-  if(!confirm('Remove this item from the product list?')) return;
-  invSaveItems(invGetItems().filter(function(i){ return i.id!==id; }));
-  invRenderItemsList();
-  invRenderPriceTable();
+  slConfirm('Remove this item from the product list?', function(){
+    invSaveItems(invGetItems().filter(function(i){ return i.id!==id; }));
+    invRenderItemsList();
+    invRenderPriceTable();
+  }, {icon:'🗑️', okLabel:'Remove'});
 }
 
 function _invXlsxDownload(filename, wb){
@@ -2873,38 +2974,44 @@ function _invXlsxDownload(filename, wb){
     setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
     return true;
   }catch(e){
-    alert('Error al generar el archivo: '+e.message);
+    slAlert('Error generating file: '+e.message, 'error');
     return false;
   }
 }
 
-function invDownloadMasterTemplate(){
+function invDownloadTemplate(city){
   try{
     var items = invGetItems();
     var prices = invGetPrices();
-    var flPrices = prices['FL']||{};
-    var nyPrices = prices['NY']||{};
-    var ws_data = [['item_name','category','price_fl','price_ny']];
+    var cityPrices = prices[city]||{};
+    var priceCol = city==='FL'?'price_fl':'price_ny';
+    var ws_data = [['item_name','category',priceCol]];
     items.forEach(function(item){
       ws_data.push([
         item.name,
         item.category||'food',
-        flPrices[item.id]!==undefined ? flPrices[item.id] : '',
-        nyPrices[item.id]!==undefined ? nyPrices[item.id] : ''
+        cityPrices[item.id]!==undefined ? cityPrices[item.id] : ''
       ]);
     });
     var wb = XLSX.utils.book_new();
     var ws = XLSX.utils.aoa_to_sheet(ws_data);
-    ws['!cols'] = [{wch:52},{wch:12},{wch:12},{wch:12}];
-    XLSX.utils.book_append_sheet(wb, ws, 'Products & Prices');
-    _invXlsxDownload('skinny_louie_inventory_template.xlsx', wb);
-  }catch(e){ alert('Error al generar el template: '+e.message); }
+    ws['!cols'] = [{wch:52},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, city==='FL'?'Florida':'New York');
+    _invXlsxDownload('skinny_louie_template_'+city.toLowerCase()+'.xlsx', wb);
+  }catch(e){ slAlert('Error generating template: '+e.message, 'error'); }
 }
+// Legacy alias
+function invDownloadMasterTemplate(){ invDownloadTemplate('FL'); }
 
 function invUploadMaster(city, input){
   var file = input.files[0];
   if(!file) return;
-  var statusEl = document.getElementById('inv-price-'+city.toLowerCase()+'-status');
+  var c = city.toLowerCase();
+  var statusEl  = document.getElementById('inv-price-'+c+'-status');
+  var filenameEl = document.getElementById('inv-price-'+c+'-filename');
+  var delBtn    = document.getElementById('inv-price-'+c+'-del');
+  // Show filename immediately
+  if(filenameEl){ filenameEl.textContent = file.name; filenameEl.style.color='#212320'; }
   var reader = new FileReader();
   reader.onload = function(e){
     try{
@@ -2918,7 +3025,7 @@ function invUploadMaster(city, input){
       var prices = invGetPrices();
       if(!prices['FL']) prices['FL']={};
       if(!prices['NY']) prices['NY']={};
-      var matched=0, added=0;
+      var added=0;
       rows.forEach(function(row){
         var name = (row['item_name']||row['Item Name']||row['name']||'').toString().trim();
         var cat  = (row['category']||row['Category']||'food').toString().trim().toLowerCase();
@@ -2933,26 +3040,68 @@ function invUploadMaster(city, input){
         newItems.push({id:itemId, name:name, category:cat, unit:'Case'});
         if(!isNaN(pfl) && (city==='FL'||row['price_fl']!==undefined)) prices['FL'][itemId]=pfl;
         if(!isNaN(pny) && (city==='NY'||row['price_ny']!==undefined)) prices['NY'][itemId]=pny;
-        matched++;
       });
       if(newItems.length){
         invSaveItems(newItems);
         invSavePrices(prices);
-        var msg = '✅ '+newItems.length+' productos';
-        if(added) msg += ' ('+added+' nuevos)';
-        var cityPrice = city==='FL'?prices['FL']:prices['NY'];
+        var cityPrice = prices[city]||{};
         var priceCount = Object.keys(cityPrice).length;
-        if(priceCount) msg += ' · '+priceCount+' precios '+city;
-        if(statusEl) statusEl.textContent = msg;
+        var msg = '<span style="color:#22a060;font-weight:700;">✅ '+newItems.length+' products loaded';
+        if(added) msg += ' ('+added+' new)';
+        if(priceCount) msg += ' · '+priceCount+' prices set';
+        msg += '</span>';
+        if(statusEl) statusEl.innerHTML = msg;
+        if(delBtn) delBtn.style.display='inline-block';
         invRenderPriceTable();
       } else {
-        if(statusEl) statusEl.textContent = '⚠️ No se encontraron productos en el archivo';
+        if(statusEl) statusEl.innerHTML = '<span style="color:#b91c1c;">⚠️ No products found in file</span>';
+        if(filenameEl){ filenameEl.textContent='No file uploaded'; filenameEl.style.color=''; }
       }
+      // Reset input so the same file can be re-uploaded
+      input.value='';
     }catch(err){
-      if(statusEl) statusEl.textContent = '❌ Error: '+err.message;
+      if(statusEl) statusEl.innerHTML = '<span style="color:#b91c1c;">❌ Error: '+err.message+'</span>';
+      input.value='';
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function invDeletePrices(city){
+  var label = city==='FL' ? 'Florida' : 'New York';
+  slConfirm('Delete all '+label+' price data? The product list will be kept.', function(){
+    var prices = invGetPrices();
+    prices[city] = {};
+    invSavePrices(prices);
+    var c = city.toLowerCase();
+    var statusEl  = document.getElementById('inv-price-'+c+'-status');
+    var filenameEl = document.getElementById('inv-price-'+c+'-filename');
+    var delBtn    = document.getElementById('inv-price-'+c+'-del');
+    if(filenameEl){ filenameEl.textContent='No file uploaded'; filenameEl.style.color=''; }
+    if(statusEl) statusEl.innerHTML='';
+    if(delBtn) delBtn.style.display='none';
+    invRenderPriceTable();
+  }, {icon:'🗑️', okLabel:'Delete Prices'});
+}
+
+function invRefreshSetupStatus(){
+  var prices = invGetPrices();
+  ['FL','NY'].forEach(function(city){
+    var c = city.toLowerCase();
+    var delBtn = document.getElementById('inv-price-'+c+'-del');
+    var filenameEl = document.getElementById('inv-price-'+c+'-filename');
+    var statusEl = document.getElementById('inv-price-'+c+'-status');
+    var cityPrice = prices[city]||{};
+    var count = Object.keys(cityPrice).length;
+    if(count>0){
+      if(delBtn) delBtn.style.display='inline-block';
+      if(filenameEl && filenameEl.textContent==='No file uploaded'){
+        filenameEl.textContent = count+' prices loaded';
+        filenameEl.style.color='#212320';
+      }
+      if(statusEl && !statusEl.innerHTML) statusEl.innerHTML='<span style="color:#22a060;font-weight:700;">✅ '+count+' prices active</span>';
+    }
+  });
 }
 
 function invRenderPriceTable(){
@@ -3040,7 +3189,7 @@ function exportSnapshot(){
     setTimeout(()=>URL.revokeObjectURL(url), 3000);
     if(btn){ btn.textContent='✓ Done!'; setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; },2000); }
   } catch(e){
-    alert('Export error: '+e.message);
+    slAlert('Export error: '+e.message, 'error');
     if(btn){ btn.textContent=orig; btn.disabled=false; }
   }
 }
@@ -3715,8 +3864,8 @@ function rcUpdateMonths(){
 function rcGenerate(){
   const loc=document.getElementById('rc-store').value;
   const month=parseInt(document.getElementById('rc-month').value);
-  if(!loc){alert('Please select a store.');return;}
-  if(isNaN(month)||month<0){alert('No data available for this selection.');return;}
+  if(!loc){slAlert('Please select a store.','warning');return;}
+  if(isNaN(month)||month<0){slAlert('No data available for this selection.','warning');return;}
   closeRCPicker();
   _runDMReportCard(_rcState, loc, _rcYear, month);
 }
@@ -3727,11 +3876,11 @@ function generateDMReportCard(){ openRCPicker(); }
 
 function _runDMReportCard(rcState, rcLoc, rcYear, rcMonth){
   try{ _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth); }
-  catch(e){ alert('Error generando el PDF: '+e.message+'\n\n'+e.stack); console.error(e); }
+  catch(e){ slAlert('Error generating PDF: '+e.message,'error'); console.error(e); }
 }
 function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   if(typeof window.jspdf==='undefined'&&typeof window.jsPDF==='undefined'){
-    alert('PDF library still loading. Please try again in a moment.');
+    slAlert('PDF library still loading. Please try again in a moment.','warning');
     return;
   }
   const { jsPDF } = window.jspdf || window;
@@ -3892,106 +4041,97 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   const fmt$=v=>v!=null?'$'+Math.round(Math.abs(v)).toLocaleString('en-US'):'—';
   const fmtK=v=>v!=null?'$'+(Math.abs(v)/1000).toFixed(1)+'K':'—';
 
-  // Page tracker — add branded header/footer on each new page
-  const addPageChrome=()=>{
-    // Thin top brand bar
-    rect(0,0,W,3,...SL_RED);
-    rect(3,0,W-3,3,...SL_DARK);
-    // Footer strip
-    rect(0,H-8,W,8,...SL_DARK);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(...SL_GOLD);
-    doc.text('SKINNY LOUIE  ·  Confidential — Internal Use Only', W/2, H-3, {align:'center'});
-    doc.text(`${loc}  ·  ${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, M+1, H-3);
-    const pg=doc.internal.getCurrentPageInfo().pageNumber;
-    const total=doc.internal.getNumberOfPages();
-    doc.text(`Page ${pg} of ${total}`, W-M-1, H-3, {align:'right'});
-  };
+  // No page breaks — everything fits on 1 page
   let y=0;
-  const newPage=()=>{ doc.addPage(); addPageChrome(); y=8; };
-  const checkPage=(needed)=>{ if(y+needed>H-14) newPage(); };
+  const checkPage=()=>{}; // disabled — single page layout
 
   // ═══════════════════════════════════════════════
-  // HEADER
+  // HEADER — Skinny Louie brand (cream + red + gold)
   // ═══════════════════════════════════════════════
-  // Main background
-  rect(0,0,W,32,...SL_DARK);
-  // Red accent left stripe
-  rect(0,0,5,32,...SL_RED);
-  // Decorative gold bottom line
-  rect(0,30,W,2,...SL_GOLD);
-  // Wordmark
-  doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(255,255,255);
-  doc.text('SKINNY LOUIE', M+5, 13);
-  // Burger icon area (text-based)
-  doc.setFontSize(8); doc.setTextColor(...SL_GOLD);
-  doc.text('🍔', M+5, 20);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...SL_GOLD);
-  doc.text('DM MONTHLY REPORT CARD', M+12, 20);
-  // Right side: location + date
-  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
-  doc.text(loc, W-M, 12, {align:'right'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...SL_GOLD);
-  doc.text(`${curMonth>=0?MFULL[curMonth]:''} ${rcYear}`, W-M, 19, {align:'right'});
-  doc.setFontSize(6.5); doc.setTextColor(160,155,140);
-  doc.text(`Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`, W-M, 25, {align:'right'});
-  // State badge
-  rrect(M+5,22,14,5,1,...SL_RED);
-  doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255);
-  doc.text(rcState==='FL'?'FLORIDA':'NEW YORK', M+12, 25.8, {align:'center'});
-  y=38;
+  const HDR=26;
+  // White header background
+  rect(0,0,W,HDR, 255,255,255);
+  // Top red stripe (letterhead)
+  rect(0,0,W,3,...SL_RED);
+  // Red left accent bar
+  rect(0,3,5.5,HDR-3,...SL_RED);
+  // Gold bottom accent line
+  rect(0,HDR-1.5,W,1.5,...SL_GOLD);
+  // Thin vertical divider before right side
+  doc.setDrawColor(...SL_BORD); doc.setLineWidth(.3); doc.line(W-58,4,W-58,HDR-2);
+  // Left: Brand wordmark (large bold red — Skinny Louie style)
+  doc.setFont('helvetica','bold'); doc.setFontSize(21); doc.setTextColor(...SL_RED);
+  doc.text('SKINNY LOUIE', M+6, 14);
+  // Subtitle in gold
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...SL_GOLD);
+  doc.text('DM MONTHLY REPORT CARD', M+6, 20);
+  // State pill
+  rrect(M+6,21.5,rcState==='FL'?17:20,4,1.5,...SL_RED);
+  doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(255,255,255);
+  doc.text(rcState==='FL'?'FLORIDA':'NEW YORK', M+14.5, 24.5, {align:'center'});
+  // Right: location name (large, red)
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...SL_RED);
+  doc.text(loc, W-M, 13, {align:'right'});
+  // Month / year (dark)
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...SL_DARK);
+  doc.text(curMonth>=0?`${MFULL[curMonth]} ${rcYear}`:'', W-M, 20, {align:'right'});
+  // Generated date (muted)
+  doc.setFontSize(6); doc.setTextColor(...SL_MUTED);
+  doc.text(`Generated ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`, W-M, 24.5, {align:'right'});
+  y=HDR+3;
 
   // ═══════════════════════════════════════════════
   // TIER 5 — HEALTH SCORE + UBER + YTD vs PY  (top strip)
   // ═══════════════════════════════════════════════
   const hsVal=hs?Math.round(hs.total):null;
   const hsOk=hsVal!=null&&hsVal>=75;
-  const stripH=18;
+  const stripH=14;
   // Health Score box
   const hsCol=hsOk?SL_GREEN:SL_WARN;
   rect(M,y, 58,stripH, ...SL_CREAM);
   border(M,y,58,stripH, ...SL_BORD);
-  rect(M,y,58,3,...(hsOk?[22,163,74]:SL_RED));
-  txt('HEALTH SCORE', M+3, y+8, 6.5, SL_MUTED, 'bold');
-  txt(hsVal!=null?`${hsVal}/100`:'No data', M+3, y+15, 13, hsCol, 'bold');
-  const bx=M+33, bw=20, bh=3;
-  rect(bx,y+9,bw,bh, 220,215,205);
-  if(hsVal!=null) rect(bx,y+9,bw*(Math.min(hsVal,100)/100),bh, ...(hsOk?[22,163,74]:SL_RED));
+  rect(M,y,58,2.5,...(hsOk?[22,163,74]:SL_RED));
+  txt('HEALTH SCORE', M+3, y+6.5, 6.5, SL_MUTED, 'bold');
+  txt(hsVal!=null?`${hsVal}/100`:'No data', M+3, y+12.5, 11, hsCol, 'bold');
+  const bx=M+33, bw=20, bh=2.5;
+  rect(bx,y+7.5,bw,bh, 220,215,205);
+  if(hsVal!=null) rect(bx,y+7.5,bw*(Math.min(hsVal,100)/100),bh, ...(hsOk?[22,163,74]:SL_RED));
   // Uber Rating box
   const ubX=M+62;
   rect(ubX,y,38,stripH, ...SL_CREAM);
   border(ubX,y,38,stripH, ...SL_BORD);
-  rect(ubX,y,38,3,...SL_GOLD);
-  txt('UBER RATING', ubX+3, y+8, 6.5, SL_MUTED, 'bold');
-  const uberCol=uberVal!=null&&uberVal>=4.5?SL_GREEN:uberVal!=null&&uberVal>=4.0?[133,77,14]:SL_WARN;
-  txt(uberVal!=null?uberVal.toFixed(1):'—', ubX+3, y+15, 13, uberCol, 'bold');
-  if(uberVal!=null){ txt(uberVal>=4.5?'Excellent':uberVal>=4.0?'Good':'Needs work', ubX+18, y+15, 6.5, uberCol); }
+  rect(ubX,y,38,2.5,...SL_GOLD);
+  txt('UBER RATING', ubX+3, y+6.5, 6.5, SL_MUTED, 'bold');
+  const uberCol=uberVal==null?SL_MUTED:uberVal>=4.5?SL_GREEN:uberVal>=4.0?[133,77,14]:SL_WARN;
+  txt(uberVal!=null?uberVal.toFixed(1):'N/A', ubX+3, y+12.5, 11, uberCol, 'bold');
+  if(uberVal!=null){ txt(uberVal>=4.5?'Excellent':uberVal>=4.0?'Good':'Needs work', ubX+18, y+12.5, 6, uberCol); }
   // YTD vs PY box
   const ytdX=M+104;
   const ytdW=W-M-ytdX;
   rect(ytdX,y,ytdW,stripH, ...SL_CREAM);
   border(ytdX,y,ytdW,stripH, ...SL_BORD);
-  rect(ytdX,y,ytdW,3,...SL_DARK);
-  txt('YTD NET SALES vs PRIOR YEAR', ytdX+3, y+8, 6.5, SL_MUTED, 'bold');
+  rect(ytdX,y,ytdW,2.5,...SL_GOLD);
+  txt('YTD NET SALES vs PRIOR YEAR', ytdX+3, y+6.5, 6.5, SL_MUTED, 'bold');
   if(ytdVsPY){
     const ytdOk=ytdVsPY.delta>=0;
-    txt(fmtK(ytdVsPY.cur), ytdX+3, y+15, 12, SL_DARK, 'bold');
-    txt((ytdVsPY.delta>=0?'+ ':'- ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+(Number(rcYear)-1), W-M-2, y+15, 6.5, ytdOk?SL_GREEN:SL_WARN, 'bold', 'right');
+    txt(fmtK(ytdVsPY.cur), ytdX+3, y+12.5, 11, SL_DARK, 'bold');
+    txt((ytdVsPY.delta>=0?'+ ':'- ')+Math.abs(ytdVsPY.delta).toFixed(1)+'% vs '+(Number(rcYear)-1), W-M-2, y+12.5, 6.5, ytdOk?SL_GREEN:SL_WARN, 'bold', 'right');
   } else {
-    txt('No prior year data', ytdX+3, y+12, 8, [180,180,180]);
+    txt('No prior year data', ytdX+3, y+9.5, 7.5, [180,180,180]);
   }
-  y+=stripH+6;
+  y+=stripH+4;
 
   // ═══════════════════════════════════════════════
   // TIER 1+2 — KPI TABLE (6 metrics)
   // ═══════════════════════════════════════════════
   sectionTitle('KEY PERFORMANCE INDICATORS', y);
-  y+=8;
+  y+=6;
   const colW=W-M*2;
   const cols=[M, M+44, M+80, M+112, M+143, M+172];
-  // Table header row
-  rect(M,y,colW,7,...SL_DARK);
-  ['Metric','Actual','Target','MoM Chg','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+5, 6.5,[255,255,255],'bold'); });
-  y+=7;
+  // Table header row — red brand color
+  rect(M,y,colW,6,...SL_RED);
+  ['Metric','Actual','Target','MoM Chg','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+4.5, 6.5,[255,255,255],'bold'); });
+  y+=6;
   const kpiRows=[
     {label:'Food Cost %',     val:lastFP!=null?fmtP(lastFP):'n/a', tgt:`<= ${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true},
     {label:'Labor %',         val:lastLP!=null?fmtP(lastLP):'n/a', tgt:`<= ${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
@@ -4001,36 +4141,36 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     {label:'Net Margin %',    val:netMarginPct!=null?fmtP(netMarginPct):'n/a',    tgt:'>= 10%', mom:null, ok:netMarginPct!=null&&netMarginPct>=10, na:netMarginPct==null, lowerBetter:false},
   ];
   kpiRows.forEach((r,i)=>{
-    const rowY=y+i*7;
-    if(i%2===0) rect(M,rowY,colW,7,...SL_CREAM);
-    else rect(M,rowY,colW,7,252,250,248);
+    const rowY=y+i*6;
+    if(i%2===0) rect(M,rowY,colW,6,...SL_CREAM);
+    else rect(M,rowY,colW,6,252,250,248);
     // Left color indicator
-    rect(M,rowY,2,7,...(r.na?[200,200,200]:r.ok?[22,163,74]:SL_RED));
+    rect(M,rowY,2,6,...(r.na?[200,200,200]:r.ok?[22,163,74]:SL_RED));
     const vc=r.na?SL_MUTED:r.ok?SL_GREEN:SL_WARN;
     const momVal=r.mom!=null?(r.mom>=0?'+':'')+r.mom.toFixed(1)+'%':'n/a';
     const momOk=r.mom==null?null:(r.lowerBetter?r.mom<=0:r.mom>=0);
     const momCol=r.mom==null?SL_MUTED:momOk?SL_GREEN:SL_WARN;
     // trend bar
-    rect(cols[4],rowY+2,18,3, 220,215,205);
+    rect(cols[4],rowY+1.5,18,3, 220,215,205);
     const barVal=r.ok?85:r.na?0:35;
-    if(barVal>0) rect(cols[4],rowY+2,barVal/100*18,3, ...(r.ok?[22,163,74]:SL_RED));
-    txt(r.label,  cols[0]+3, rowY+5, 7.5, SL_DARK);
-    txt(r.val,    cols[1]+2, rowY+5, 7.5, vc, 'bold');
-    txt(r.tgt,    cols[2]+2, rowY+5, 7,   SL_MUTED);
-    txt(momVal,   cols[3]+2, rowY+5, 7,   momCol, r.mom!=null?'bold':'normal');
-    txt(r.na?'No data':r.ok?'ON TARGET':'OVER TARGET', cols[5]+2, rowY+5, 6.5, vc, 'bold');
+    if(barVal>0) rect(cols[4],rowY+1.5,barVal/100*18,3, ...(r.ok?[22,163,74]:SL_RED));
+    txt(r.label,  cols[0]+3, rowY+4.5, 7, SL_DARK);
+    txt(r.val,    cols[1]+2, rowY+4.5, 7, vc, 'bold');
+    txt(r.tgt,    cols[2]+2, rowY+4.5, 6.5, SL_MUTED);
+    txt(momVal,   cols[3]+2, rowY+4.5, 6.5, momCol, r.mom!=null?'bold':'normal');
+    txt(r.na?'No data':r.ok?'ON TARGET':'OVER TARGET', cols[5]+2, rowY+4.5, 6.5, vc, 'bold');
   });
-  y+=kpiRows.length*7+6;
-  hr(y,...SL_BORD); y+=5;
+  y+=kpiRows.length*6+4;
+  hr(y,...SL_BORD); y+=4;
 
   // ═══════════════════════════════════════════════
   // TIER 2 — SALES PERFORMANCE (4 cards in a row)
   // ═══════════════════════════════════════════════
   sectionTitle('SALES PERFORMANCE', y, latestSX?`${MSHORT[latestSX.month]} ${latestSX.year}`:'');
-  y+=8;
+  y+=7;
   // 5 equal cards: Net Sales, Avg Check, Total Orders, D&C%, Gross Profit
   const sc5w=Math.floor((W-M*2-8)/5); // 5 cards, 4 gaps of 2mm
-  const sc5h=20;
+  const sc5h=17;
   const fmtMoM=(v,lower)=>{ if(v==null) return ''; const ok=lower?v<=0:v>=0; return (ok?'+ ':'- ')+Math.abs(v).toFixed(1)+'% MoM'; };
   const fmtMoMCol=(v,lower)=>{ if(v==null) return SL_MUTED; return (lower?v<=0:v>=0)?SL_GREEN:SL_WARN; };
   const sc5Cards=[
@@ -4046,19 +4186,18 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     rect(x,y,sc5w,sc5h,...SL_CREAM);
     border(x,y,sc5w,sc5h,...SL_BORD);
     rect(x,y,sc5w,2.5,...topCol);
-    txt(s.label, x+3, y+9, 6.5, SL_MUTED);
-    txt(s.val,   x+3, y+15.5, 10, SL_DARK, 'bold');
+    txt(s.label, x+3, y+7, 6.5, SL_MUTED);
+    txt(s.val,   x+3, y+13, 9.5, SL_DARK, 'bold');
     if(s.sub){ txt(s.sub, x+3, y+sc5h-1, 6, s.subCol, 'bold'); }
   });
-  y+=sc5h+6;
-  hr(y,...SL_BORD); y+=5;
+  y+=sc5h+4;
+  hr(y,...SL_BORD); y+=4;
 
   // ═══════════════════════════════════════════════
   // TIER 3 — BURGER INTELLIGENCE
   // ═══════════════════════════════════════════════
-  checkPage(48);
   sectionTitle('BURGER INTELLIGENCE  ·  Single / Double / Triple', y, mixData?`Mix data: ${MSHORT[mixData.month]} ${mixData.year}`:'');
-  y+=8;
+  y+=7;
   if(mixData){
     const bColW=(W-M*2)/3-3;
     const pattyData=[
@@ -4066,65 +4205,64 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
       {label:'DOUBLE',   pct:mixData.dPct, qty:mixData.dQ, col:[185,28,28],  bg:[255,235,235], bc:[239,68,68]},
       {label:'TRIPLE',   pct:mixData.tPct, qty:mixData.tQ, col:[127,10,10],  bg:[255,220,220], bc:[200,30,30]},
     ];
-    const pattyH=22;
+    const pattyH=18;
     pattyData.forEach((p,i)=>{
       const px=M+i*(bColW+3);
       rect(px,y,bColW,pattyH, ...p.bg);
       doc.setDrawColor(...p.bc); doc.setLineWidth(.5); doc.rect(px,y,bColW,pattyH,'S');
       // Large % hero
-      txt(p.pct.toFixed(1)+'%', px+bColW/2, y+13, 22, p.col, 'bold', 'center');
-      txt(p.label, px+bColW/2, y+5, 7.5, p.col, 'bold', 'center');
-      txt(p.qty.toLocaleString()+' sold', px+bColW/2, y+pattyH-2, 6.5, [120,120,120], 'normal', 'center');
+      txt(p.pct.toFixed(1)+'%', px+bColW/2, y+11, 18, p.col, 'bold', 'center');
+      txt(p.label, px+bColW/2, y+4.5, 7, p.col, 'bold', 'center');
+      txt(p.qty.toLocaleString()+' sold', px+bColW/2, y+pattyH-1.5, 6, [120,120,120], 'normal', 'center');
       // bar
-      rect(px+3, y+15, bColW-6, 3, 220,220,220);
-      if(p.pct>0) rect(px+3, y+15, (bColW-6)*Math.min(p.pct/100,1), 3, ...p.col);
+      rect(px+3, y+13, bColW-6, 2.5, 220,220,220);
+      if(p.pct>0) rect(px+3, y+13, (bColW-6)*Math.min(p.pct/100,1), 2.5, ...p.col);
     });
     y+=pattyH+3;
     // Upsell rate call-out
     const upsellOk=mixData.upsellRate>=40;
-    rect(M,y, W-M*2, 8, upsellOk?240:255, upsellOk?253:241, upsellOk?244:242);
-    border(M,y,W-M*2,8, upsellOk?134:252, upsellOk?239:165, upsellOk?172:165);
-    txt('DOUBLE + TRIPLE UPSELL RATE', M+3, y+5.5, 7, [80,80,80], 'bold');
-    txt(mixData.upsellRate.toFixed(1)+'%', M+70, y+5.5, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
-    txt(upsellOk?'Strong upsell performance':'Push Double & Triple more aggressively', M+90, y+5.5, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
-    txt(`${(mixData.dQ+mixData.tQ).toLocaleString()} of ${mixData.total.toLocaleString()} orders`, W-M-2, y+5.5, 7, [120,120,120], 'normal', 'right');
-    y+=11;
+    rect(M,y, W-M*2, 7, upsellOk?240:255, upsellOk?253:241, upsellOk?244:242);
+    border(M,y,W-M*2,7, upsellOk?134:252, upsellOk?239:165, upsellOk?172:165);
+    txt('DOUBLE + TRIPLE UPSELL RATE', M+3, y+4.8, 7, [80,80,80], 'bold');
+    txt(mixData.upsellRate.toFixed(1)+'%', M+70, y+4.8, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
+    txt(upsellOk?'Strong upsell performance':'Push Double & Triple more aggressively', M+90, y+4.8, 7, upsellOk?[22,101,52]:[185,28,28], 'bold');
+    txt(`${(mixData.dQ+mixData.tQ).toLocaleString()} of ${mixData.total.toLocaleString()} orders`, W-M-2, y+4.8, 7, [120,120,120], 'normal', 'right');
+    y+=9;
     // Top 3 items
     if(mixData.top3.length){
-      txt('TOP ITEMS BY REVENUE', M, y+4, 7, SL_RED, 'bold');
-      if(mixData.topItemMoM!=null){ const c=mixData.topItemMoM>=0?[22,101,52]:[185,28,28]; txt(`Top item MoM: ${mixData.topItemMoM>=0?'+':''}${mixData.topItemMoM.toFixed(1)}%`, W-M, y+4, 7, c, 'bold', 'right'); }
-      y+=6;
+      txt('TOP ITEMS BY REVENUE', M, y+3.5, 7, SL_RED, 'bold');
+      if(mixData.topItemMoM!=null){ const c=mixData.topItemMoM>=0?[22,101,52]:[185,28,28]; txt(`Top item MoM: ${mixData.topItemMoM>=0?'+':''}${mixData.topItemMoM.toFixed(1)}%`, W-M, y+3.5, 7, c, 'bold', 'right'); }
+      y+=5;
       const itemW=(W-M*2)/3-3;
       mixData.top3.forEach((it,i)=>{
         const ix=M+i*(itemW+3);
-        rect(ix,y,itemW,14,...SL_CREAM);
-        border(ix,y,itemW,14, 220,215,200);
+        rect(ix,y,itemW,12,...SL_CREAM);
+        border(ix,y,itemW,12, 220,215,200);
         const lines=doc.splitTextToSize(it.name,itemW-5);
-        txt(lines[0], ix+3, y+5.5, 7.5, [30,20,15], 'bold');
-        txt(fmt$(it.net), ix+3, y+11, 8, [30,58,95], 'bold');
-        txt(`${it.qty.toLocaleString()} sold`, ix+itemW-3, y+11, 7, [120,120,120], 'normal', 'right');
+        txt(lines[0], ix+3, y+5, 7, [30,20,15], 'bold');
+        txt(fmt$(it.net), ix+3, y+10, 7.5, SL_DARK, 'bold');
+        txt(`${it.qty.toLocaleString()} sold`, ix+itemW-3, y+10, 6.5, SL_MUTED, 'normal', 'right');
         // rank badge
-        rect(ix+itemW-9,y+.5,8,6, 30,58,95);
-        txt(`#${i+1}`, ix+itemW-5, y+4.5, 6.5, [255,255,255], 'bold', 'center');
+        rect(ix+itemW-9,y+.5,8,5.5,...SL_RED);
+        txt(`#${i+1}`, ix+itemW-5, y+4.3, 6.5, [255,255,255], 'bold', 'center');
       });
-      y+=17;
+      y+=14;
     }
   } else {
-    rect(M,y,W-M*2,12, 248,245,238);
-    txt('No Product Mix data imported. Upload mix data to see burger intelligence.', M+4, y+7.5, 8, [150,150,150]);
-    y+=15;
+    rect(M,y,W-M*2,10, 248,245,238);
+    txt('No Product Mix data imported. Upload mix data to see burger intelligence.', M+4, y+6.5, 7.5, [150,150,150]);
+    y+=13;
   }
-  hr(y); y+=4;
+  hr(y); y+=3;
 
   // ═══════════════════════════════════════════════
   // TIER 4 — P&L SNAPSHOT
   // ═══════════════════════════════════════════════
-  checkPage(36);
   sectionTitle('P&L SNAPSHOT', y, latestPnL?`${MSHORT[latestPnL.month]} ${latestPnL.year}`:'');
-  y+=8;
+  y+=7;
   if(latestPnL){
     const p4=[M, M+48, M+96, M+144];
-    const p4w=44, p4h=18;
+    const p4w=44, p4h=15;
     const pnlCards=[
       {label:'Net Income',   val:fmt$(latestPnL.netIncome), sub:netMarginPct!=null?netMarginPct.toFixed(1)+'% margin':null, ok:latestPnL.netIncome>=0},
       {label:'Payroll $',    val:fmt$(payrollAbs), sub:latestPnL.netSales>0?((payrollAbs/latestPnL.netSales)*100).toFixed(1)+'% of NS':null, ok:lastLP!=null&&lastLP<=tgts.lp},
@@ -4133,75 +4271,73 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     ];
     pnlCards.forEach((c,i)=>{
       const x=p4[i];
-      const cardCol=c.ok===false?SL_WARN:c.ok===true?SL_GREEN:SL_DARK;
+      const cardCol=c.ok===false?SL_WARN:c.ok===true?SL_GREEN:SL_RED;
       rect(x,y,p4w,p4h,...SL_CREAM);
       border(x,y,p4w,p4h,...SL_BORD);
       rect(x,y,p4w,2.5,...cardCol);
-      txt(c.label,x+3,y+8,6.5,SL_MUTED);
-      txt(c.val,x+3,y+15,10,cardCol,'bold');
+      txt(c.label,x+3,y+6.5,6.5,SL_MUTED);
+      txt(c.val,x+3,y+12,9.5,cardCol,'bold');
       if(c.sub){ txt(c.sub,x+3,y+p4h-1,6.5,cardCol,'bold'); }
     });
-    y+=p4h+4;
+    y+=p4h+3;
     // Top anomaly callout
     if(topAnomaly){
       const sev={high:[220,38,38],med:[217,119,6],low:[202,138,4]};
       const sevBg={high:[255,235,235],med:[255,247,235],low:[255,252,235]};
       const col=sev[topAnomaly.severity]||sev.low;
       const bg=sevBg[topAnomaly.severity]||sevBg.low;
-      rect(M,y,W-M*2,9,...bg);
-      doc.setDrawColor(...col); doc.setLineWidth(.4); doc.rect(M,y,W-M*2,9,'S');
-      txt('! TOP EXPENSE ANOMALY:', M+3,y+6,7,[100,60,60],'bold');
-      txt(`${topAnomaly.label}  +${(topAnomaly.delta*100).toFixed(0)}% above 3-mo avg  (This month: ${fmt$(topAnomaly.current)}  vs avg: ${fmt$(topAnomaly.avg)})`, M+46,y+6,7,col,'bold');
-      if(anomalies.length>1) txt(`+${anomalies.length-1} more`,W-M-2,y+6,6.5,[120,120,120],'normal','right');
-      y+=12;
+      rect(M,y,W-M*2,7,...bg);
+      doc.setDrawColor(...col); doc.setLineWidth(.4); doc.rect(M,y,W-M*2,7,'S');
+      txt('! TOP EXPENSE ANOMALY:', M+3,y+4.8,7,[100,60,60],'bold');
+      txt(`${topAnomaly.label}  +${(topAnomaly.delta*100).toFixed(0)}% above 3-mo avg  (This month: ${fmt$(topAnomaly.current)}  vs avg: ${fmt$(topAnomaly.avg)})`, M+46,y+4.8,7,col,'bold');
+      if(anomalies.length>1) txt(`+${anomalies.length-1} more`,W-M-2,y+4.8,6.5,[120,120,120],'normal','right');
+      y+=9;
     } else if(pnlLocRecs.length>=3){
-      rect(M,y,W-M*2,7,240,253,244);
-      border(M,y,W-M*2,7,134,239,172);
-      txt('OK  No expense anomalies detected this month - all line items within normal range.', M+3,y+4.8,7.5,[22,101,52],'bold');
-      y+=10;
+      rect(M,y,W-M*2,6,240,253,244);
+      border(M,y,W-M*2,6,134,239,172);
+      txt('OK  No expense anomalies detected this month - all line items within normal range.', M+3,y+4.3,7,[22,101,52],'bold');
+      y+=8;
     }
   } else {
-    rect(M,y,W-M*2,10,248,245,238);
-    txt('No P&L data imported for this location.', M+4,y+6.5,8,[150,150,150]);
-    y+=13;
+    rect(M,y,W-M*2,9,248,245,238);
+    txt('No P&L data imported for this location.', M+4,y+6,7.5,[150,150,150]);
+    y+=12;
   }
-  hr(y); y+=4;
+  hr(y); y+=3;
 
   // ═══════════════════════════════════════════════
   // WINS & CONCERNS
   // ═══════════════════════════════════════════════
-  checkPage(36);
   const halfW=(W-M*2-6)/2;
   // Section headers
-  rect(M,y,halfW,6.5,...SL_GREEN);
-  txt('WINS THIS MONTH', M+3, y+4.8, 7.5, [255,255,255], 'bold');
-  rect(M+halfW+5,y,halfW+1,6.5,...SL_RED);
-  txt('CONCERNS / ACTION ITEMS', M+halfW+8, y+4.8, 7.5, [255,255,255], 'bold');
-  y+=6.5;
-  const itemH=9, minBoxH=14;
-  const wH=Math.max(top3wins.length*itemH+6, minBoxH);
-  const cH=Math.max(top3concerns.length*itemH+6, minBoxH);
+  rect(M,y,halfW,5,...SL_GREEN);
+  txt('WINS THIS MONTH', M+3, y+3.8, 7, [255,255,255], 'bold');
+  rect(M+halfW+5,y,halfW+1,5,...SL_RED);
+  txt('CONCERNS / ACTION ITEMS', M+halfW+8, y+3.8, 7, [255,255,255], 'bold');
+  y+=5;
+  const itemH=7, minBoxH=12;
+  const wH=Math.max(top3wins.length*itemH+5, minBoxH);
+  const cH=Math.max(top3concerns.length*itemH+5, minBoxH);
   const boxH=Math.max(wH,cH);
-  checkPage(boxH+4);
   rect(M,y,halfW,boxH,...SL_GREEN_LT); border(M,y,halfW,boxH,134,239,172);
   rect(M+halfW+5,y,halfW+1,boxH,...SL_RED_LT); border(M+halfW+5,y,halfW+1,boxH,220,100,100);
   if(top3wins.length){
     top3wins.forEach((w,i)=>{
-      rect(M,y+4+i*itemH,2,itemH-2,...SL_GREEN);
+      rect(M,y+3+i*itemH,2,itemH-1.5,...SL_GREEN);
       const lines=doc.splitTextToSize(w, halfW-10);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...SL_GREEN);
-      doc.text(lines, M+6, y+4+i*itemH+5.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...SL_GREEN);
+      doc.text(lines, M+6, y+3+i*itemH+4.5);
     });
-  } else { txt('No data yet.',M+4,y+9,8,SL_MUTED); }
+  } else { txt('No data yet.',M+4,y+8,7.5,SL_MUTED); }
   if(top3concerns.length){
     top3concerns.forEach((c,i)=>{
-      rect(M+halfW+5,y+4+i*itemH,2,itemH-2,...SL_RED);
+      rect(M+halfW+5,y+3+i*itemH,2,itemH-1.5,...SL_RED);
       const lines=doc.splitTextToSize(c, halfW-10);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...SL_WARN);
-      doc.text(lines, M+halfW+10, y+4+i*itemH+5.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...SL_WARN);
+      doc.text(lines, M+halfW+10, y+3+i*itemH+4.5);
     });
-  } else { txt('All metrics within targets.',M+halfW+8,y+9,8,SL_MUTED); }
-  y+=boxH+4;
+  } else { txt('All metrics within targets.',M+halfW+8,y+8,7.5,SL_MUTED); }
+  y+=boxH+3;
 
   // ═══════════════════════════════════════════════
   // FOOTER (stamp on all pages)
@@ -4209,15 +4345,21 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   const totalPages=doc.internal.getNumberOfPages();
   for(let pg=1;pg<=totalPages;pg++){
     doc.setPage(pg);
-    // Footer strip
-    rect(0,H-8,W,8,...SL_DARK);
+    // Footer — cream background, brand colors
+    rect(0,H-8,W,8,...SL_CREAM);
     // Gold accent line above footer
-    rect(0,H-9,W,1,...SL_GOLD);
-    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...SL_GOLD);
-    doc.text('SKINNY LOUIE', M+1, H-3.5);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(180,175,165);
-    doc.text('Operations Dashboard  ·  Confidential — Internal Use Only', W/2, H-3.5, {align:'center'});
-    doc.text(`Page ${pg} of ${totalPages}`, W-M-1, H-3.5, {align:'right'});
+    rect(0,H-8.5,W,.5,...SL_GOLD);
+    // Red bottom stripe
+    rect(0,H-1.5,W,1.5,...SL_RED);
+    // Brand name in red
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...SL_RED);
+    doc.text('SKINNY LOUIE', M+1, H-3.8);
+    // Center text in muted
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(...SL_MUTED);
+    doc.text('Operations Dashboard  ·  Confidential — Internal Use Only', W/2, H-3.8, {align:'center'});
+    // Page number in dark
+    doc.setTextColor(...SL_DARK);
+    doc.text(`Page ${pg} of ${totalPages}`, W-M-1, H-3.8, {align:'right'});
   }
 
   // ── Save
@@ -4262,7 +4404,7 @@ function addAlertRule(){
   const op=document.getElementById('ar-op')?.value||'gt';
   const thr=parseFloat(document.getElementById('ar-threshold')?.value);
   const consec=parseInt(document.getElementById('ar-consec')?.value||'1');
-  if(isNaN(thr)){alert('Enter a valid threshold number.');return;}
+  if(isNaN(thr)){slAlert('Enter a valid threshold number.','warning');return;}
   const rules=getAlertRules();
   rules.push({id:Date.now(),loc,kpi,op,threshold:thr,consec,active:true});
   saveAlertRules(rules);
@@ -5207,13 +5349,14 @@ function delMonth(){
   const yr=document.getElementById('m-year').value;
   const mi=+document.getElementById('m-month').value;
   const lc=getModalLoc();
-  if(!confirm(`Delete all data for ${MFULL[mi]} ${yr} — ${lc}?`))return;
-  const dlSt=S.state==='ALL'?locState(lc):S.state;
-  const d=DB[yr]?.[dlSt]?.[lc];if(!d)return;
-  ['ns','dineIn','delivery','fa','fp','la','lp','da','dp','grStart','grEnd','uberRating'].forEach(k=>{if(d[k])d[k][mi]=null;});
-  if(d.targets){['fp','lp','dp','uber'].forEach(k=>{if(d.targets[k])d.targets[k][mi]=null;});}
-  save(); closeDataModal();
-  renderLocBar();renderCards();renderCharts();renderTable();
+  slConfirm(`Delete all data for ${MFULL[mi]} ${yr} — ${lc}? This cannot be undone.`, function(){
+    const dlSt=S.state==='ALL'?locState(lc):S.state;
+    const d=DB[yr]?.[dlSt]?.[lc];if(!d)return;
+    ['ns','dineIn','delivery','fa','fp','la','lp','da','dp','grStart','grEnd','uberRating'].forEach(k=>{if(d[k])d[k][mi]=null;});
+    if(d.targets){['fp','lp','dp','uber'].forEach(k=>{if(d.targets[k])d.targets[k][mi]=null;});}
+    save(); closeDataModal();
+    renderLocBar();renderCards();renderCharts();renderTable();
+  }, {icon:'🗑️', okLabel:'Delete'});
 }
 // Returns the effective location name from the modal (dropdown or new-loc text)
 function getModalLoc(){
@@ -5227,7 +5370,7 @@ function saveDataModal(){
   const yr  = document.getElementById('m-year').value;
   const mi  = +document.getElementById('m-month').value;
   const lc  = getModalLoc();
-  if(!lc){alert('Please enter a location name.');return;}
+  if(!lc){slAlert('Please enter a location name.','warning');return;}
   const di  = parseFloat(document.getElementById('m-dinein').value)||null;
   const dv  = parseFloat(document.getElementById('m-delivery').value)||null;
   const fa  = parseFloat(document.getElementById('m-fa').value)||null;
@@ -5239,7 +5382,7 @@ function saveDataModal(){
   const ub  = parseFloat(document.getElementById('m-uber').value);
 
   // Validate uber
-  if(!isNaN(ub)&&(ub<3||ub>5)){alert('UberEats rating must be between 3.0 and 5.0');return;}
+  if(!isNaN(ub)&&(ub<3||ub>5)){slAlert('UberEats rating must be between 3.0 and 5.0','warning');return;}
 
   const saveSt=S.state==='ALL'?(locState(lc)||'FL'):S.state;
   if(!DB[yr])DB[yr]={};
@@ -5395,7 +5538,7 @@ function saveTargetsModal(){
 // ══════════════════════════════════════════════════
 let _rptMonth=null;
 function openReportModal(){
-  if(S.loc==='ALL'){ alert('Select a specific store first (not All Locations) to generate a report.'); return; }
+  if(S.loc==='ALL'){ slAlert('Select a specific store first (not All Locations) to generate a report.','warning'); return; }
   const d=locD(S.loc); if(!d) return;
   _rptMonth=null;
   document.getElementById('btn-gen-rpt').disabled=true;
@@ -5467,7 +5610,7 @@ function generateMonthlyReport(){
     +'</body></html>';
   const win=window.open('','_blank','width=920,height=720');
   if(win){win.document.write(html);win.document.close();win.focus();}
-  else{alert('Pop-up blocked. Allow pop-ups for this page and try again.');}
+  else{slAlert('Pop-up blocked. Please allow pop-ups for this page and try again.','warning');}
 }
 
 // Close overlays on outside click
@@ -5821,7 +5964,7 @@ function doImportMix(){
 
   // Check XLSX library
   if(typeof XLSX === 'undefined'){
-    alert('Excel parser not loaded. Please check your internet connection and refresh.');
+    slAlert('Excel parser not loaded. Please check your internet connection and refresh.','error');
     return;
   }
 
@@ -5855,7 +5998,7 @@ function doImportMix(){
       renderMixPage(); renderNavRight();
     })
     .catch(err => {
-      alert('Error parsing file: ' + err);
+      slAlert('Error parsing file: ' + err,'error');
       if(btn){ btn.disabled=false; btn.textContent='Import Data'; }
     });
 }
@@ -6578,7 +6721,7 @@ function parseSalesFile(file, state, loc, year, month){
 function doImportSales(){
   const pg='sales'; const u=US[pg];
   if(!u.file) return;
-  if(typeof XLSX==='undefined'){ alert('Excel parser not loaded. Refresh and try again.'); return; }
+  if(typeof XLSX==='undefined'){ slAlert('Excel parser not loaded. Refresh and try again.','error'); return; }
   const btn=document.getElementById('upl-btn-'+pg);
   if(btn){ btn.disabled=true; btn.textContent='Parsing…'; }
   parseSalesFile(u.file, u.state, u.loc, u.year, u.month)
@@ -6598,7 +6741,7 @@ function doImportSales(){
       SX.state=record.state; SX.loc=record.loc; SX.year=record.year; SX.month=record.month; SX.activeTab='overview';
       renderSalesPage(); renderNavRight();
     })
-    .catch(err=>{ alert('Error parsing file: '+err); if(btn){ btn.disabled=false; btn.textContent='Import Data'; } });
+    .catch(err=>{ slAlert('Error parsing file: '+err,'error'); if(btn){ btn.disabled=false; btn.textContent='Import Data'; } });
 }
 
 // ── renderSalesPage
@@ -7766,7 +7909,7 @@ function buildBulkPnLRecords(rows, state, loc){
 function doImportPnl(){
   const pg='pnl'; const u=US[pg];
   if(!u.file) return;
-  if(typeof XLSX==='undefined'){ alert('Excel parser not loaded. Refresh and try again.'); return; }
+  if(typeof XLSX==='undefined'){ slAlert('Excel parser not loaded. Refresh and try again.','error'); return; }
   const btn=document.getElementById('upl-btn-'+pg);
   if(btn){ btn.disabled=true; btn.textContent='Parsing…'; }
   parsePnLFile(u.file, u.state, u.loc, u.year, u.month)
@@ -7813,7 +7956,7 @@ function doImportPnl(){
       PX.state=last.state; PX.loc=last.loc; PX.year=last.year; PX.month=last.month;
       renderPnLPage(); renderNavRight();
     })
-    .catch(err=>{ alert('Error parsing P&L file: '+err.message||err); if(btn){ btn.disabled=false; btn.textContent='Import Data'; } });
+    .catch(err=>{ slAlert('Error parsing P&L file: '+(err.message||err),'error'); if(btn){ btn.disabled=false; btn.textContent='Import Data'; } });
 }
 
 // ── Navigation helpers
