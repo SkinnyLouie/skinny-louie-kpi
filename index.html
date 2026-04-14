@@ -1663,6 +1663,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <button class="inv-tab-btn active" id="inv-t-count" onclick="invShowTab('count')">📝 Count</button>
       <button class="inv-tab-btn" id="inv-t-history" onclick="invShowTab('history')">📋 History</button>
       <button class="inv-tab-btn" id="inv-t-analytics" onclick="invShowTab('analytics')">📊 Analytics</button>
+      <button class="inv-tab-btn" id="inv-t-variance" onclick="invShowTab('variance')">📐 Variance</button>
       <button class="inv-tab-btn" id="inv-t-setup" onclick="invShowTab('setup')">⚙️ Setup</button>
     </div>
   </div>
@@ -1717,6 +1718,25 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <select id="inv-anl-store" class="rc-sel" onchange="invRenderAnalytics()" style="min-width:180px;"></select>
     </div>
     <div id="inv-analytics-body"></div>
+  </div>
+
+  <!-- VARIANCE ANALYSIS PANE -->
+  <div id="inv-pane-variance" class="inv-pane" style="display:none;">
+    <div style="position:relative;min-height:480px;border:2px dashed rgba(90,58,126,.25);border-radius:18px;background:rgba(90,58,126,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px;text-align:center;">
+      <div style="font-size:52px;margin-bottom:16px;">📐</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;letter-spacing:.08em;color:#5a3a7e;text-transform:uppercase;margin-bottom:8px;">Variance Analysis</div>
+      <div style="font-size:13px;font-weight:600;color:var(--muted);max-width:460px;line-height:1.6;margin-bottom:24px;">
+        Compare <strong>theoretical usage</strong> (based on Product Mix sales × recipe yield) against <strong>actual inventory consumed</strong> to detect waste, theft, and over-portioning — by location, category, and item.
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:28px;">
+        <span style="background:rgba(90,58,126,.1);color:#5a3a7e;border:1.5px solid rgba(90,58,126,.25);border-radius:99px;padding:5px 14px;font-size:11px;font-weight:700;">🍔 Theoretical COGS from Sales Mix</span>
+        <span style="background:rgba(90,58,126,.1);color:#5a3a7e;border:1.5px solid rgba(90,58,126,.25);border-radius:99px;padding:5px 14px;font-size:11px;font-weight:700;">📦 Actual Inventory Delta</span>
+        <span style="background:rgba(90,58,126,.1);color:#5a3a7e;border:1.5px solid rgba(90,58,126,.25);border-radius:99px;padding:5px 14px;font-size:11px;font-weight:700;">🚨 Waste & Shrinkage Alerts</span>
+        <span style="background:rgba(90,58,126,.1);color:#5a3a7e;border:1.5px solid rgba(90,58,126,.25);border-radius:99px;padding:5px 14px;font-size:11px;font-weight:700;">📍 Per-location Breakdown</span>
+      </div>
+      <div style="background:linear-gradient(135deg,#7e2023,#b03030);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:800;letter-spacing:.5px;padding:12px 28px;border-radius:12px;text-transform:uppercase;opacity:.9;">🔒 Coming Soon</div>
+      <div style="margin-top:14px;font-size:10px;color:var(--muted);">Requires: Inventory counts + Product Mix data + Recipe cost inputs</div>
+    </div>
   </div>
 
   <!-- SETUP PANE -->
@@ -2596,7 +2616,7 @@ function invInit(){
 
 function invShowTab(tab){
   INV.tab = tab;
-  ['count','history','analytics','setup'].forEach(function(t){
+  ['count','history','analytics','variance','setup'].forEach(function(t){
     var pane = document.getElementById('inv-pane-'+t);
     if(pane) pane.style.display = t===tab ? 'block' : 'none';
     var btn = document.getElementById('inv-t-'+t);
@@ -6365,6 +6385,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       <button class="mx-tab all-tab ${MX.activeTab==='ALL'?'on':''}" onclick="mxSetTab('ALL')">📊 All</button>
       ${catNames.map(n=>`<button class="mx-tab ${MX.activeTab===n?'on':''}" onclick="mxSetTab('${n}')">${n}</button>`).join('')}
       <button class="mx-tab ${MX.activeTab==='__eng__'?'on':''}" onclick="mxSetTab('__eng__')" style="${MX.activeTab==='__eng__'?'':''}">📐 Menu Engineering</button>
+      <button class="mx-tab ${MX.activeTab==='__xstore__'?'on':''}" onclick="mxSetTab('__xstore__')">🗺 Store Compare</button>
     </div>`;
 
   // Build category sections
@@ -6445,9 +6466,76 @@ function renderMixDashboard(rec, locRecs, allRecs){
     window._mxEngData=engData; window._mxEngMedX=medianQtyShare; window._mxEngMedY=medianNPU;
   }
 
-  const activeCats = MX.activeTab==='ALL' ? categories : (MX.activeTab==='__eng__'?[]:categories.filter(c=>c.name===MX.activeTab));
+  // ── Store Compare tab
+  let xstoreHTML='';
+  if(MX.activeTab==='__xstore__'){
+    const searchQ=(window._mxSearchQ||'').toLowerCase().trim();
+    // Collect all unique item names across all recs for this state+year
+    const allItems=[...new Set(allRecs.filter(r=>r.state===MX.state&&r.year===MX.year).flatMap(r=>r.items.map(i=>i.name)))].sort();
+    // Selected item (default: first item or last searched)
+    if(!window._mxSelectedItem||!allItems.includes(window._mxSelectedItem)) window._mxSelectedItem=allItems[0]||'';
+    const selected=window._mxSelectedItem;
+    const filteredItems=searchQ?allItems.filter(n=>n.toLowerCase().includes(searchQ)):allItems;
 
-  if(MX.activeTab!=='__eng__') {
+    // For the selected item, gather data across all locations for selected month
+    const storeRecs=allRecs.filter(r=>r.state===MX.state&&r.year===MX.year&&r.month===MX.month);
+    const storeData=storeRecs.map(r=>{
+      const item=r.items.find(i=>i.name===selected);
+      return {loc:r.loc, qty:item?item.qty:0, net:item?item.net:0, unitPrice:item&&item.qty>0?item.net/item.qty:0, hasData:!!item&&item.qty>0};
+    }).sort((a,b)=>b.net-a.net);
+
+    const maxNet=storeData.reduce((m,d)=>Math.max(m,d.net),1);
+    const storeRows=storeData.map((d,i)=>`<tr>
+      <td style="font-weight:700;color:${i===0?'#15803d':i===storeData.length-1&&d.net===0?'#9ca3af':'#374151'};">${i===0&&d.net>0?'🥇':i+1}</td>
+      <td style="font-weight:600;">${d.loc}</td>
+      <td class="num" style="font-weight:700;color:${!d.hasData?'var(--muted)':''};">${d.hasData?'$'+Math.round(d.net).toLocaleString('en-US'):'—'}</td>
+      <td class="num">${d.hasData?Math.round(d.qty).toLocaleString('en-US'):'—'}</td>
+      <td class="num">${d.hasData&&d.unitPrice>0?'$'+d.unitPrice.toFixed(2):'—'}</td>
+      <td class="num" style="min-width:120px;">
+        ${d.hasData?`<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:7px;"><div style="width:${Math.min(d.net/maxNet*100,100).toFixed(1)}%;height:100%;background:${i===0?'#15803d':'#1e3a5f'};border-radius:99px;"></div></div><span style="font-size:11px;font-weight:700;">${totalNet>0?(d.net/rec.totalNet*100).toFixed(1):'—'}%</span></div>`:'<span style="color:var(--muted);font-size:12px;">not sold</span>'}
+      </td>
+    </tr>`).join('');
+
+    // Month-over-month trend for selected item at current location
+    const trendRecs=[...locRecs].sort((a,b)=>a.month-b.month);
+    const trendData=trendRecs.map(r=>{const it=r.items.find(i=>i.name===selected);return{m:r.month,net:it?it.net:0,qty:it?it.qty:0};});
+    const trendChartHTML=trendData.some(d=>d.net>0)?`<div class="sx-chart-panel" style="margin-top:16px;">
+      <div class="sx-panel-title">${selected} — Revenue & Qty Trend at ${rec.loc}</div>
+      <div style="position:relative;height:180px;"><canvas id="mx-xstore-trend-chart"></canvas></div>
+    </div>`:'';
+
+    xstoreHTML=`
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:260px;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Search Item</div>
+          <div style="display:flex;gap:8px;">
+            <input id="mx-xstore-search" type="text" placeholder="e.g. Smash Burger…" value="${window._mxSearchQ||''}"
+              style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;"
+              oninput="window._mxSearchQ=this.value;mxRefreshXStore();"
+              onkeydown="if(event.key==='Enter'&&document.querySelector('#mx-xstore-items button')){document.querySelector('#mx-xstore-items button').click();}">
+          </div>
+          <div id="mx-xstore-items" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow-y:auto;">
+            ${filteredItems.slice(0,40).map(n=>`<button onclick="window._mxSelectedItem='${n.replace(/'/g,"\\'")}';window._mxSearchQ='';mxRefreshXStore();"
+              style="padding:4px 10px;border-radius:99px;border:1.5px solid ${n===selected?'var(--accent)':'var(--border)'};background:${n===selected?'var(--accent)':'transparent'};color:${n===selected?'white':'var(--ink)'};font-size:11px;cursor:pointer;white-space:nowrap;">${n}</button>`).join('')}
+            ${filteredItems.length>40?`<span style="font-size:10px;color:var(--muted);align-self:center;">+${filteredItems.length-40} more…</span>`:''}
+          </div>
+        </div>
+      </div>
+      ${selected?`<div class="mx-sec">
+        <div class="mx-sec-title" style="margin-bottom:12px;">📍 <strong>${selected}</strong> — All Stores · ${MSHORT[MX.month]} ${MX.year}</div>
+        <div class="mx-item-table-wrap"><table class="mx-item-table">
+          <thead><tr><th>#</th><th>Store</th><th class="num">Net Revenue</th><th class="num">Qty Sold</th><th class="num">$/Unit</th><th class="num">Relative Performance</th></tr></thead>
+          <tbody>${storeRows}</tbody>
+        </table></div>
+        ${trendChartHTML}
+      </div>`:''}`;
+    window._mxXStoreRec=rec; window._mxXStoreLocRecs=locRecs; window._mxXStoreAllRecs=allRecs;
+    window._mxXStoreTrendData=trendData;
+  }
+
+  const activeCats = MX.activeTab==='ALL' ? categories : (MX.activeTab==='__eng__'||MX.activeTab==='__xstore__'?[]:categories.filter(c=>c.name===MX.activeTab));
+
+  if(MX.activeTab!=='__eng__'&&MX.activeTab!=='__xstore__') {
   for(const cat of activeCats){
     const catKey = cat.name.toUpperCase();
     const mapKey = Object.keys(MENU_TO_ITEM_CAT).find(k=>k===catKey);
@@ -6573,9 +6661,10 @@ function renderMixDashboard(rec, locRecs, allRecs){
     <div class="mx-page">
       ${shiftAlertHTML}
       ${monthPillsHTML}
-      ${cardsHTML}
-      ${top5bottom5HTML}
+      ${MX.activeTab!=='__xstore__'?cardsHTML:''}
+      ${MX.activeTab!=='__xstore__'?top5bottom5HTML:''}
       ${tabsHTML}
+      ${xstoreHTML}
       ${sectionsHTML}
     </div>`;
 
@@ -6600,6 +6689,37 @@ function renderMixDashboard(rec, locRecs, allRecs){
     });
   }
   } // end if not __eng__ (donut)
+
+  // Init Store Compare trend chart
+  if(MX.activeTab==='__xstore__' && window._mxXStoreTrendData && typeof Chart!=='undefined'){
+    setTimeout(()=>{
+      const cvs=document.getElementById('mx-xstore-trend-chart');
+      if(!cvs) return;
+      Chart.getChart(cvs)?.destroy();
+      const td=window._mxXStoreTrendData;
+      const labels=td.map(d=>MONTHS_SHORT[d.m]);
+      new Chart(cvs,{
+        type:'bar',
+        data:{
+          labels,
+          datasets:[
+            {type:'bar',label:'Net Revenue ($)',data:td.map(d=>d.net||null),backgroundColor:'rgba(155,41,44,.5)',borderRadius:3,yAxisID:'y',order:2},
+            {type:'line',label:'Qty Sold',data:td.map(d=>d.qty||null),borderColor:'#1e3a5f',borderWidth:2,pointRadius:4,tension:.3,fill:false,yAxisID:'y2',order:1}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          interaction:{mode:'index',intersect:false},
+          plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12,padding:8}}},
+          scales:{
+            x:{grid:{display:false},ticks:{font:{size:10}}},
+            y:{position:'left',ticks:{font:{size:10},callback:v=>'$'+(v/1000).toFixed(1)+'K'},grid:{color:'rgba(0,0,0,.05)'}},
+            y2:{position:'right',ticks:{font:{size:10}},grid:{display:false}}
+          }
+        }
+      });
+    },50);
+  }
 
   // Init Menu Engineering bubble chart
   if(MX.activeTab==='__eng__' && window._mxEngData && typeof Chart!=='undefined'){
@@ -6653,6 +6773,12 @@ function mxSetTab(tab){
   const allRecs  = getPMixRecords();
   const locRecs  = allRecs.filter(r=>r.state===MX.state && r.year===MX.year && r.loc===MX.loc);
   const rec      = locRecs.find(r=>r.month===MX.month);
+  if(rec) renderMixDashboard(rec, locRecs, allRecs);
+}
+function mxRefreshXStore(){
+  const allRecs = getPMixRecords();
+  const locRecs = allRecs.filter(r=>r.state===MX.state && r.year===MX.year && r.loc===MX.loc);
+  const rec     = locRecs.find(r=>r.month===MX.month);
   if(rec) renderMixDashboard(rec, locRecs, allRecs);
 }
 function mxSort(col){
@@ -6893,13 +7019,13 @@ function renderSalesPage(){
   }
   renderSalesLocBar(filtered);
   if(bar) bar.style.display='flex';
-  if(!SX.loc||!filtered.find(r=>r.loc===SX.loc)) SX.loc=filtered[0].loc;
+  if(!SX.loc||(!filtered.find(r=>r.loc===SX.loc) && SX.loc!=='ALL')) SX.loc=filtered[0].loc;
+  uv.style.display='none'; dv.style.display='block';
+  if(SX.loc==='ALL'){ renderSalesFleetView(allRecs); return; }
   const locRecs=filtered.filter(r=>r.loc===SX.loc);
   if(SX.month===null||!locRecs.find(r=>r.month===SX.month)) SX.month=locRecs[locRecs.length-1].month;
   const rec=locRecs.find(r=>r.month===SX.month);
-  if(!rec){ uv.style.display='none'; dv.style.display='block';
-    dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return; }
-  uv.style.display='none'; dv.style.display='block';
+  if(!rec){ dv.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this selection.</div>'; return; }
   if(SX.cmpMode) renderSalesCompare(rec, allRecs);
   else renderSalesDashboard(rec, locRecs, allRecs);
 }
@@ -6908,7 +7034,7 @@ function renderSalesLocBar(filteredRecs){
   const bar=document.getElementById('sales-loc-bar');
   if(!bar) return;
   const locs=[...new Set(filteredRecs.map(r=>r.loc))];
-  let h='';
+  let h=`<button class="loc-tab ${SX.loc==='ALL'?'on':''}" onclick="sxSetLoc('ALL')" style="font-weight:800;">📊 All</button><div class="loc-sep"></div>`;
   for(const loc of locs)
     h+=`<button class="loc-tab ${SX.loc===loc?'on':''}" onclick="sxSetLoc('${loc}')">${loc}</button>`;
   h+=`<button class="loc-tab" onclick="sxShowUpload()" style="margin-left:auto;color:var(--accent);font-size:12px;">+ Upload</button>`;
@@ -6921,6 +7047,187 @@ function sxShowUpload(){
   if(dv) dv.style.display='none';
   if(bar) bar.style.display='none';
   renderUpload('sales');
+}
+
+// ══════════════════════════════════════════════════
+//  SALES — FLEET "ALL LOCATIONS" VIEW
+// ══════════════════════════════════════════════════
+function renderSalesFleetView(allRecs){
+  const el=document.getElementById('sales-dashboard-view');
+  if(!el) return;
+  const fmt$=v=>'$'+Math.round(v).toLocaleString('en-US');
+  const MSHORT=MONTHS_SHORT;
+  const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // Filter by state+year
+  const stateRecs=allRecs.filter(r=>r.state===SX.state&&r.year===SX.year);
+  if(!stateRecs.length){
+    el.innerHTML='<div style="padding:60px;text-align:center;color:var(--muted);">No data for this state/year.</div>';
+    return;
+  }
+
+  // All unique months & locs
+  const allMonths=[...new Set(stateRecs.map(r=>r.month))].sort((a,b)=>a-b);
+  const allLocs=[...new Set(stateRecs.map(r=>r.loc))];
+
+  // Default fleet month = latest available
+  if(SX.month===null||!allMonths.includes(SX.month)) SX.month=allMonths[allMonths.length-1];
+
+  // Month pills
+  const monthPills=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
+    <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:4px;">Month:</span>
+    ${allMonths.map(m=>`<button class="sx-month-pill ${SX.month===m?'on':''}" onclick="SX.month=${m};renderSalesFleetView(getSalesRecords())">${MSHORT[m]}</button>`).join('')}
+  </div>`;
+
+  // Recs for the selected month, one per loc
+  const monthRecs=stateRecs.filter(r=>r.month===SX.month);
+
+  // Fleet totals for selected month
+  const fleetNS=monthRecs.reduce((s,r)=>s+r.netSales,0);
+  const fleetOrders=monthRecs.reduce((s,r)=>s+(r.totalOrders||0),0);
+  const fleetAvgCheck=fleetOrders>0?fleetNS/fleetOrders:0;
+
+  // YTD totals (all months up to current)
+  const ytdRecs=stateRecs.filter(r=>r.month<=SX.month);
+  const ytdNS=ytdRecs.reduce((s,r)=>s+r.netSales,0);
+
+  // Aggregate channels for this month (UberEats vs Dine-In)
+  let fleetUE=0, fleetDI=0;
+  for(const r of monthRecs){
+    for(const ch of (r.channels||[])){
+      const n=ch.name.toLowerCase();
+      if(n.includes('uber')||n.includes('doordash')||n.includes('delivery')) fleetUE+=ch.netSales;
+      else fleetDI+=ch.netSales;
+    }
+  }
+  const chTotal=fleetUE+fleetDI||1;
+
+  // Summary cards
+  const summaryCards=`<div class="sx-cards" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+    <div class="sx-card accent" style="flex:2;min-width:200px;padding:20px 24px;">
+      <div class="sc-lbl">Fleet Net Sales</div>
+      <div class="sc-val" style="font-size:28px;margin:4px 0;">${fmt$(fleetNS)}</div>
+      <div class="sc-sub">${MFULL[SX.month]} ${SX.year} · ${monthRecs.length} stores</div>
+    </div>
+    <div class="sx-card" style="flex:1;min-width:155px;padding:20px 18px;">
+      <div class="sc-lbl">Total Orders</div>
+      <div class="sc-val">${Math.round(fleetOrders).toLocaleString('en-US')}</div>
+      <div class="sc-sub" style="margin-top:6px;font-size:10px;">All locations</div>
+    </div>
+    <div class="sx-card" style="flex:1;min-width:155px;padding:20px 18px;">
+      <div class="sc-lbl">Fleet Avg Check</div>
+      <div class="sc-val">$${fleetAvgCheck.toFixed(2)}</div>
+      <div class="sc-sub" style="margin-top:6px;font-size:10px;">Blended</div>
+    </div>
+    <div class="sx-card" style="flex:1;min-width:155px;padding:20px 18px;">
+      <div class="sc-lbl">YTD Net Sales</div>
+      <div class="sc-val">${fmt$(ytdNS)}</div>
+      <div class="sc-sub" style="margin-top:6px;font-size:10px;">Jan–${MSHORT[SX.month]}</div>
+    </div>
+  </div>`;
+
+  // Store breakdown table
+  const sortedByNS=[...monthRecs].sort((a,b)=>b.netSales-a.netSales);
+  const storeRows=sortedByNS.map((r,idx)=>{
+    const avg=r.totalOrders>0?r.netSales/r.totalOrders:0;
+    const sharePct=fleetNS>0?(r.netSales/fleetNS*100):0;
+    const ue=(r.channels||[]).filter(c=>c.name.toLowerCase().includes('uber')||c.name.toLowerCase().includes('delivery')).reduce((s,c)=>s+c.netSales,0);
+    const uePct=r.netSales>0?(ue/r.netSales*100):0;
+    const vPct=r.voidPct>=0&&r.voidPct<=100?r.voidPct:(r.voidAmount>0&&r.netSales>0?+(r.voidAmount/r.netSales*100).toFixed(2):null);
+    const rankCol=idx===0?'#15803d':idx===sortedByNS.length-1?'#b91c1c':'#374151';
+    return `<tr style="cursor:pointer;" onclick="sxSetLoc('${r.loc}')">
+      <td style="font-weight:700;color:${rankCol};">${idx+1}</td>
+      <td style="font-weight:600;">${r.loc}</td>
+      <td class="num" style="font-weight:700;">${fmt$(r.netSales)}</td>
+      <td class="num">${(r.totalOrders||0).toLocaleString('en-US')}</td>
+      <td class="num">$${avg.toFixed(2)}</td>
+      <td class="num">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;background:#e5e7eb;border-radius:99px;height:6px;min-width:60px;">
+            <div style="width:${Math.min(sharePct,100).toFixed(1)}%;height:100%;background:#1e3a5f;border-radius:99px;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:#1e3a5f;">${sharePct.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td class="num" style="color:${uePct>60?'#b91c1c':'#374151'};">${uePct.toFixed(1)}%</td>
+      <td class="num" style="color:${vPct!=null&&vPct>SX.voidTgt?'#b91c1c':'#374151'}">${vPct!=null?vPct.toFixed(1)+'%':'—'}</td>
+      <td style="text-align:center;"><span style="font-size:10px;background:rgba(30,58,95,.1);color:#1e3a5f;border-radius:99px;padding:2px 8px;">Drill →</span></td>
+    </tr>`;
+  }).join('');
+
+  const storeTable=`<div class="tcard" style="margin-bottom:20px;">
+    <div class="thdr"><div class="ttitle">🏪 Store Breakdown — ${MFULL[SX.month]} ${SX.year}</div></div>
+    <div class="tscroll">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:var(--paper);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">
+          <th style="padding:8px 10px;">#</th>
+          <th style="padding:8px 10px;text-align:left;">Store</th>
+          <th style="padding:8px 10px;text-align:right;">Net Sales</th>
+          <th style="padding:8px 10px;text-align:right;">Orders</th>
+          <th style="padding:8px 10px;text-align:right;">Avg Check</th>
+          <th style="padding:8px 10px;text-align:right;">Fleet Share</th>
+          <th style="padding:8px 10px;text-align:right;">UberEats %</th>
+          <th style="padding:8px 10px;text-align:right;">Void %</th>
+          <th style="padding:8px 10px;"></th>
+        </tr></thead>
+        <tbody>${storeRows}</tbody>
+      </table>
+    </div>
+    <div style="padding:8px 16px;font-size:10px;color:var(--muted);">Click any row to drill into that store's Sales Summary.</div>
+  </div>`;
+
+  // Channel mix aggregated
+  const chPanel=`<div class="sx-two-col" style="margin-bottom:20px;">
+    <div class="sx-panel">
+      <div class="sx-panel-title">Fleet Channel Mix — ${MFULL[SX.month]}</div>
+      <div class="sx-bar-row">
+        <div class="sx-bar-row-top"><span class="sx-bar-row-label">🍽 Dine-In / Walk-in</span><span class="sx-bar-row-val">${fmt$(fleetDI)} &nbsp; ${(fleetDI/chTotal*100).toFixed(1)}%</span></div>
+        <div class="sx-bar-bg"><div class="sx-bar-fill dinein" style="width:${(fleetDI/chTotal*100).toFixed(1)}%"></div></div>
+      </div>
+      <div class="sx-bar-row">
+        <div class="sx-bar-row-top"><span class="sx-bar-row-label">🛵 Uber Eats / Delivery</span><span class="sx-bar-row-val">${fmt$(fleetUE)} &nbsp; ${(fleetUE/chTotal*100).toFixed(1)}%</span></div>
+        <div class="sx-bar-bg"><div class="sx-bar-fill uber" style="width:${(fleetUE/chTotal*100).toFixed(1)}%"></div></div>
+      </div>
+    </div>
+    <div class="sx-panel">
+      <div class="sx-panel-title">Net Sales by Month — All Stores</div>
+      <div style="position:relative;height:190px;"><canvas id="sx-fleet-trend-chart"></canvas></div>
+    </div>
+  </div>`;
+
+  el.innerHTML=`<div class="sx-page">${monthPills}${summaryCards}${storeTable}${chPanel}</div>`;
+
+  // Fleet monthly trend chart (stacked bar per location)
+  setTimeout(()=>{
+    const canvas=document.getElementById('sx-fleet-trend-chart');
+    if(!canvas) return;
+    const allLocsYr=[...new Set(stateRecs.map(r=>r.loc))];
+    const labels=allMonths.map(m=>MSHORT[m]+' '+String(SX.year).slice(2));
+    const LOC_COLORS=['#9b292c','#1e3a5f','#c4a850','#2d7a4f','#7a6058','#4a9ac4','#6d28d9','#b45309','#0891b2','#be185d'];
+    const datasets=allLocsYr.map((loc,i)=>({
+      label:loc,
+      data:allMonths.map(m=>{const r=stateRecs.find(x=>x.loc===loc&&x.month===m);return r?r.netSales:null;}),
+      backgroundColor:LOC_COLORS[i%LOC_COLORS.length],
+      borderRadius:2, borderSkipped:false
+    }));
+    Chart.getChart(canvas)?.destroy();
+    new Chart(canvas,{
+      type:'bar',
+      data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:9},padding:6,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>' '+c.dataset.label+': $'+Math.round(c.parsed.y||0).toLocaleString('en-US')}}
+        },
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},
+          y:{stacked:true,ticks:{font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:'rgba(0,0,0,.05)'}}
+        }
+      }
+    });
+  },50);
 }
 
 // ── renderSalesDashboard
@@ -7262,7 +7569,12 @@ function renderSalesDashboard(rec, locRecs, allRecs){
           onkeydown="if(event.key==='Enter') sxSetVoidTgt(this.value)" />
         <button onclick="sxSetVoidTgt(document.getElementById('sx-void-tgt-input').value)">Set Target</button>
         <span style="color:var(--muted);">%  (default 2.0%)</span>
-      </div>`;
+      </div>
+      ${locRecs.length>=2?`<div class="sx-chart-panel" style="margin-top:20px;">
+        <div class="sx-panel-title">📈 Void Rate Trend — % of Net Sales by Month</div>
+        <div style="position:relative;height:200px;"><canvas id="sx-void-trend-chart"></canvas></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;">Dashed line = your void rate target (${SX.voidTgt}%). Red months = over target.</div>
+      </div>`:'<div class="sx-top-items-none" style="margin-top:20px;">Upload more months to see the void rate trend.</div>'}`;
   }
 
   el.innerHTML=`<div class="sx-page">${voidAlertHtml}${monthPills}${cards}${cardsPeakRow}${tabs}${content}</div>`;
@@ -7274,6 +7586,8 @@ function renderSalesDashboard(rec, locRecs, allRecs){
     initSxForecastChart(locRecs);
   } else if(SX.activeTab==='discounts'){
     initSxDiscChart(locRecs);
+  } else if(SX.activeTab==='voids'){
+    initSxVoidTrendChart(locRecs);
   }
 }
 
@@ -7429,6 +7743,65 @@ function initSxDiscChart(locRecs){
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11}}},
         y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11},callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+// ── Sales Chart: Void Rate Trend (new)
+function initSxVoidTrendChart(locRecs){
+  const canvas=document.getElementById('sx-void-trend-chart');
+  if(!canvas) return;
+  Chart.getChart(canvas)?.destroy();
+  const sorted=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
+  if(sorted.length<2){ canvas.style.display='none'; return; }
+  canvas.style.display='';
+  const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+String(r.year).slice(2));
+  const voidPcts=sorted.map(r=>{
+    if(r.voidPct>=0&&r.voidPct<=100) return +r.voidPct.toFixed(2);
+    if(r.voidAmount>0&&r.netSales>0) return +(r.voidAmount/r.netSales*100).toFixed(2);
+    return null;
+  });
+  const targetLine=sorted.map(()=>SX.voidTgt);
+  const pointColors=voidPcts.map(v=>v!=null&&v>SX.voidTgt?'#dc2626':'#1e3a5f');
+  new Chart(canvas,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Void Rate %',
+          data:voidPcts,
+          borderColor:'#1e3a5f',
+          pointBackgroundColor:pointColors,
+          pointBorderColor:pointColors,
+          backgroundColor:'rgba(30,58,95,.08)',
+          borderWidth:2.5, tension:.3, pointRadius:5, fill:true, spanGaps:false
+        },
+        {
+          label:`Target (${SX.voidTgt}%)`,
+          data:targetLine,
+          borderColor:'#dc2626',
+          borderWidth:1.5,
+          borderDash:[6,4],
+          pointRadius:0,
+          fill:false
+        }
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:10},padding:10,boxWidth:12}},
+        tooltip:{callbacks:{label:c=>c.parsed.y!=null?' '+c.dataset.label+': '+c.parsed.y.toFixed(2)+'%':null}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{
+          min:0,
+          grid:{color:'rgba(0,0,0,.06)'},
+          ticks:{font:{size:11},callback:v=>v+'%'}
+        }
       }
     }
   });
@@ -8782,6 +9155,11 @@ function renderPnLDashboard(rec, locRecs){
       </div>
       ${trendPanel}
       ${yoyPanel}
+      ${locAllRecs.length>=2?`<div class="pnl-yoy-panel">
+        <div class="ui-panel-title">📉 Expense Lines — % of Net Sales by Month <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">Last 12 months — reveals creeping cost trends</span></div>
+        <div style="position:relative;height:240px;"><canvas id="pnl-expense-trend-chart"></canvas></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;">Each line = a cost category as % of net sales for that month. Rising lines = cost creep. Includes all locations loaded for this store.</div>
+      </div>`:''}
       ${bePanel}
       ${whatifPanel}
       ${unitEconPanel}
@@ -9014,6 +9392,48 @@ function renderPnLDashboard(rec, locRecs){
 
       // Init what-if display
       pxUpdateWhatif();
+
+      // ── Expense Trend chart (new)
+      const expTrendCtx=document.getElementById('pnl-expense-trend-chart');
+      if(expTrendCtx && locAllRecs.length>=2){
+        Chart.getChart(expTrendCtx)?.destroy();
+        const etRecs=[...locAllRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month)).slice(-12);
+        const etLabels=etRecs.map(r=>MSHORT[r.month]+' '+String(r.year).slice(2));
+        const lines=[
+          {key:'cogs',      label:'COGS',         color:'#854d0e'},
+          {key:'payroll',   label:'Payroll',       color:'#6d28d9'},
+          {key:'supplies',  label:'Supplies',      color:'#0891b2'},
+          {key:'commissions',label:'Commissions',  color:'#be185d'},
+          {key:'advertising',label:'Advertising',  color:'#ca8a04'},
+          {key:'utilities', label:'Utilities',     color:'#64748b'},
+          ...(etRecs.some(r=>r.rent)?[{key:'rent',label:'Rent',color:'#1e3a5f'}]:[]),
+        ];
+        const datasets=lines.map(l=>({
+          label:l.label,
+          data:etRecs.map(r=>{
+            const v=r[l.key]; const ns=r.netSales||1;
+            return (v!=null&&ns>0)?+(Math.abs(v)/ns*100).toFixed(2):null;
+          }),
+          borderColor:l.color, pointBackgroundColor:l.color,
+          borderWidth:2, tension:.3, pointRadius:3, fill:false, spanGaps:false
+        }));
+        new Chart(expTrendCtx,{
+          type:'line',
+          data:{labels:etLabels,datasets},
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+              legend:{position:'bottom',labels:{font:{size:10},padding:8,boxWidth:12}},
+              tooltip:{callbacks:{label:c=>c.parsed.y!=null?' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%':null}}
+            },
+            scales:{
+              x:{grid:{display:false},ticks:{font:{size:10},maxRotation:0}},
+              y:{min:0,ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.06)'}}
+            }
+          }
+        });
+      }
 
     },50);
   }
