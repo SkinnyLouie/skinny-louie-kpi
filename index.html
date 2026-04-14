@@ -6567,6 +6567,13 @@ function renderMixDashboard(rec, locRecs, allRecs){
             <div class="mx-mod-pct">${fmtPct(qty)}%</div>
             <div class="mx-mod-qty">${Math.round(qty).toLocaleString('en-US')} sold</div>
           </div>`;
+        // Build month-over-month modifier trend from locRecs
+        const modTrendRecs=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
+        const modTrendLabels=modTrendRecs.map(r=>MSHORT[r.month]+' '+String(r.year).slice(2));
+        const modTrendS=modTrendRecs.map(r=>{const m=r.modifiers||{};const t=(m.single||0)+(m.double||0)+(m.triple||0);return t>0?+(m.single/t*100).toFixed(1):null;});
+        const modTrendD=modTrendRecs.map(r=>{const m=r.modifiers||{};const t=(m.single||0)+(m.double||0)+(m.triple||0);return t>0?+(m.double/t*100).toFixed(1):null;});
+        const modTrendT=modTrendRecs.map(r=>{const m=r.modifiers||{};const t=(m.single||0)+(m.double||0)+(m.triple||0);return t>0?+(m.triple/t*100).toFixed(1):null;});
+        const hasTrend=modTrendRecs.length>=2&&modTrendS.some(v=>v!=null);
         modPanelHTML = `
           <div class="mx-mod-panel">
             <div class="mx-mod-title">🍔 Burger Modifier Split · ${Math.round(totalModQty).toLocaleString('en-US')} total burgers</div>
@@ -6575,16 +6582,10 @@ function renderMixDashboard(rec, locRecs, allRecs){
               ${makeModCard('mod-doble','Double',dQty)}
               ${makeModCard('mod-triple','Triple',tQty)}
             </div>
-            <div class="mx-mod-bar">
-              <div class="mx-mod-seg seg-single" style="width:${sPct}%;" title="Single ${sPct}%"></div>
-              <div class="mx-mod-seg seg-doble"  style="width:${dPct}%;" title="Double ${dPct}%"></div>
-              <div class="mx-mod-seg seg-triple" style="width:${tPct}%;" title="Triple ${tPct}%"></div>
-            </div>
-            <div class="mx-mod-bar-lbls">
-              <span class="mx-mod-bar-lbl" style="color:#e07070;font-weight:700;">Single ${sPct}%</span>
-              <span class="mx-mod-bar-lbl" style="color:#c45b5e;font-weight:700;">Double ${dPct}%</span>
-              <span class="mx-mod-bar-lbl" style="color:#9b292c;font-weight:700;">Triple ${tPct}%</span>
-            </div>
+            ${hasTrend?`<div style="margin-top:18px;">
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Monthly Trend — % of Total Burgers</div>
+              <div style="position:relative;height:140px;"><canvas id="mx-mod-trend-chart"></canvas></div>
+            </div>`:''}
           </div>`;
       }
     }
@@ -6689,6 +6690,75 @@ function renderMixDashboard(rec, locRecs, allRecs){
     });
   }
   } // end if not __eng__ (donut)
+
+  // Init Burger Modifier Trend chart — fires whenever canvas is in DOM (ALL tab or SMASHED BURGERS tab)
+  if(typeof Chart!=='undefined'){
+    setTimeout(()=>{
+      const modCvs=document.getElementById('mx-mod-trend-chart');
+      if(!modCvs) return;
+      Chart.getChart(modCvs)?.destroy();
+      const modSorted=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
+      if(modSorted.length<2) return;
+      const mlabels=modSorted.map(r=>MONTHS_SHORT[r.month]+' '+String(r.year).slice(2));
+      const getModPct=(recs,key)=>recs.map(r=>{const m=r.modifiers||{};const t=(m.single||0)+(m.double||0)+(m.triple||0);return t>0?+(m[key]/t*100).toFixed(1):null;});
+      const sData=getModPct(modSorted,'single');
+      const dData=getModPct(modSorted,'double');
+      const tData=getModPct(modSorted,'triple');
+      if(!sData.some(v=>v!=null)) return; // no modifier data at all
+      const modLabelPlugin={
+        id:'modLabels',
+        afterDatasetsDraw(chart){
+          const ctx=chart.ctx;
+          chart.data.datasets.forEach((ds,di)=>{
+            const meta=chart.getDatasetMeta(di);
+            if(meta.hidden) return;
+            meta.data.forEach((pt,idx)=>{
+              const val=ds.data[idx];
+              if(val==null) return;
+              ctx.save();
+              ctx.font='700 10px system-ui,sans-serif';
+              ctx.fillStyle=ds.borderColor;
+              ctx.textAlign='center';
+              ctx.textBaseline='bottom';
+              ctx.fillText(val.toFixed(1)+'%', pt.x, pt.y-9);
+              ctx.restore();
+            });
+          });
+        }
+      };
+      new Chart(modCvs,{
+        type:'line',
+        data:{
+          labels:mlabels,
+          datasets:[
+            {label:'Single %', data:sData, borderColor:'#e07070', backgroundColor:'rgba(224,112,112,.08)', borderWidth:2.5, pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#e07070', pointBorderColor:'#fff', pointBorderWidth:2, tension:.35, fill:false, spanGaps:false},
+            {label:'Double %', data:dData, borderColor:'#9b292c', backgroundColor:'rgba(155,41,44,.08)', borderWidth:2.5, pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#9b292c', pointBorderColor:'#fff', pointBorderWidth:2, tension:.35, fill:false, spanGaps:false},
+            {label:'Triple %', data:tData, borderColor:'#5a1a1a', backgroundColor:'rgba(90,26,26,.06)',  borderWidth:2,   pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#5a1a1a', pointBorderColor:'#fff', pointBorderWidth:2, tension:.35, fill:false, spanGaps:false}
+          ]
+        },
+        plugins:[modLabelPlugin],
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          interaction:{mode:'index',intersect:false},
+          layout:{padding:{top:18}},
+          plugins:{
+            legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:12}},
+            tooltip:{callbacks:{
+              label:c=>c.parsed.y!=null?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:null,
+              footer:items=>{
+                const vals=items.map(i=>i.parsed.y).filter(v=>v!=null);
+                return vals.length===3?`Total: ${vals.reduce((s,v)=>s+v,0).toFixed(1)}%`:'';
+              }
+            }}
+          },
+          scales:{
+            x:{grid:{display:false},ticks:{font:{size:11},maxRotation:0}},
+            y:{min:0,max:100,ticks:{font:{size:11},callback:v=>v+'%',maxTicksLimit:5},grid:{color:'rgba(0,0,0,.05)'}}
+          }
+        }
+      });
+    },50);
+  }
 
   // Init Store Compare trend chart
   if(MX.activeTab==='__xstore__' && window._mxXStoreTrendData && typeof Chart!=='undefined'){
@@ -6831,13 +6901,19 @@ function getSxTopItems(rec){
 
 function sxSetYear(y){ SX.year=y; SX.loc=null; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null; try{ renderSalesPage(); }catch(e){ console.error(e); } renderNavRight(); }
 function sxSetState(st){ SX.state=st; SX.loc=null; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null; try{ renderSalesPage(); }catch(e){ console.error(e); } renderNavRight(); }
-function sxSetLoc(loc){ SX.loc=loc; SX.month=null; SX.activeTab='overview'; renderSalesPage(); }
+function sxSetLoc(loc){
+  // Reset compare mode whenever crossing the fleet boundary (to or from ALL)
+  if(loc==='ALL' || SX.loc==='ALL'){ SX.cmpMode=false; SX.cmpMonth=null; SX.cmpLoc=null; }
+  SX.loc=loc; SX.month=null; SX.activeTab='overview'; renderSalesPage();
+}
 function sxSetMonth(m){ SX.month=m; SX.activeTab='overview'; renderSalesPage(); }
 function sxSetTab(tab){ SX.activeTab=tab; renderSalesDashboard(..._sxCurrentArgs()); }
 function sxSetCmpMonth(m){ SX.cmpMonth=m; renderSalesPage(); }
 function sxSetCmpLoc(loc){ SX.cmpLoc=loc; renderSalesPage(); }
 function sxSetCmpType(t){ SX.cmpType=t; SX.cmpMonth=null; SX.cmpLoc=null; renderSalesPage(); }
 function sxToggleCmp(){
+  // Compare mode is not available in fleet (ALL) view — silently ignore
+  if(SX.loc==='ALL') return;
   SX.cmpMode=!SX.cmpMode; SX.cmpLoc=null;
   if(SX.cmpMode){
     const locRecs=getSalesRecords()
@@ -7592,105 +7668,142 @@ function renderSalesDashboard(rec, locRecs, allRecs){
 }
 
 
-// ── Sales Chart: Daypart Trend Stacked Bar (Feature 1)
+// ── Sales Chart: Daypart Trend — % share lines per month
 function initSxDpChart(locRecs){
   const canvas=document.getElementById('sx-dp-chart');
   if(!canvas) return;
   if(sxDpChart){ sxDpChart.destroy(); sxDpChart=null; }
-  const sorted=[...locRecs].sort((a,b)=>a.month-b.month);
+  const sorted=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
   if(sorted.length<2){ canvas.style.display='none'; return; }
   canvas.style.display='';
-  const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+(String(r.year).slice(2)));
-  // Collect unique daypart names (excl. Breakfast), preserving order
+  const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+String(r.year).slice(2));
   const dpNames=[];
-  for(const r of sorted){
-    for(const dp of r.dayparts){
+  for(const r of sorted)
+    for(const dp of r.dayparts)
       if(!dpNames.includes(dp.name)&&dp.name.toLowerCase()!=='breakfast') dpNames.push(dp.name);
-    }
-  }
-  // Bar colors (semi-transparent) + solid line colors per daypart
-  const DP_BAR  =['rgba(155,41,44,.65)','rgba(30,58,95,.65)','rgba(196,168,80,.65)','rgba(122,96,88,.65)','rgba(74,154,196,.65)'];
+  const monthTotals=sorted.map(r=>r.dayparts.filter(d=>d.name.toLowerCase()!=='breakfast').reduce((s,d)=>s+d.netSales,0)||1);
+  const rawData=dpNames.map(name=>sorted.map(r=>{ const dp=r.dayparts.find(d=>d.name===name); return dp?dp.netSales:0; }));
   const DP_LINE =['#9b292c','#1e3a5f','#c4a850','#7a6058','#4a9ac4'];
-  const datasets=[];
-  dpNames.forEach((name,idx)=>{
-    const data=sorted.map(r=>{ const dp=r.dayparts.find(d=>d.name===name); return dp?dp.netSales:null; });
-    // Bar dataset
-    datasets.push({
-      type:'bar', label:name,
-      data, backgroundColor:DP_BAR[idx%DP_BAR.length],
-      borderColor:DP_LINE[idx%DP_LINE.length], borderWidth:1,
-      borderRadius:3, order:2
-    });
-    // Trend line dataset (same data, line only)
-    datasets.push({
-      type:'line', label:name+' trend',
-      data, borderColor:DP_LINE[idx%DP_LINE.length],
-      pointBackgroundColor:DP_LINE[idx%DP_LINE.length],
-      borderWidth:2, tension:.4, pointRadius:3, fill:false, spanGaps:false,
-      order:1,
-      // Hide from legend — only the bar entry shows
-      legend:{display:false}
-    });
-  });
+  const DP_FILL =['rgba(155,41,44,.08)','rgba(30,58,95,.08)','rgba(196,168,80,.08)','rgba(122,96,88,.08)','rgba(74,154,196,.08)'];
+  const datasets=dpNames.map((name,idx)=>({
+    label:name,
+    data:sorted.map((_,mi)=>+(rawData[idx][mi]/monthTotals[mi]*100).toFixed(1)),
+    borderColor:DP_LINE[idx%DP_LINE.length],
+    backgroundColor:DP_FILL[idx%DP_FILL.length],
+    borderWidth:2.5,
+    pointRadius:5, pointHoverRadius:7,
+    pointBackgroundColor:DP_LINE[idx%DP_LINE.length],
+    pointBorderColor:'#fff', pointBorderWidth:2,
+    tension:.35, fill:false, spanGaps:false
+  }));
+  // Inline plugin: draw % labels directly on each data point
+  const dpLabelPlugin={
+    id:'dpLabels',
+    afterDatasetsDraw(chart){
+      const ctx=chart.ctx;
+      chart.data.datasets.forEach((ds,di)=>{
+        const meta=chart.getDatasetMeta(di);
+        if(meta.hidden) return;
+        meta.data.forEach((pt,idx)=>{
+          const val=ds.data[idx];
+          if(val==null) return;
+          const txt=val.toFixed(1)+'%';
+          ctx.save();
+          ctx.font='700 10px system-ui,sans-serif';
+          ctx.fillStyle=ds.borderColor;
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          // offset upward so label doesn't sit on top of the dot
+          ctx.fillText(txt, pt.x, pt.y-9);
+          ctx.restore();
+        });
+      });
+    }
+  };
   sxDpChart=new Chart(canvas,{
-    type:'bar',
+    type:'line',
     data:{labels,datasets},
+    plugins:[dpLabelPlugin],
     options:{
       responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      layout:{padding:{top:18}},
       plugins:{
-        legend:{
-          position:'bottom',
-          labels:{
-            font:{size:11}, padding:14, boxWidth:12,
-            // only show bar datasets (even indices)
-            filter: item => !item.text.endsWith(' trend')
-          }
-        },
-        tooltip:{
-          callbacks:{
-            label:ctx=>{
-              if(ctx.dataset.label.endsWith(' trend')) return null;
-              return ' '+ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('en-US');
-            }
-          },
-          filter: item => !item.dataset.label.endsWith(' trend')
-        }
+        legend:{position:'bottom',labels:{font:{size:11},padding:14,boxWidth:12}},
+        tooltip:{callbacks:{
+          label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}% · $${Math.round(rawData[c.datasetIndex][c.dataIndex]).toLocaleString('en-US')}`,
+          footer:items=>{ const t=monthTotals[items[0]?.dataIndex]||0; return t?`Total: $${Math.round(t).toLocaleString('en-US')}`:''; }
+        }}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{ticks:{font:{size:11},callback:v=>'$'+(v>=1000?Math.round(v/1000)+'k':v)},grid:{color:'rgba(0,0,0,.06)'}}
+        y:{min:0,max:100,ticks:{font:{size:11},callback:v=>v+'%',maxTicksLimit:6},grid:{color:'rgba(0,0,0,.06)'}}
       }
     }
   });
 }
 
-// ── Sales Chart: Avg Check + Orders Combo (Feature 5)
+// ── Sales Chart: Avg Check + Orders — two clean lines, no bars
 function initSxAvgChart(locRecs){
   const canvas=document.getElementById('sx-avg-chart');
   if(!canvas) return;
   if(sxAvgChart){ sxAvgChart.destroy(); sxAvgChart=null; }
-  const sorted=[...locRecs].sort((a,b)=>a.month-b.month);
+  const sorted=[...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
   if(sorted.length<2){ canvas.style.display='none'; return; }
   canvas.style.display='';
-  const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+(String(r.year).slice(2)));
+  const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+String(r.year).slice(2));
   const avgData=sorted.map(r=>r.totalOrders>0?+(r.netSales/r.totalOrders).toFixed(2):null);
-  const ordData=sorted.map(r=>r.totalOrders||0);
+  const ordData=sorted.map(r=>r.totalOrders||null);
   sxAvgChart=new Chart(canvas,{
-    type:'bar',
+    type:'line',
     data:{labels,datasets:[
-      {type:'bar',label:'Total Orders',data:ordData,backgroundColor:'rgba(74,127,181,.22)',borderColor:'rgba(74,127,181,.4)',borderWidth:1,yAxisID:'yOrd'},
-      {type:'line',label:'Avg Check',data:avgData,borderColor:'#9b292c',pointBackgroundColor:'#9b292c',tension:.35,pointRadius:4,fill:false,yAxisID:'yAvg',spanGaps:false}
+      {
+        label:'Total Orders',
+        data:ordData,
+        borderColor:'#1e3a5f',
+        backgroundColor:'rgba(30,58,95,.08)',
+        borderWidth:2.5, pointRadius:5, pointHoverRadius:7,
+        pointBackgroundColor:'#1e3a5f', pointBorderColor:'#fff', pointBorderWidth:2,
+        tension:.35, fill:true, spanGaps:false, yAxisID:'yOrd'
+      },
+      {
+        label:'Avg Check',
+        data:avgData,
+        borderColor:'#9b292c',
+        backgroundColor:'rgba(155,41,44,.07)',
+        borderWidth:2.5, pointRadius:5, pointHoverRadius:7,
+        pointBackgroundColor:'#9b292c', pointBorderColor:'#fff', pointBorderWidth:2,
+        tension:.35, fill:true, spanGaps:false, yAxisID:'yAvg'
+      }
     ]},
     options:{
       responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:12}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.dataset.label==='Avg Check'?'$'+Number(ctx.parsed.y).toFixed(2):Math.round(ctx.parsed.y).toLocaleString('en-US'))}}
+        legend:{position:'bottom',labels:{font:{size:11},padding:14,boxWidth:12}},
+        tooltip:{callbacks:{
+          label:c=>{
+            if(c.parsed.y==null) return null;
+            return c.dataset.label==='Avg Check'
+              ? ` Avg Check: $${Number(c.parsed.y).toFixed(2)}`
+              : ` Orders: ${Math.round(c.parsed.y).toLocaleString('en-US')}`;
+          }
+        }}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11}}},
-        yOrd:{position:'left',title:{display:true,text:'Orders',font:{size:10}},grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:10}}},
-        yAvg:{position:'right',title:{display:true,text:'Avg Check',font:{size:10}},grid:{display:false},ticks:{font:{size:10},callback:v=>'$'+v.toFixed(0)}}
+        yOrd:{
+          position:'left',
+          grid:{color:'rgba(0,0,0,.06)'},
+          ticks:{font:{size:10},color:'#1e3a5f',maxTicksLimit:5,callback:v=>Math.round(v/1000)+'K'},
+          title:{display:true,text:'Orders',font:{size:10},color:'#1e3a5f'}
+        },
+        yAvg:{
+          position:'right',
+          grid:{display:false},
+          ticks:{font:{size:10},color:'#9b292c',maxTicksLimit:5,callback:v=>'$'+v.toFixed(0)},
+          title:{display:true,text:'Avg Check',font:{size:10},color:'#9b292c'}
+        }
       }
     }
   });
@@ -8990,11 +9103,7 @@ function renderPnLDashboard(rec, locRecs){
   // ── Feature 3: YoY chart panel (only if multiple years have data)
   const locAllRecs=getPnLRecords().filter(r=>r.state===(PX.state||rec.state)&&r.loc===(PX.loc||rec.loc));
   const allYears=[...new Set(locAllRecs.map(r=>r.year))].sort();
-  const yoyPanel=allYears.length>=2?`
-    <div class="pnl-yoy-panel">
-      <div class="ui-panel-title">Year-over-Year · Net Sales &amp; Net Income by Quarter</div>
-      <div style="position:relative;height:220px;"><canvas id="pnl-yoy-chart"></canvas></div>
-    </div>`:'';
+  const yoyPanel='';
 
   // ── Feature 4: Smart Break-Even from actual P&L (no manual inputs)
   const mosColor=mosPct==null?'#5a4c2e':mosPct>=20?'#15803d':mosPct>=5?'#854d0e':'#b91c1c';
@@ -9055,7 +9164,8 @@ function renderPnLDashboard(rec, locRecs){
             </div>
           </div>
           <div class="pnl-be-trend">
-            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">BEP vs Net Sales — Monthly Trend</div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Safety Margin — Distance Above Break-Even</div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Net Sales − BEP Revenue · Green = safe · Red = below break-even</div>
             <div style="position:relative;height:130px;"><canvas id="pnl-be-chart"></canvas></div>
           </div>
         </div>
@@ -9276,85 +9386,51 @@ function renderPnLDashboard(rec, locRecs){
 
       // ── Waterfall is now HTML/CSS — no chart init needed
 
-      // ── YoY chart (Feature 3)
-      const yoyCtx=document.getElementById('pnl-yoy-chart');
-      if(yoyCtx&&locAllRecs&&allYears.length>=2){
-        Chart.getChart(yoyCtx)?.destroy();
-        const quarters=['Q1','Q2','Q3','Q4'];
-        const getQ=m=>quarters[Math.floor(m/3)];
-        const qd={};
-        quarters.forEach(q=>{qd[q]={};allYears.forEach(y=>{qd[q][y]={ns:0,ni:0,has:false};});});
-        for(const r of locAllRecs){
-          const q=getQ(r.month); const y=r.year;
-          if(qd[q]&&qd[q][y]){ qd[q][y].ns+=r.netSales; qd[q][y].ni+=r.netIncome; qd[q][y].has=true; }
-        }
-        const activeQ=quarters.filter(q=>allYears.some(y=>qd[q][y].has));
-        if(activeQ.length>0){
-          const YCOLS={'2025':{ns:'rgba(155,41,44,.75)',ni:'rgba(155,41,44,.35)'},'2026':{ns:'rgba(30,58,95,.8)',ni:'rgba(30,58,95,.35)'}};
-          const getYC=(y,t)=>(YCOLS[y]||{ns:'rgba(74,127,181,.7)',ni:'rgba(74,127,181,.35)'})[t];
-          const datasets=[];
-          allYears.forEach(y=>{
-            datasets.push({label:'Net Sales '+y, data:activeQ.map(q=>qd[q][y].has?qd[q][y].ns:null), backgroundColor:getYC(y,'ns'), borderRadius:3});
-            datasets.push({label:'Net Income '+y, data:activeQ.map(q=>qd[q][y].has?qd[q][y].ni:null), backgroundColor:getYC(y,'ni'), borderRadius:3});
-          });
-          new Chart(yoyCtx,{
-            type:'bar',
-            data:{labels:activeQ,datasets},
-            options:{
-              responsive:true, maintainAspectRatio:false,
-              plugins:{
-                legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:12}},
-                tooltip:{callbacks:{label:c=>' '+c.dataset.label+': $'+Math.round(c.parsed.y).toLocaleString('en-US')}}
-              },
-              scales:{
-                x:{grid:{display:false},ticks:{font:{size:12}}},
-                y:{ticks:{font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'K'},grid:{color:'rgba(0,0,0,.05)'}}
-              }
-            }
-          });
-        }
-      }
-
-      // ── BEP Trend chart (Break-Even panel)
+      // ── Safety Margin chart (replaces BEP vs Net Sales)
       const beCtx=document.getElementById('pnl-be-chart');
       if(beCtx&&trendRecs.length>=2){
         Chart.getChart(beCtx)?.destroy();
         const beLabels=trendRecs.map(r=>MSHORT[r.month]+' '+r.year.slice(2));
-        const beNsData=trendRecs.map(r=>r.netSales||0);
-        const beBepData=trendRecs.map(r=>{
+        const safetyData=trendRecs.map(r=>{
           const rns=r.netSales||1;
           const rv=Math.abs(r.cogs)+Math.abs(r.payroll)+Math.abs(r.supplies)+Math.abs(r.commissions);
           const rf=Math.abs(r.insurance)+Math.abs(r.professionalFees)+Math.abs(r.generalBusiness)+
                    Math.abs(r.advertising)+Math.abs(r.utilities)+(r.taxes?Math.abs(r.taxes):0)+(r.rent?Math.abs(r.rent):0);
           const rcmr=rns>0?1-(rv/rns):0;
-          return rcmr>0.01?+(rf/rcmr).toFixed(0):null;
+          const rbep=rcmr>0.01?rf/rcmr:null;
+          return rbep!=null?+(rns-rbep).toFixed(0):null;
         });
+        const barColors=safetyData.map(v=>v==null?'rgba(0,0,0,.1)':v>=0?'rgba(34,197,94,.65)':'rgba(185,28,28,.65)');
         new Chart(beCtx,{
           type:'bar',
           data:{
             labels:beLabels,
-            datasets:[
-              {type:'bar', label:'Net Sales', data:beNsData,
-               backgroundColor:'rgba(30,58,95,.35)', borderRadius:3, order:2},
-              {type:'line', label:'BEP Revenue', data:beBepData,
-               borderColor:'#b91c1c', borderWidth:2, borderDash:[5,3],
-               pointRadius:3, pointHoverRadius:5, tension:.3,
-               backgroundColor:'transparent', order:1}
-            ]
+            datasets:[{
+              label:'Safety Margin',
+              data:safetyData,
+              backgroundColor:barColors,
+              borderRadius:4,
+              borderSkipped:false
+            }]
           },
           options:{
             responsive:true, maintainAspectRatio:false,
             interaction:{mode:'index',intersect:false},
             plugins:{
-              legend:{display:true,position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}},
+              legend:{display:false},
               tooltip:{callbacks:{label:c=>{
                 const v=c.raw; if(v==null) return null;
-                return ' '+c.dataset.label+': $'+Math.round(v).toLocaleString('en-US');
+                const sign=v>=0?'+':'';
+                return ' Safety Margin: '+sign+'$'+Math.round(v).toLocaleString('en-US');
               }}}
             },
             scales:{
               x:{grid:{display:false},ticks:{font:{size:9},maxRotation:0,maxTicksLimit:8}},
-              y:{ticks:{font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K',maxTicksLimit:4},grid:{color:'rgba(0,0,0,.05)'}}
+              y:{
+                ticks:{font:{size:9},callback:v=>(v>=0?'+':'')+('$'+(Math.abs(v)/1000).toFixed(0)+'K'),maxTicksLimit:5},
+                grid:{color:ctx=>ctx.tick.value===0?'rgba(0,0,0,.3)':'rgba(0,0,0,.05)'},
+                border:{dash:[3,3]}
+              }
             }
           }
         });
