@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v38 -->
+<!-- BUILD: 2026-04-15-v39 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -5581,7 +5581,7 @@ function _renderAdmPermGrid(perms){
       </div>
       <div class="adm-toggle-wrap">
         <div class="adm-toggle">
-          <input type="checkbox" ${on?'checked':''} id="adm-chk-${m.id}" onclick="event.stopPropagation()" onchange="_admToggleModule('${m.id}')" />
+          <input type="checkbox" ${on?'checked':''} id="adm-chk-${m.id}" style="pointer-events:none;" />
           <div class="adm-toggle-slider"></div>
         </div>
       </div>
