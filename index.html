@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v29 -->
+<!-- BUILD: 2026-04-15-v33 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2713,6 +2713,79 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-icon{font-size:22px;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-title{font-size:12px;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-msg{font-size:11px;}
+/* ── Admin Panel ─────────────────────────────────────────── */
+#pg-admin{display:none;background:#faf9f7;height:calc(100vh - 62px);overflow:hidden;display:flex;flex-direction:column;}
+.adm-hdr{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-shrink:0;}
+.adm-hdr-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;}
+/* Two-panel layout */
+.adm-layout{display:flex;flex:1;overflow:hidden;}
+/* Left: user list */
+.adm-user-list{width:272px;min-width:200px;border-right:1px solid #e8e2d8;background:#fff;display:flex;flex-direction:column;flex-shrink:0;}
+.adm-user-list-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:14px 16px 10px;border-bottom:1px solid #f1ede6;flex-shrink:0;}
+.adm-user-scroll{flex:1;overflow-y:auto;}
+.adm-user-item{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-bottom:1px solid #f5f0ea;transition:background .1s;}
+.adm-user-item:hover{background:#faf5ef;}
+.adm-user-item.active{background:#fff5f0;border-left:3px solid #7e2023;}
+.adm-user-item.active .adm-user-name{color:#7e2023;font-weight:700;}
+.adm-user-avatar{width:30px;height:30px;border-radius:8px;background:#f1ede6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#94a3b8;flex-shrink:0;text-transform:uppercase;}
+.adm-user-item.active .adm-user-avatar{background:rgba(126,32,35,.12);color:#7e2023;}
+.adm-user-name{font-size:13px;font-weight:600;color:#1e293b;line-height:1.2;word-break:break-all;}
+.adm-user-sub{font-size:10px;color:#94a3b8;margin-top:1px;}
+/* Right: permission panel */
+.adm-perm-panel{flex:1;overflow-y:auto;padding:0;}
+.adm-perm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:13px;gap:10px;}
+.adm-perm-body{padding:28px 32px 40px;}
+.adm-perm-user-hdr{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #e8e2d8;}
+.adm-perm-user-avatar{width:44px;height:44px;border-radius:10px;background:rgba(126,32,35,.1);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#7e2023;flex-shrink:0;text-transform:uppercase;}
+.adm-perm-user-name{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;letter-spacing:.02em;}
+.adm-perm-user-sub{font-size:11px;color:#94a3b8;margin-top:2px;}
+.adm-perm-section-title{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
+.adm-perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:28px;}
+.adm-perm-module{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .15s;user-select:none;}
+.adm-perm-module:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-perm-module.on{border-color:#7e2023;background:#fff5f0;}
+.adm-perm-module.on .adm-perm-mod-name{color:#7e2023;font-weight:700;}
+.adm-perm-mod-icon{font-size:20px;flex-shrink:0;}
+.adm-perm-mod-info{flex:1;}
+.adm-perm-mod-name{font-size:13px;font-weight:600;color:#334155;}
+.adm-perm-mod-desc{font-size:10px;color:#94a3b8;margin-top:1px;}
+/* Custom toggle */
+.adm-toggle-wrap{flex-shrink:0;}
+.adm-toggle{position:relative;width:36px;height:20px;cursor:pointer;}
+.adm-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.adm-toggle-slider{position:absolute;inset:0;background:#d4c9b8;border-radius:99px;transition:background .18s;}
+.adm-toggle-slider::before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;left:3px;top:3px;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.adm-toggle input:checked + .adm-toggle-slider{background:#7e2023;}
+.adm-toggle input:checked + .adm-toggle-slider::before{transform:translateX(16px);}
+/* Action bar */
+.adm-action-bar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:#fff;border-top:1px solid #e8e2d8;position:sticky;bottom:0;}
+.adm-act-save{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 24px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
+.adm-act-save:hover{opacity:.88;}
+.adm-act-full{background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
+.adm-act-full:hover{opacity:.8;}
+.adm-act-clear{background:#fee2e2;color:#991b1b;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
+.adm-act-clear:hover{opacity:.8;}
+.adm-act-msg{font-size:12px;margin-left:4px;}
+.adm-act-msg.ok{color:#166534;}
+.adm-act-msg.err{color:#b91c1c;}
+/* Invite section */
+.adm-invite-wrap{padding:24px 32px 0;border-top:1px solid #e8e2d8;margin-top:8px;}
+.adm-perm-section-title2{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
+.adm-invite-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.adm-invite-input{font-size:13px;padding:8px 10px;border:1px solid #d4c9b8;border-radius:7px;background:#fff;color:#1e293b;box-sizing:border-box;}
+.adm-invite-input:focus{outline:none;border-color:#7e2023;}
+.adm-invite-btn{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:8px 20px;border-radius:7px;border:none;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
+.adm-invite-btn:hover{opacity:.88;}
+.adm-msg{font-size:12px;margin-top:8px;}
+.adm-msg.ok{color:#166534;}
+.adm-msg.err{color:#b91c1c;}
+.adm-loading{padding:32px;text-align:center;color:#94a3b8;font-size:13px;}
+/* Misc shared */
+.adm-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;transition:opacity .15s;letter-spacing:.02em;}
+.adm-btn:hover{opacity:.82;}
+.adm-btn-del{background:#fee2e2;color:#991b1b;}
+.adm-sel{font-size:12px;padding:4px 8px;border:1px solid #d4c9b8;border-radius:6px;background:#fff;color:#334155;cursor:pointer;}
+.adm-sel:focus{outline:none;border-color:#7e2023;}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -2731,6 +2804,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   <div class="nb-right" id="nb-right">
     <!-- populated by JS -->
   </div>
+  <button id="nb-admin-btn" onclick="goAdmin()" style="display:none;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(196,160,53,.5);background:rgba(196,160,53,.15);color:#e8c870;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .15s;white-space:nowrap;margin-right:4px;" onmouseenter="this.style.background='rgba(196,160,53,.28)'" onmouseleave="this.style.background='rgba(196,160,53,.15)'">👥 ADMIN</button>
   <div id="nb-user-info" style="display:flex;align-items:center;"></div>
   <span id="last-sync-label" style="font-size:10px;color:rgba(255,255,255,.5);white-space:nowrap;margin-right:4px;"></span>
   <span id="sync-badge" style="font-size:10px;color:rgba(255,255,255,.65);background:rgba(45,122,79,.2);border:1px solid rgba(45,122,79,.35);border-radius:99px;padding:2px 8px;opacity:0;transition:opacity .4s;margin-right:6px;">✓ Synced</span>
@@ -2819,25 +2893,25 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <p>Better data. Better decisions. Better stores.</p>
   </div>
   <div class="home-grid">
-    <div class="hcard c1" onclick="goKPI()">
+    <div id="hcard-kpi" class="hcard c1" onclick="goKPI()">
       <span class="hcard-icon">📊</span>
       <div class="hcard-title">KPI Dashboard</div>
       <div class="hcard-desc">Track food cost, labor, disposable &amp; cleaning — with monthly targets, Google Reviews, and UberEats ratings.</div>
       <div class="hcard-tag">Active · All Locations</div>
     </div>
-    <div class="hcard c2" onclick="goSales()">
+    <div id="hcard-sales" class="hcard c2" onclick="goSales()">
       <span class="hcard-icon">💰</span>
       <div class="hcard-title">Sales Summary</div>
       <div class="hcard-desc">Revenue breakdown by channel, day part, and location. Upload your reports to track trends.</div>
       <div class="hcard-tag">Import Data</div>
     </div>
-    <div class="hcard c3" onclick="goMix()">
+    <div id="hcard-mix" class="hcard c3" onclick="goMix()">
       <span class="hcard-icon">🍔</span>
       <div class="hcard-title">Product Mix</div>
       <div class="hcard-desc">Top sellers, category breakdown, and item-level performance across all locations.</div>
       <div class="hcard-tag">Import Data</div>
     </div>
-    <div class="hcard c4" onclick="goPNL()" style="position:relative;">
+    <div id="hcard-pnl" class="hcard c4" onclick="goPNL()" style="position:relative;">
       <span class="hcard-icon">📋</span>
       <div class="hcard-title">P&amp;L Dashboard</div>
       <div class="hcard-desc">Profit &amp; loss review by location. Upload your P&amp;L reports to track margins and profitability.</div>
@@ -2849,7 +2923,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         <span style="font-size:10px;color:rgba(255,255,255,.6);">Managers &amp; Admins only</span>
       </div>
     </div>
-    <div class="hcard c7" onclick="goMaint()" style="position:relative;cursor:pointer;">
+    <div id="hcard-maint" class="hcard c7" onclick="goMaint()" style="position:relative;cursor:pointer;">
       <span class="hcard-icon">🔧</span>
       <div class="hcard-title">Store Maintenance</div>
       <div class="hcard-desc">Track work orders by store and priority. Open, assign, and close maintenance issues with full history and technician notes.</div>
@@ -2862,6 +2936,22 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
        <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
        <div class="hcard-tag">Active · All Locations</div>
      </div>
+    <div id="admin-home-card" onclick="goAdmin()" style="display:none;grid-column:1/-1;cursor:pointer;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 100%);border-radius:18px;padding:28px 36px;display:flex;align-items:center;gap:28px;text-align:left;box-shadow:0 4px 24px rgba(30,58,95,.25);border:none;transition:box-shadow .18s;" onmouseenter="this.style.boxShadow='0 8px 36px rgba(30,58,95,.38)'" onmouseleave="this.style.boxShadow='0 4px 24px rgba(30,58,95,.25)'">
+      <span style="font-size:56px;margin-bottom:0;flex-shrink:0;filter:brightness(1.2);">👥</span>
+      <div style="flex:1;">
+        <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:.04em;margin-bottom:6px;">User Management</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.72);line-height:1.55;">Manage team access from one place — invite users, assign roles, and control which dashboards each person can see.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">👤 User List</span>
+          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">🔐 Permissions</span>
+          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">✉️ Invite</span>
+          <span style="background:rgba(196,160,53,.3);color:#e8c870;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">Admin Only</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;text-align:center;">
+        <div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;">Open Admin →</div>
+      </div>
+    </div>
     <div class="hcard c8" style="position:relative;">
       <span class="hcard-icon">🎉</span>
       <div class="hcard-title">Event Calculator</div>
@@ -3429,9 +3519,13 @@ try {
 }
 const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
 
-let _slUser = null;
+let _slUser  = null;
 let _slRole  = null;
 let _slState = 'all'; // 'all', 'FL', or 'NY'
+// _slPerms: null = not yet loaded; Set of module strings = explicit permission list.
+// Admins bypass all permission checks. For others: null/empty → all modules allowed;
+// non-empty Set → only listed modules are accessible.
+let _slPerms = null;
 
 // Intercept localStorage.setItem — auto-sync SL keys to Supabase
 const _origLS = localStorage.setItem.bind(localStorage);
@@ -3602,7 +3696,7 @@ async function doLogin(){
 
 async function doLogout(){
   await _supa.auth.signOut();
-  _slUser = null; _slRole = null; _slState = 'all';
+  _slUser = null; _slRole = null; _slState = 'all'; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
   S.page = 'home';
   // Reset MN state so maintenance filters start clean on next login
@@ -3612,7 +3706,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -3622,11 +3716,18 @@ async function doLogout(){
 
 async function _initApp(user){
   _slUser = user;
-  // Fetch profile (role, name, state) — fail gracefully
+  // Fetch profile (role, name, state) AND user_permissions in parallel — fail gracefully
   try {
-    const { data: profile } = await _supa.from('profiles').select('role,name,state').eq('id', user.id).single();
+    const [profileRes, permsRes] = await Promise.all([
+      _supa.from('profiles').select('role,name,state').eq('id', user.id).single(),
+      _supa.from('user_permissions').select('module').eq('user_id', user.id)
+    ]);
+    const profile = profileRes.data;
     _slRole  = profile?.role  || 'manager';
     _slState = profile?.state || 'all';
+    // Build permissions Set — null/empty means all modules allowed (permissive default)
+    const permRows = permsRes.data || [];
+    _slPerms = permRows.length ? new Set(permRows.map(r => r.module)) : new Set();
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
     const uinfo = document.getElementById('nb-user-info');
@@ -3643,6 +3744,7 @@ async function _initApp(user){
     console.error('Profile fetch failed:', e);
     _slRole  = 'manager';
     _slState = 'all';
+    _slPerms = new Set(); // empty = all allowed on error
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
   }
@@ -3676,6 +3778,62 @@ function _applyRoleUI(){
   // Show Sync Data button only for admin/manager
   const syncBtn = document.getElementById('force-sync-btn');
   if(syncBtn) syncBtn.style.display = canEdit ? 'flex' : 'none';
+  // Show Admin home card only if user has admin permission
+  const adminCard = document.getElementById('admin-home-card');
+  if(adminCard) adminCard.style.display = _hasPermission('admin') ? '' : 'none';
+  // Apply module-level permissions to home grid cards
+  _applyPermissionsUI();
+}
+
+// ── Permission helpers ────────────────────────────────────────────────────
+// Modules: 'kpi', 'pnl', 'sales', 'mix', 'maint'
+// Returns true if the current user may access the given module.
+// Admins always have access. Empty/null _slPerms = permissive default (all allowed).
+function _hasPermission(module){
+  if(_slRole === 'admin') return true;
+  if(!_slPerms || _slPerms.size === 0) return true; // permissive default
+  return _slPerms.has(module);
+}
+
+// Updates home grid card visibility based on _slPerms.
+function _applyPermissionsUI(){
+  const MODULE_CARDS = {
+    kpi:   'hcard-kpi',
+    sales: 'hcard-sales',
+    mix:   'hcard-mix',
+    pnl:   'hcard-pnl',
+    maint: 'hcard-maint',
+  };
+  for(const [module, cardId] of Object.entries(MODULE_CARDS)){
+    const card = document.getElementById(cardId);
+    if(!card) continue;
+    card.style.display = _hasPermission(module) ? '' : 'none';
+  }
+  // Show/hide navbar Admin button
+  const nbAdminBtn = document.getElementById('nb-admin-btn');
+  if(nbAdminBtn) nbAdminBtn.style.display = _hasPermission('admin') ? 'flex' : 'none';
+}
+
+// Shows a brief full-screen access-denied overlay then returns user to Home.
+function _showAccessDenied(moduleName){
+  let overlay = document.getElementById('_perm-denied-overlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.id = '_perm-denied-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(15,15,15,.72);backdrop-filter:blur(6px);';
+    overlay.innerHTML = `<div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+      <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+      <div id="_perm-denied-title" style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-bottom:8px;"></div>
+      <div style="font-size:13px;color:#64748b;line-height:1.55;margin-bottom:24px;">You don't have permission to access this dashboard.<br>Contact your administrator if you need access.</div>
+      <button onclick="document.getElementById('_perm-denied-overlay').style.display='none';goHome();" style="background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:10px 28px;border-radius:8px;border:none;cursor:pointer;">← Back to Home</button>
+    </div>`;
+    document.body.appendChild(overlay);
+  }
+  const titleEl = document.getElementById('_perm-denied-title');
+  if(titleEl) titleEl.textContent = moduleName + ' — Access Denied';
+  overlay.style.display = 'flex';
+  // Auto-dismiss after 4 seconds
+  setTimeout(() => { if(overlay) overlay.style.display = 'none'; }, 4000);
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -4377,6 +4535,7 @@ var INV = { city:'FL', tab:'count' };
 
 function goInv(){ const first=S.page!=='inv'; S.page='inv'; if(first) invInit(); render(); }
 function goMaint(){
+  if(!_hasPermission('maint')){ _showAccessDenied('Store Maintenance'); return; }
   S.page='maint';
   // Sync MN.state to the user's allowed state so data is always visible on first load
   if(_slState && _slState !== 'all'){
@@ -5250,25 +5409,284 @@ function exportSnapshot(){
     if(btn){ btn.textContent=orig; btn.disabled=false; }
   }
 }
-function goKPI(){  S.page='kpi'; if(S.loc==='ALL'||!locD(S.loc)){ const ls=locs(); S.loc=ls.length?ls[0]:'ALL'; } render(); }
+function goKPI(){
+  if(!_hasPermission('kpi')){ _showAccessDenied('KPI Dashboard'); return; }
+  S.page='kpi'; if(S.loc==='ALL'||!locD(S.loc)){ const ls=locs(); S.loc=ls.length?ls[0]:'ALL'; } render();
+}
 function goSales(){
+  if(!_hasPermission('sales')){ _showAccessDenied('Sales Summary'); return; }
   _slApplyLatest('sales'); // snap to latest if no valid selection
   S.page='sales'; render();
   if(typeof renderSalesPage!=='undefined') renderSalesPage();
 }
 function goMix(){
+  if(!_hasPermission('mix')){ _showAccessDenied('Product Mix'); return; }
   _slApplyLatest('mix'); // snap to latest if no valid selection
   S.page='mix'; render();
   if(typeof renderMixPage!=='undefined') renderMixPage();
 }
 function goPNL(){
-  if(_slRole==='user'){ // block only explicit users, not null/admin/manager
+  if(!_hasPermission('pnl')){ _showAccessDenied('P&L Dashboard'); return; }
+  if(_slRole==='user'){ // secondary lock for explicit 'user' role within pnl access
     const ol=document.getElementById('pnl-lock-overlay');
     if(ol){ ol.style.display='flex'; setTimeout(()=>ol.style.display='none',1800); }
     return;
   }
   _slApplyLatest('pnl'); // snap to latest if no valid selection
   S.page='pnl'; render();
+}
+function goAdmin(){
+  if(!_hasPermission('admin')) return;
+  S.page = 'admin';
+  render();
+  renderAdminPage();
+}
+
+// ══════════════════════════════════════════════════
+//  ADMIN PANEL — User Permission Management
+// ══════════════════════════════════════════════════
+
+// Module definitions (id, label, icon, description)
+const _ADM_MODULES = [
+  { id:'kpi',   label:'KPI Dashboard',    icon:'📊', desc:'Food cost, labor, targets' },
+  { id:'sales', label:'Sales Summary',    icon:'💰', desc:'Revenue by channel & location' },
+  { id:'mix',   label:'Product Mix',      icon:'🍔', desc:'Top sellers, category breakdown' },
+  { id:'pnl',   label:'P&L Dashboard',   icon:'📋', desc:'Profit & loss by location' },
+  { id:'maint', label:'Store Maintenance',icon:'🔧', desc:'Work orders & history' },
+  { id:'admin', label:'Admin Panel',      icon:'👥', desc:'User management & permissions' },
+];
+
+// Session state for admin editor
+let _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
+
+async function renderAdminPage(){
+  if(!_hasPermission('admin')) return;
+  const scroll = document.getElementById('adm-user-scroll');
+  if(!scroll) return;
+
+  scroll.innerHTML = '<div class="adm-loading">Loading…</div>';
+  // Reset right panel
+  const empty  = document.getElementById('adm-perm-empty');
+  const editor = document.getElementById('adm-perm-editor');
+  if(empty)  empty.style.display   = 'flex';
+  if(editor) editor.style.display  = 'none';
+  _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
+
+  try {
+    const { data: profiles, error } = await _supa
+      .from('profiles')
+      .select('id, name, role, state')
+      .order('name', { ascending: true });
+    if(error) throw error;
+
+    if(!profiles || !profiles.length){
+      scroll.innerHTML = '<div class="adm-loading" style="color:#94a3b8;">No users found.</div>';
+      return;
+    }
+
+    scroll.innerHTML = profiles.map(p => {
+      const initial = (p.name||'?')[0].toUpperCase();
+      return `<div class="adm-user-item" id="adm-uid-${p.id}" onclick="_adminSelectUser('${p.id}','${(p.name||'Unknown').replace(/'/g,'\\'')}','${p.role||'user'}','${p.state||'all'}')">
+        <div class="adm-user-avatar">${initial}</div>
+        <div>
+          <div class="adm-user-name">${p.name||'—'}</div>
+          <div class="adm-user-sub">${(p.role||'user').charAt(0).toUpperCase()+(p.role||'user').slice(1)} · ${p.state==='all'||!p.state?'All States':p.state}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    console.error('[Admin] renderAdminPage error:', e);
+    scroll.innerHTML = `<div class="adm-loading" style="color:#b91c1c;">Failed to load users: ${e.message||e}</div>`;
+  }
+}
+
+async function _adminSelectUser(userId, displayName, role, state){
+  // Highlight selection in left panel
+  document.querySelectorAll('.adm-user-item').forEach(el => el.classList.remove('active'));
+  const row = document.getElementById('adm-uid-' + userId);
+  if(row) row.classList.add('active');
+
+  // Show editor, hide empty state
+  const empty  = document.getElementById('adm-perm-empty');
+  const editor = document.getElementById('adm-perm-editor');
+  if(empty)  empty.style.display  = 'none';
+  if(editor) editor.style.display = 'flex';
+
+  // Set header
+  const avatarEl = document.getElementById('adm-sel-avatar');
+  const nameEl   = document.getElementById('adm-sel-name');
+  const subEl    = document.getElementById('adm-sel-sub');
+  if(avatarEl) avatarEl.textContent = displayName[0].toUpperCase();
+  if(nameEl)   nameEl.textContent   = displayName;
+  if(subEl)    subEl.textContent    = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${state==='all'?'All States':state}`;
+
+  // Load permissions for this user
+  _admCtx = { userId, displayName, role, state, perms: new Set() };
+  _admSetActionMsg('');
+  _renderAdmPermGrid(null); // show loading state
+
+  try {
+    const { data, error } = await _supa
+      .from('user_permissions')
+      .select('module')
+      .eq('user_id', userId);
+    if(error) throw error;
+    _admCtx.perms = new Set((data||[]).map(r => r.module));
+    _renderAdmPermGrid(_admCtx.perms);
+  } catch(e){
+    console.error('[Admin] _adminSelectUser perms fetch error:', e);
+    _renderAdmPermGrid(new Set()); // show empty toggles on error
+  }
+}
+
+function _renderAdmPermGrid(perms){
+  const grid = document.getElementById('adm-perm-grid');
+  if(!grid) return;
+  if(perms === null){
+    grid.innerHTML = '<div class="adm-loading" style="padding:16px 0;">Loading permissions…</div>';
+    return;
+  }
+  grid.innerHTML = _ADM_MODULES.map(m => {
+    const on = perms.has(m.id);
+    return `<label class="adm-perm-module ${on?'on':''}" id="adm-pm-${m.id}" onclick="_admToggleModule('${m.id}')">
+      <span class="adm-perm-mod-icon">${m.icon}</span>
+      <div class="adm-perm-mod-info">
+        <div class="adm-perm-mod-name">${m.label}</div>
+        <div class="adm-perm-mod-desc">${m.desc}</div>
+      </div>
+      <div class="adm-toggle-wrap">
+        <div class="adm-toggle">
+          <input type="checkbox" ${on?'checked':''} id="adm-chk-${m.id}" onclick="event.stopPropagation()" onchange="_admToggleModule('${m.id}')" />
+          <div class="adm-toggle-slider"></div>
+        </div>
+      </div>
+    </label>`;
+  }).join('');
+}
+
+function _admToggleModule(moduleId){
+  if(!_admCtx.userId) return;
+  if(_admCtx.perms.has(moduleId)){
+    _admCtx.perms.delete(moduleId);
+  } else {
+    _admCtx.perms.add(moduleId);
+  }
+  // Sync UI: update checkbox + card class
+  const card = document.getElementById('adm-pm-' + moduleId);
+  const chk  = document.getElementById('adm-chk-' + moduleId);
+  const on   = _admCtx.perms.has(moduleId);
+  if(card){ card.classList.toggle('on', on); }
+  if(chk)  chk.checked = on;
+  _admSetActionMsg('');
+}
+
+async function _adminSavePerms(){
+  if(!_admCtx.userId){ _admSetActionMsg('No user selected.', 'err'); return; }
+  _admSetActionMsg('Saving…');
+  try {
+    // Delete existing permissions for this user
+    const { error: delErr } = await _supa
+      .from('user_permissions')
+      .delete()
+      .eq('user_id', _admCtx.userId);
+    if(delErr) throw delErr;
+
+    // Insert selected permissions (if any)
+    if(_admCtx.perms.size > 0){
+      const rows = [..._admCtx.perms].map(module => ({ user_id: _admCtx.userId, module }));
+      const { error: insErr } = await _supa.from('user_permissions').insert(rows);
+      if(insErr) throw insErr;
+    }
+    console.log('[Admin] Saved permissions for', _admCtx.displayName, ':', [..._admCtx.perms]);
+    _admSetActionMsg(`✓ Saved for ${_admCtx.displayName}`, 'ok');
+  } catch(e){
+    console.error('[Admin] _adminSavePerms error:', e);
+    _admSetActionMsg('Save failed: ' + (e.message||e), 'err');
+  }
+}
+
+function _adminGrantFull(){
+  if(!_admCtx.userId) return;
+  _admCtx.perms = new Set(_ADM_MODULES.map(m => m.id));
+  _renderAdmPermGrid(_admCtx.perms);
+  _admSetActionMsg('');
+}
+
+function _adminClearAll(){
+  if(!_admCtx.userId) return;
+  _admCtx.perms = new Set();
+  _renderAdmPermGrid(_admCtx.perms);
+  _admSetActionMsg('');
+}
+
+function _admSetActionMsg(msg, type){
+  const el = document.getElementById('adm-act-msg');
+  if(!el) return;
+  el.textContent = msg||'';
+  el.className = 'adm-act-msg' + (type ? ' ' + type : '');
+  if(msg && type === 'ok') setTimeout(() => { if(el.textContent === msg) el.textContent = ''; }, 3000);
+}
+
+async function _adminDeleteUser(userId, displayName){
+  if(!confirm(`Delete user "${displayName}"?\n\nThis cannot be undone. Their profile and login will be permanently removed.`)) return;
+  try {
+    const { error } = await _supa.auth.admin.deleteUser(userId);
+    if(error) throw error;
+    console.log('[Admin] Deleted user:', userId);
+    renderAdminPage();
+  } catch(e){
+    console.error('[Admin] _adminDeleteUser error:', e);
+    const msg = e.message||String(e);
+    if(msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('permission')){
+      alert('User deletion requires elevated server permissions.\n\nGo to Supabase dashboard → Authentication → Users to remove them there.');
+    } else {
+      alert('Failed to delete user: ' + msg);
+    }
+  }
+}
+
+async function _adminInviteUser(){
+  const emailEl = document.getElementById('adm-inv-email');
+  const roleEl  = document.getElementById('adm-inv-role');
+  const stateEl = document.getElementById('adm-inv-state');
+  const msgEl   = document.getElementById('adm-inv-msg');
+  if(!emailEl||!roleEl||!stateEl||!msgEl) return;
+
+  const email = emailEl.value.trim();
+  const role  = roleEl.value;
+  const state = stateEl.value;
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msgEl.className = 'adm-msg err';
+    msgEl.textContent = 'Please enter a valid email address.';
+    msgEl.style.display = 'block';
+    return;
+  }
+  msgEl.className = 'adm-msg';
+  msgEl.textContent = 'Sending invite…';
+  msgEl.style.display = 'block';
+
+  try {
+    const { data, error } = await _supa.auth.admin.inviteUserByEmail(email, {
+      data: { role, state }
+    });
+    if(error) throw error;
+    try {
+      await _supa.from('profiles').upsert({ id: data.user?.id, role, state }, { onConflict: 'id' });
+    } catch(pe){ console.warn('[Admin] Profile upsert after invite (non-fatal):', pe); }
+    msgEl.className = 'adm-msg ok';
+    msgEl.textContent = `✓ Invite sent to ${email}.`;
+    emailEl.value = '';
+    setTimeout(() => renderAdminPage(), 600);
+  } catch(e){
+    console.error('[Admin] _adminInviteUser error:', e);
+    const msg = e.message||String(e);
+    msgEl.className = 'adm-msg err';
+    if(msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('permission')){
+      msgEl.textContent = 'Invites require elevated permissions. Use Supabase dashboard → Auth → Users → Invite user.';
+    } else {
+      msgEl.textContent = 'Failed: ' + msg;
+    }
+  }
 }
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
@@ -5293,7 +5711,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint'].forEach(p=>document.getElementById('pg-'+p).style.display='none');
+  ['home','kpi','sales','mix','pnl','inv','maint','admin'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   document.getElementById('pg-'+S.page).style.display = S.page==='home' ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
@@ -5301,6 +5719,7 @@ function render(){
   else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
   else if(S.page==='maint'){ try{ if(typeof renderMaintPage!=='undefined') renderMaintPage(); }catch(e){ console.error('renderMaintPage',e); } }
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
+  else if(S.page==='admin'){ try{ renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -5326,7 +5745,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -5400,11 +5819,13 @@ function renderNavRight(){
       _mnShowAll ? `<button class="yr-pill ${MN.state==='ALL'?'on':''}" onclick="MN.state='ALL';renderMaintPage();renderNavRight();">🌎 All</button>` : '',
     ].filter(Boolean).join('');
     r.innerHTML=crumb+(mnStateBtns ? `<div class="yr-pills">${mnStateBtns}</div>` : '');
+  } else if(S.page==='admin'){
+    r.innerHTML=crumb+`<button class="btn" onclick="renderAdminPage()" style="font-size:11px;">↺ Refresh</button>`;
   } else {
     r.innerHTML=crumb;
   }
   // Admin-only debug panel toggle button (appended to every page)
-  if(window._slRole === 'admin'){
+  if(_hasPermission('admin')){
     const dbgBtn = document.createElement('button');
     dbgBtn.title = 'Data Health Panel (Ctrl+Shift+D)';
     dbgBtn.onclick = toggleDebugPanel;
@@ -14660,6 +15081,81 @@ migrate();
   <div id="maint-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-tech"   style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-review" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
+</div>
+
+<!-- ═══ ADMIN PAGE ═══ -->
+<div id="pg-admin" style="display:none;background:#faf9f7;height:calc(100vh - 62px);overflow:hidden;display:flex;flex-direction:column;">
+  <div class="adm-hdr">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
+  </div>
+  <div class="adm-layout">
+    <!-- Left: user list -->
+    <div class="adm-user-list">
+      <div class="adm-user-list-hdr">Users</div>
+      <div class="adm-user-scroll" id="adm-user-scroll">
+        <div class="adm-loading">Loading…</div>
+      </div>
+    </div>
+    <!-- Right: permission editor -->
+    <div class="adm-perm-panel" id="adm-perm-panel">
+      <div class="adm-perm-empty" id="adm-perm-empty">
+        <span style="font-size:36px;">👈</span>
+        <span>Select a user to manage their permissions</span>
+      </div>
+      <!-- Permission editor (hidden until user selected) -->
+      <div id="adm-perm-editor" style="display:none;display:flex;flex-direction:column;height:100%;">
+        <div class="adm-perm-body" style="flex:1;overflow-y:auto;">
+          <!-- User header -->
+          <div class="adm-perm-user-hdr">
+            <div class="adm-perm-user-avatar" id="adm-sel-avatar"></div>
+            <div>
+              <div class="adm-perm-user-name" id="adm-sel-name"></div>
+              <div class="adm-perm-user-sub" id="adm-sel-sub"></div>
+            </div>
+          </div>
+          <!-- Permission toggles -->
+          <div class="adm-perm-section-title">Dashboard Access</div>
+          <div class="adm-perm-grid" id="adm-perm-grid"></div>
+          <!-- Invite section -->
+          <div class="adm-invite-wrap">
+            <div class="adm-perm-section-title2">Invite New User</div>
+            <div class="adm-invite-row">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Email</div>
+                <input class="adm-invite-input" id="adm-inv-email" type="email" placeholder="name@example.com" style="width:220px;" />
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Role</div>
+                <select class="adm-invite-input adm-sel" id="adm-inv-role" style="padding:7px 8px;width:110px;">
+                  <option value="user">User</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">State</div>
+                <select class="adm-invite-input adm-sel" id="adm-inv-state" style="padding:7px 8px;width:110px;">
+                  <option value="all">All States</option>
+                  <option value="FL">Florida</option>
+                  <option value="NY">New York</option>
+                </select>
+              </div>
+              <button class="adm-invite-btn" onclick="_adminInviteUser()" style="margin-top:auto;">Send Invite →</button>
+            </div>
+            <div id="adm-inv-msg" style="display:none;" class="adm-msg"></div>
+          </div>
+        </div>
+        <!-- Sticky action bar -->
+        <div class="adm-action-bar">
+          <button class="adm-act-save" onclick="_adminSavePerms()">Save Changes</button>
+          <button class="adm-act-full" onclick="_adminGrantFull()">✓ Grant Full Access</button>
+          <button class="adm-act-clear" onclick="_adminClearAll()">✕ Clear All</button>
+          <span class="adm-act-msg" id="adm-act-msg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 </body>
