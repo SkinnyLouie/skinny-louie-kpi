@@ -48,7 +48,7 @@ function saveUploads(arr){
 //
 //  Rule of thumb for each field:
 //    state  → always uppercase 2-letter code  ("FL" | "NY")
-//    loc    → canonical value from LOC_MAP     (trimmed at normalise time; must match LOC_MAP exactly)
+//    loc    → canonical LOC_MAP value           (leading/trailing whitespace stripped; internal casing unchanged; must match LOC_MAP exactly — no fuzzy matching; import validator rejects unknowns)
 //    year   → always String                    ("2025", "2026" …)
 //    month  → always Number, 0-indexed         (0=January … 11=December)
 //
@@ -131,16 +131,18 @@ function _slNormalizeRecord(rec){
   if(!rec || typeof rec !== 'object') return rec;
   const out = Object.assign({}, rec);
   // Identity field normalisation — applied in a fixed order, each step idempotent.
-  // state: uppercase string, whitespace trimmed
+  // state: uppercase 2-letter code, whitespace stripped (e.g. " fl " → "FL")
   if(out.state !== undefined && out.state !== null)
     out.state = String(out.state).trim().toUpperCase();
-  // loc: trim leading/trailing whitespace — preserves exact internal spacing
+  // loc: leading/trailing whitespace stripped only — internal casing and spacing are
+  //   preserved exactly. The trimmed value MUST match a LOC_MAP entry precisely;
+  //   no fuzzy matching is applied. Import validator rejects unrecognised loc values.
   if(out.loc !== undefined && out.loc !== null)
     out.loc = String(out.loc).trim();
-  // year: always a string (e.g. "2024") so template literals and string keys work uniformly
+  // year: always a String (e.g. "2026") — keeps DB key lookups and template literals consistent
   if(out.year !== undefined && out.year !== null)
     out.year = String(out.year).trim();
-  // month: always a number 0–11
+  // month: always a Number 0–11 (January=0 … December=11)
   if(out.month !== undefined && out.month !== null)
     out.month = Number(out.month);
   return out;
