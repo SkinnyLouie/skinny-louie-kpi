@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v37 -->
+<!-- BUILD: 2026-04-15-v38 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -5468,18 +5468,9 @@ const _ADM_MODULES = [
 // Session state for admin editor
 let _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
 
-// ROOT CAUSE NOTE — user visibility:
-// renderAdminPage reads from the `profiles` table via the anon key.
-// If the RLS SELECT policy on `profiles` is restricted to `auth.uid() = id`,
-// the admin will only see their own row (1 user). Fix by adding this policy in Supabase:
-//
-//   CREATE POLICY "admin_read_all_profiles" ON public.profiles
-//   FOR SELECT USING (
-//     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-//   );
-//
-// auth.admin.listUsers() (which would bypass RLS) requires service_role key —
-// not safe to call from the browser. profiles table + correct RLS is the right approach.
+// renderAdminPage reads from `profiles` via the anon key.
+// RLS policy on profiles uses a security-definer helper that checks user_permissions
+// for an 'admin' row — avoids recursive self-reference on the profiles table.
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
   const scroll = document.getElementById('adm-user-scroll');
@@ -5502,20 +5493,10 @@ async function renderAdminPage(){
 
     if(!profiles || !profiles.length){
       scroll.innerHTML = `<div style="padding:16px;font-size:12px;color:#b91c1c;line-height:1.6;">
-        No users found in <code>profiles</code>.<br>
-        Check that your Supabase RLS SELECT policy allows admins to read all rows.
-        <br><br><code style="font-size:10px;color:#64748b;">SELECT column_name FROM information_schema.columns WHERE table_name='profiles';</code>
+        No users found. Make sure profile records exist in the <code>profiles</code> table.
       </div>`;
       return;
     }
-
-    // If only 1 result, we're likely only seeing our own profile (RLS too restrictive)
-    const rlsWarning = profiles.length === 1
-      ? `<div style="padding:10px 14px;background:#fef9c3;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e;line-height:1.5;">
-          ⚠ Only 1 user visible — your own profile. Other users may be hidden by RLS.<br>
-          Add policy: <code>admin_read_all_profiles</code> on <code>profiles</code>.
-        </div>`
-      : '';
 
     const rows = profiles.map(p => {
       const display = p.name || '(no name)';
@@ -5533,7 +5514,7 @@ async function renderAdminPage(){
       </div>`;
     }).join('');
 
-    scroll.innerHTML = rlsWarning + rows;
+    scroll.innerHTML = rows;
     console.log(`[Admin] Loaded ${profiles.length} profile(s). Permission column: "${_PERM_COL}".`);
 
   } catch(e){
