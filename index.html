@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v33 -->
+<!-- BUILD: 2026-04-15-v35 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2936,22 +2936,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
        <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
        <div class="hcard-tag">Active · All Locations</div>
      </div>
-    <div id="admin-home-card" onclick="goAdmin()" style="display:none;grid-column:1/-1;cursor:pointer;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 100%);border-radius:18px;padding:28px 36px;display:flex;align-items:center;gap:28px;text-align:left;box-shadow:0 4px 24px rgba(30,58,95,.25);border:none;transition:box-shadow .18s;" onmouseenter="this.style.boxShadow='0 8px 36px rgba(30,58,95,.38)'" onmouseleave="this.style.boxShadow='0 4px 24px rgba(30,58,95,.25)'">
-      <span style="font-size:56px;margin-bottom:0;flex-shrink:0;filter:brightness(1.2);">👥</span>
-      <div style="flex:1;">
-        <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:.04em;margin-bottom:6px;">User Management</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.72);line-height:1.55;">Manage team access from one place — invite users, assign roles, and control which dashboards each person can see.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">👤 User List</span>
-          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">🔐 Permissions</span>
-          <span style="background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">✉️ Invite</span>
-          <span style="background:rgba(196,160,53,.3);color:#e8c870;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:99px;">Admin Only</span>
-        </div>
-      </div>
-      <div style="flex-shrink:0;text-align:center;">
-        <div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;">Open Admin →</div>
-      </div>
-    </div>
+<!-- Admin footer button: small, secondary, admin-only. Shown via _applyPermissionsUI(). -->
+    <div id="admin-home-card" style="display:none;grid-column:1/-1;"></div>
     <div class="hcard c8" style="position:relative;">
       <span class="hcard-icon">🎉</span>
       <div class="hcard-title">Event Calculator</div>
@@ -2995,6 +2981,10 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       </div>
       <div class="hcard-tag" style="margin-top:14px;">Powered by your data</div>
     </div>
+  </div>
+  <!-- Admin-only footer — small and secondary, shown via JS for admin users only -->
+  <div id="adm-home-footer" style="display:none;text-align:center;padding:14px 0 28px;border-top:1px solid #ede8df;margin-top:4px;">
+    <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
 </div>
 
@@ -3523,9 +3513,12 @@ let _slUser  = null;
 let _slRole  = null;
 let _slState = 'all'; // 'all', 'FL', or 'NY'
 // _slPerms: null = not yet loaded; Set of module strings = explicit permission list.
-// Admins bypass all permission checks. For others: null/empty → all modules allowed;
-// non-empty Set → only listed modules are accessible.
+// FAIL-CLOSED: admins bypass, null = blocked, empty Set = no access.
 let _slPerms = null;
+// _PERM_COL: the column name in your user_permissions table.
+// Run: SELECT column_name FROM information_schema.columns WHERE table_name='user_permissions';
+// Change to 'permission' here if that is what your schema uses.
+const _PERM_COL = 'module';
 
 // Intercept localStorage.setItem — auto-sync SL keys to Supabase
 const _origLS = localStorage.setItem.bind(localStorage);
@@ -3720,14 +3713,14 @@ async function _initApp(user){
   try {
     const [profileRes, permsRes] = await Promise.all([
       _supa.from('profiles').select('role,name,state').eq('id', user.id).single(),
-      _supa.from('user_permissions').select('module').eq('user_id', user.id)
+      _supa.from('user_permissions').select(_PERM_COL).eq('user_id', user.id)
     ]);
     const profile = profileRes.data;
     _slRole  = profile?.role  || 'manager';
     _slState = profile?.state || 'all';
-    // Build permissions Set — null/empty means all modules allowed (permissive default)
+    // Build permissions Set — FAIL-CLOSED: empty Set = no module access (not permissive)
     const permRows = permsRes.data || [];
-    _slPerms = permRows.length ? new Set(permRows.map(r => r.module)) : new Set();
+    _slPerms = new Set((permRows || []).map(r => r[_PERM_COL]));
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
     const uinfo = document.getElementById('nb-user-info');
@@ -3760,9 +3753,10 @@ async function _initApp(user){
 }
 
 function _applyRoleUI(){
-  // P&L lock overlay visibility
+  // P&L lock overlay: always hidden — permissions (user_permissions table) control access,
+  // not role. The overlay is redundant since the home card is hidden and goP&L is blocked.
   const pnlLock = document.getElementById('pnl-lock-overlay');
-  if(pnlLock) pnlLock.style.display = (_slRole==='user') ? 'flex' : 'none'; // only locks for explicit 'user' role
+  if(pnlLock) pnlLock.style.display = 'none';
   // State/city filter based on user's allowed state
   if(_slState && _slState !== 'all'){
     // Force state and hide the state toggle buttons
@@ -3778,21 +3772,30 @@ function _applyRoleUI(){
   // Show Sync Data button only for admin/manager
   const syncBtn = document.getElementById('force-sync-btn');
   if(syncBtn) syncBtn.style.display = canEdit ? 'flex' : 'none';
-  // Show Admin home card only if user has admin permission
-  const adminCard = document.getElementById('admin-home-card');
-  if(adminCard) adminCard.style.display = _hasPermission('admin') ? '' : 'none';
+  // Admin entry points: navbar button + small footer button (both admin-only)
+  // The large admin-home-card div is now an empty placeholder — visibility managed below.
   // Apply module-level permissions to home grid cards
   _applyPermissionsUI();
 }
 
 // ── Permission helpers ────────────────────────────────────────────────────
-// Modules: 'kpi', 'pnl', 'sales', 'mix', 'maint'
-// Returns true if the current user may access the given module.
-// Admins always have access. Empty/null _slPerms = permissive default (all allowed).
+// AUTHORITY: user_permissions table is the single source of truth for module access.
+// _slRole === 'admin' (from profiles.role) is the only role that bypasses checks.
+// All other roles — regardless of their profile.role value — are governed entirely
+// by their rows in user_permissions. This model is FAIL-CLOSED:
+//   - _slRole === 'admin' → always true
+//   - _slPerms === null   → permissions not yet loaded → false (block until ready)
+//   - _slPerms is empty Set → no rows in user_permissions → no access
+//   - otherwise → check Set membership
+// NOTE: user_permissions schema expected: { user_id uuid, module text }
+// Module values: 'kpi' | 'sales' | 'mix' | 'pnl' | 'maint' | 'admin'
+// If your Supabase column is named 'permission' instead of 'module', run:
+//   SELECT column_name FROM information_schema.columns WHERE table_name='user_permissions';
+// and update all .select('module') / .map(r=>r.module) calls to match.
 function _hasPermission(module){
-  if(_slRole === 'admin') return true;
-  if(!_slPerms || _slPerms.size === 0) return true; // permissive default
-  return _slPerms.has(module);
+  if(_slRole === 'admin') return true;   // admin role: full bypass
+  if(_slPerms === null)   return false;  // still loading: fail closed
+  return _slPerms.has(module);           // explicit whitelist only
 }
 
 // Updates home grid card visibility based on _slPerms.
@@ -3812,6 +3815,9 @@ function _applyPermissionsUI(){
   // Show/hide navbar Admin button
   const nbAdminBtn = document.getElementById('nb-admin-btn');
   if(nbAdminBtn) nbAdminBtn.style.display = _hasPermission('admin') ? 'flex' : 'none';
+  // Show/hide home page footer admin button
+  const admFooter = document.getElementById('adm-home-footer');
+  if(admFooter) admFooter.style.display = _hasPermission('admin') ? '' : 'none';
 }
 
 // Shows a brief full-screen access-denied overlay then returns user to Home.
@@ -5426,12 +5432,8 @@ function goMix(){
   if(typeof renderMixPage!=='undefined') renderMixPage();
 }
 function goPNL(){
+  // Permissions are the single source of truth. No role-based secondary check.
   if(!_hasPermission('pnl')){ _showAccessDenied('P&L Dashboard'); return; }
-  if(_slRole==='user'){ // secondary lock for explicit 'user' role within pnl access
-    const ol=document.getElementById('pnl-lock-overlay');
-    if(ol){ ol.style.display='flex'; setTimeout(()=>ol.style.display='none',1800); }
-    return;
-  }
   _slApplyLatest('pnl'); // snap to latest if no valid selection
   S.page='pnl'; render();
 }
@@ -5459,17 +5461,28 @@ const _ADM_MODULES = [
 // Session state for admin editor
 let _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
 
+// ROOT CAUSE NOTE — user visibility:
+// renderAdminPage reads from the `profiles` table via the anon key.
+// If the RLS SELECT policy on `profiles` is restricted to `auth.uid() = id`,
+// the admin will only see their own row (1 user). Fix by adding this policy in Supabase:
+//
+//   CREATE POLICY "admin_read_all_profiles" ON public.profiles
+//   FOR SELECT USING (
+//     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+//   );
+//
+// auth.admin.listUsers() (which would bypass RLS) requires service_role key —
+// not safe to call from the browser. profiles table + correct RLS is the right approach.
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
   const scroll = document.getElementById('adm-user-scroll');
   if(!scroll) return;
 
-  scroll.innerHTML = '<div class="adm-loading">Loading…</div>';
-  // Reset right panel
+  scroll.innerHTML = '<div class="adm-loading">Loading users…</div>';
   const empty  = document.getElementById('adm-perm-empty');
   const editor = document.getElementById('adm-perm-editor');
-  if(empty)  empty.style.display   = 'flex';
-  if(editor) editor.style.display  = 'none';
+  if(empty)  empty.style.display = 'flex';
+  if(editor) editor.style.display = 'none';
   _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
 
   try {
@@ -5477,26 +5490,50 @@ async function renderAdminPage(){
       .from('profiles')
       .select('id, name, role, state')
       .order('name', { ascending: true });
+
     if(error) throw error;
 
     if(!profiles || !profiles.length){
-      scroll.innerHTML = '<div class="adm-loading" style="color:#94a3b8;">No users found.</div>';
+      scroll.innerHTML = `<div style="padding:16px;font-size:12px;color:#b91c1c;line-height:1.6;">
+        No users found in <code>profiles</code>.<br>
+        Check that your Supabase RLS SELECT policy allows admins to read all rows.
+        <br><br><code style="font-size:10px;color:#64748b;">SELECT column_name FROM information_schema.columns WHERE table_name='profiles';</code>
+      </div>`;
       return;
     }
 
-    scroll.innerHTML = profiles.map(p => {
-      const initial = (p.name||'?')[0].toUpperCase();
-      return `<div class="adm-user-item" id="adm-uid-${p.id}" onclick="_adminSelectUser('${p.id}','${(p.name||'Unknown').replace(/'/g,'\\'')}','${p.role||'user'}','${p.state||'all'}')">
+    // If only 1 result, we're likely only seeing our own profile (RLS too restrictive)
+    const rlsWarning = profiles.length === 1
+      ? `<div style="padding:10px 14px;background:#fef9c3;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e;line-height:1.5;">
+          ⚠ Only 1 user visible — your own profile. Other users may be hidden by RLS.<br>
+          Add policy: <code>admin_read_all_profiles</code> on <code>profiles</code>.
+        </div>`
+      : '';
+
+    const rows = profiles.map(p => {
+      const display = p.name || '(no name)';
+      const initial = display[0].toUpperCase();
+      const safeDisplay = display.replace(/'/g, "\\'");
+      const roleLabel = (p.role||'user');
+      const stateLabel = (!p.state || p.state==='all') ? 'All States' : p.state;
+      return `<div class="adm-user-item" id="adm-uid-${p.id}"
+          onclick="_adminSelectUser('${p.id}','${safeDisplay}','${roleLabel}','${p.state||'all'}')">
         <div class="adm-user-avatar">${initial}</div>
         <div>
-          <div class="adm-user-name">${p.name||'—'}</div>
-          <div class="adm-user-sub">${(p.role||'user').charAt(0).toUpperCase()+(p.role||'user').slice(1)} · ${p.state==='all'||!p.state?'All States':p.state}</div>
+          <div class="adm-user-name">${display}</div>
+          <div class="adm-user-sub">${roleLabel.charAt(0).toUpperCase()+roleLabel.slice(1)} · ${stateLabel}</div>
         </div>
       </div>`;
     }).join('');
+
+    scroll.innerHTML = rlsWarning + rows;
+    console.log(`[Admin] Loaded ${profiles.length} profile(s). Permission column: "${_PERM_COL}".`);
+
   } catch(e){
     console.error('[Admin] renderAdminPage error:', e);
-    scroll.innerHTML = `<div class="adm-loading" style="color:#b91c1c;">Failed to load users: ${e.message||e}</div>`;
+    scroll.innerHTML = `<div style="padding:16px;font-size:12px;color:#b91c1c;">
+      Failed to load users: ${e.message||String(e)}
+    </div>`;
   }
 }
 
@@ -5528,10 +5565,10 @@ async function _adminSelectUser(userId, displayName, role, state){
   try {
     const { data, error } = await _supa
       .from('user_permissions')
-      .select('module')
+      .select(_PERM_COL)
       .eq('user_id', userId);
     if(error) throw error;
-    _admCtx.perms = new Set((data||[]).map(r => r.module));
+    _admCtx.perms = new Set((data||[]).map(r => r[_PERM_COL]));
     _renderAdmPermGrid(_admCtx.perms);
   } catch(e){
     console.error('[Admin] _adminSelectUser perms fetch error:', e);
@@ -5593,7 +5630,7 @@ async function _adminSavePerms(){
 
     // Insert selected permissions (if any)
     if(_admCtx.perms.size > 0){
-      const rows = [..._admCtx.perms].map(module => ({ user_id: _admCtx.userId, module }));
+      const rows = [..._admCtx.perms].map(val => ({ user_id: _admCtx.userId, [_PERM_COL]: val }));
       const { error: insErr } = await _supa.from('user_permissions').insert(rows);
       if(insErr) throw insErr;
     }
@@ -5627,6 +5664,12 @@ function _admSetActionMsg(msg, type){
   if(msg && type === 'ok') setTimeout(() => { if(el.textContent === msg) el.textContent = ''; }, 3000);
 }
 
+// ARCHITECTURE NOTE — auth.admin operations (deleteUser, inviteUserByEmail):
+// These methods require a service_role key and are NOT safe to call from a browser
+// using the anon key. They are intentionally included here for convenience during
+// development, but will gracefully fail with a permission error in production.
+// Long-term: move these calls to a Supabase Edge Function or backend API endpoint
+// that holds the service_role key server-side and validates the calling user is admin.
 async function _adminDeleteUser(userId, displayName){
   if(!confirm(`Delete user "${displayName}"?\n\nThis cannot be undone. Their profile and login will be permanently removed.`)) return;
   try {
@@ -5638,13 +5681,15 @@ async function _adminDeleteUser(userId, displayName){
     console.error('[Admin] _adminDeleteUser error:', e);
     const msg = e.message||String(e);
     if(msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('permission')){
-      alert('User deletion requires elevated server permissions.\n\nGo to Supabase dashboard → Authentication → Users to remove them there.');
+      alert('User deletion requires a service_role key (server-side only).\n\nFor now, go to Supabase dashboard → Authentication → Users to remove this user.');
     } else {
       alert('Failed to delete user: ' + msg);
     }
   }
 }
 
+// See ARCHITECTURE NOTE above. inviteUserByEmail also requires service_role.
+// Graceful fallback: shows a message directing admin to Supabase dashboard.
 async function _adminInviteUser(){
   const emailEl = document.getElementById('adm-inv-email');
   const roleEl  = document.getElementById('adm-inv-role');
