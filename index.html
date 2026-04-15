@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v36 -->
+<!-- BUILD: 2026-04-15-v37 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -3516,9 +3516,8 @@ let _slState = 'all'; // 'all', 'FL', or 'NY'
 // FAIL-CLOSED: admins bypass, null = blocked, empty Set = no access.
 let _slPerms = null;
 // _PERM_COL: the column name in your user_permissions table.
-// Run: SELECT column_name FROM information_schema.columns WHERE table_name='user_permissions';
-// Change to 'permission' here if that is what your schema uses.
-const _PERM_COL = 'module';
+// Schema confirmed: user_permissions(user_id, permission)
+const _PERM_COL = 'permission';
 
 // Intercept localStorage.setItem — auto-sync SL keys to Supabase
 const _origLS = localStorage.setItem.bind(localStorage);
@@ -3790,8 +3789,7 @@ function _applyRoleUI(){
 // NOTE: user_permissions schema expected: { user_id uuid, module text }
 // Module values: 'kpi' | 'sales' | 'mix' | 'pnl' | 'maint' | 'admin'
 // If your Supabase column is named 'permission' instead of 'module', run:
-//   SELECT column_name FROM information_schema.columns WHERE table_name='user_permissions';
-// and update all .select('module') / .map(r=>r.module) calls to match.
+// Schema confirmed: user_permissions(user_id, permission). _PERM_COL = 'permission'.
 function _hasPermission(module){
   if(_slRole === 'admin') return true;   // admin role: full bypass
   if(_slPerms === null)   return false;  // still loading: fail closed
@@ -3805,7 +3803,7 @@ function _applyPermissionsUI(){
     sales:       'hcard-sales',
     mix:         'hcard-mix',
     pnl:         'hcard-pnl',
-    maintenance: 'hcard-maint',
+    maint:       'hcard-maint',
     inventory:   'hcard-inventory',
     dm_report:   'hcard-dm_report',
     events:      'hcard-events',
@@ -4547,7 +4545,7 @@ function goInv(){
   const first=S.page!=='inv'; S.page='inv'; if(first) invInit(); render();
 }
 function goMaint(){
-  if(!_hasPermission('maintenance')){ _showAccessDenied('Store Maintenance'); return; }
+  if(!_hasPermission('maint')){ _showAccessDenied('Store Maintenance'); return; }
   S.page='maint';
   // Sync MN.state to the user's allowed state so data is always visible on first load
   if(_slState && _slState !== 'all'){
@@ -5460,7 +5458,7 @@ const _ADM_MODULES = [
   { id:'sales', label:'Sales Summary',    icon:'💰', desc:'Revenue by channel & location' },
   { id:'mix',   label:'Product Mix',      icon:'🍔', desc:'Top sellers, category breakdown' },
   { id:'pnl',   label:'P&L Dashboard',   icon:'📋', desc:'Profit & loss by location' },
-  { id:'maintenance', label:'Store Maintenance',icon:'🔧', desc:'Work orders & history' },
+  { id:'maint',       label:'Store Maintenance',icon:'🔧', desc:'Work orders & history' },
   { id:'inventory',   label:'Inventory',         icon:'📦', desc:'Stock levels, usage & waste by location' },
   { id:'dm_report',   label:'DM Scorecard',       icon:'📋', desc:'19-KPI PDF report for district managers' },
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
