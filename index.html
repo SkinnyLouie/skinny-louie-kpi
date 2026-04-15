@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v25 -->
+<!-- BUILD: 2026-04-15-v26 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -15,8 +15,8 @@
 //  UPLOAD PAGES
 // ══════════════════════════════════════════════════
 const LOC_MAP = {
-  FL: ['Wynwood','Little Havana','Kaseya Center','Coral Gables','West Palm Beach','Aventura','Dania','South Miami'],
-  NY: ['Nomad','West Village']
+  FL: ['Wynwood','Little Havana','Kaseya Center','Coral Gables','West Palm Beach','Aventura','Dania Beach','South Miami'],
+  NY: ['NoMad','West Village']
 };
 const UPLOAD_CFG = {
   sales: { icon:'💰', title:'Sales Summary',  sub:'Import your sales reports by location and month.' },
@@ -48,13 +48,16 @@ function saveUploads(arr){
 //
 //  Rule of thumb for each field:
 //    state  → always uppercase 2-letter code  ("FL" | "NY")
-//    loc    → canonical value from LOC_MAP     (fuzzy-matched at import time, exact thereafter)
+//    loc    → canonical value from LOC_MAP     (trimmed at normalise time; must match LOC_MAP exactly)
 //    year   → always String                    ("2025", "2026" …)
 //    month  → always Number, 0-indexed         (0=January … 11=December)
 //
-//  The divergence between P&L and Sales/Mix at the render level is intentional:
-//    • Sales & Mix: pre-filter by state+year  (year selector is in the nav)
-//    • P&L: pre-filter by state only          (year is chosen via month pills inside the view)
+//  All three modules (sales, mix, pnl) use the same nav pattern:
+//    • Year pills (2025 | 2026) in the top nav; clicking a year pill resets month to null
+//      and renderPage() auto-selects the latest month FOR THAT YEAR (not globally latest).
+//    • State pills (FL | NY) in the top nav; clicking resets loc + month.
+//    • Store selector built from canonical LOC_MAP — stores with no data in the current
+//      context are shown disabled ("no data") rather than hidden.
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── 1. Storage key registry ─────────────────────────────────────────────────
@@ -3625,7 +3628,7 @@ let DB = {
   }
   },
   'NY':{
-  'Nomad':{
+  'NoMad':{
     ns:[null,null,null,null,228568,227993,214217,244517,247232,287373,278929,273353],
     dineIn:[null,null,null,null,null,null,null,null,null,null,null,null],
     delivery:[null,null,null,null,null,null,null,null,null,null,null,null],
@@ -3698,7 +3701,7 @@ let DB = {
     da:[8142,4914,null,null,null,null,null,null,null,null,null,null],
     dp:[.0272,.0192,null,null,null,null,null,null,null,null,null,null]
   },
-  'Dania': {
+  'Dania Beach': {
     ns:[260365,561920,null,null,null,null,null,null,null,null,null,null],
     fa:[72698,152113,null,null,null,null,null,null,null,null,null,null],
     fp:[.2792,.2707,null,null,null,null,null,null,null,null,null,null],
@@ -3718,7 +3721,7 @@ let DB = {
   }
   },
   'NY':{
-  'Nomad':{
+  'NoMad':{
     ns:[252436,235012,null,null,null,null,null,null,null,null,null,null],
     dineIn:[null,null,null,null,null,null,null,null,null,null,null,null],
     delivery:[null,null,null,null,null,null,null,null,null,null,null,null],
@@ -8238,14 +8241,15 @@ function renderMixPage(){
 function renderMixLocBar(filteredRecs){
   const bar = document.getElementById('mix-loc-bar');
   if(!bar) return;
-  const available = [...new Set(filteredRecs.map(r=>r.loc))];
+  // Build from canonical LOC_MAP — stores with no data shown disabled, not hidden
+  const available = new Set(filteredRecs.map(r=>r.loc));
   let opts = '';
   for(const [st, stLocs] of Object.entries(LOC_MAP)){
-    const group = stLocs.filter(l=>available.includes(l));
-    if(!group.length) continue;
     opts += `<optgroup label="── ${st} ──">`;
-    for(const l of group)
-      opts += `<option value="${l}"${MX.loc===l?' selected':''}>${l}</option>`;
+    for(const l of stLocs){
+      const hasData = available.has(l);
+      opts += `<option value="${l}"${MX.loc===l?' selected':''}${hasData?'':' disabled'}>${l}${hasData?'':' (no data)'}</option>`;
+    }
     opts += `</optgroup>`;
   }
   const vmMonth = MX.viewMode==='month';
@@ -9632,14 +9636,15 @@ function renderSalesPage(){
 function renderSalesLocBar(filteredRecs){
   const bar=document.getElementById('sales-loc-bar');
   if(!bar) return;
-  const available=[...new Set(filteredRecs.map(r=>r.loc))];
+  // Build from canonical LOC_MAP — stores with no data shown disabled, not hidden
+  const available=new Set(filteredRecs.map(r=>r.loc));
   let opts=`<option value="ALL"${SX.loc==='ALL'?' selected':''}>📊 All Locations</option>`;
   for(const [st, stLocs] of Object.entries(LOC_MAP)){
-    const group=stLocs.filter(l=>available.includes(l));
-    if(!group.length) continue;
     opts+=`<optgroup label="── ${st} ──">`;
-    for(const l of group)
-      opts+=`<option value="${l}"${SX.loc===l?' selected':''}>${l}</option>`;
+    for(const l of stLocs){
+      const hasData=available.has(l);
+      opts+=`<option value="${l}"${SX.loc===l?' selected':''}${hasData?'':' disabled'}>${l}${hasData?'':' (no data)'}</option>`;
+    }
     opts+=`</optgroup>`;
   }
   bar.innerHTML=`<div class="sl-store-wrap">
@@ -11797,7 +11802,7 @@ function renderPnLPage(){
   // Pick up any pending fallback message from a recursive call
   if(PX._pendingFallbackMsg){ _fallbackMsg=PX._pendingFallbackMsg; delete PX._pendingFallbackMsg; }
 
-  // ── State fallback — snap to globally latest record ──
+  // ── State fallback — if selected state has no records, snap to globally latest ──
   const statRecs=allRecs.filter(r=>r.state===PX.state);
   if(statRecs.length===0){
     const origState=PX.state;
@@ -11809,17 +11814,22 @@ function renderPnLPage(){
   }
   renderPnLLocBar(statRecs);
   if(bar) bar.style.display='flex';
-  // Default loc = the location with the most recent record (not just first in list)
+  // ── Loc auto-select: prefer a loc that has data for the selected year;
+  //    only fall back to globally-latest loc if no loc has that year's data.
   if(!PX.loc||!statRecs.find(r=>r.loc===PX.loc)){
-    const latestStat=_slLatestFromArray(statRecs);
-    PX.loc=latestStat ? latestStat.loc : statRecs[0].loc;
+    const yearStatRecs=statRecs.filter(r=>r.year===PX.year);
+    const candidateStat=_slLatestFromArray(yearStatRecs.length ? yearStatRecs : statRecs);
+    PX.loc=candidateStat ? candidateStat.loc : statRecs[0].loc;
   }
   const locRecs=statRecs.filter(r=>r.loc===PX.loc).sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
 
-  // ── Month auto-select (track if we changed it) ──
+  // ── Month auto-select: when month is null (e.g. after a year-pill click),
+  //    pick the latest month FOR THE SELECTED YEAR. Only snap to a different
+  //    year when the selected year has no data at this loc at all.
   const origMonth=PX.month; const origYear=PX.year;
   if(PX.month===null||!locRecs.find(r=>r.month===PX.month&&r.year===PX.year)){
-    const last=locRecs[locRecs.length-1];
+    const yearLocRecs=locRecs.filter(r=>r.year===PX.year);
+    const last=(yearLocRecs.length ? yearLocRecs : locRecs)[yearLocRecs.length ? yearLocRecs.length-1 : locRecs.length-1];
     if(last){
       PX.month=last.month; PX.year=last.year;
       if(origMonth!==null && (origMonth!==PX.month||origYear!==PX.year) && PX.viewMode==='month'){
@@ -11903,14 +11913,15 @@ function renderPnLPage(){
 function renderPnLLocBar(filteredRecs){
   const bar=document.getElementById('pnl-loc-bar');
   if(!bar) return;
-  const available=[...new Set(filteredRecs.map(r=>r.loc))];
+  // Build from canonical LOC_MAP — stores with no data shown disabled, not hidden
+  const available=new Set(filteredRecs.map(r=>r.loc));
   let opts='';
   for(const [st, stLocs] of Object.entries(LOC_MAP)){
-    const group=stLocs.filter(l=>available.includes(l));
-    if(!group.length) continue;
     opts+=`<optgroup label="── ${st} ──">`;
-    for(const l of group)
-      opts+=`<option value="${l}"${PX.loc===l?' selected':''}>${l}</option>`;
+    for(const l of stLocs){
+      const hasData=available.has(l);
+      opts+=`<option value="${l}"${PX.loc===l?' selected':''}${hasData?'':' disabled'}>${l}${hasData?'':' (no data)'}</option>`;
+    }
     opts+=`</optgroup>`;
   }
   bar.innerHTML=`<div class="sl-store-wrap">
