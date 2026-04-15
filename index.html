@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v26 -->
+<!-- BUILD: 2026-04-15-v27 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -5845,11 +5845,18 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   const fpSeries = d ? locMonthlyPcts(d,'fp') : [];
   const lpSeries = d ? locMonthlyPcts(d,'lp') : [];
   const dpSeries = d ? locMonthlyPcts(d,'dp') : [];
-  const lastFP = fpSeries.length ? fpSeries[fpSeries.length-1].v : null;
-  const lastLP = lpSeries.length ? lpSeries[lpSeries.length-1].v : null;
-  const lastDP = dpSeries.length ? dpSeries[dpSeries.length-1].v : null;
-  const momKpi=(series)=>{ if(series.length<2) return null; const c=series[series.length-1].v,p=series[series.length-2].v; return p?((c-p)/Math.abs(p)*100):null; };
-  const fpMoM=momKpi(fpSeries), lpMoM=momKpi(lpSeries), dpMoM=momKpi(dpSeries);
+  // locMonthlyPcts returns plain number|null per month (NOT {v} objects) — filter to valid entries
+  const fpValid = fpSeries.map((v,i)=>({v,i})).filter(x=>x.v!=null);
+  const lpValid = lpSeries.map((v,i)=>({v,i})).filter(x=>x.v!=null);
+  const dpValid = dpSeries.map((v,i)=>({v,i})).filter(x=>x.v!=null);
+  console.log('[RC PDF] valid series counts — fp:', fpValid.length, 'lp:', lpValid.length, 'dp:', dpValid.length, '| loc:', loc, 'year:', rcYear, 'month:', rcMonth);
+  // Store as % (×100) so comparisons against tgts (25/20/2) and fmtP display are correct
+  const lastFP = fpValid.length ? fpValid[fpValid.length-1].v * 100 : null;
+  const lastLP = lpValid.length ? lpValid[lpValid.length-1].v * 100 : null;
+  const lastDP = dpValid.length ? dpValid[dpValid.length-1].v * 100 : null;
+  // momKpi operates on valid filtered arrays ({v,i} objects with decimal values)
+  const momKpi=(valid)=>{ if(valid.length<2) return null; const c=valid[valid.length-1].v,p=valid[valid.length-2].v; return (p!=null&&p!==0)?((c-p)/Math.abs(p)*100):null; };
+  const fpMoM=momKpi(fpValid), lpMoM=momKpi(lpValid), dpMoM=momKpi(dpValid);
   // Uber rating
   const uberVal = (()=>{ try{ const m=DB[rcYear]?.[rcState]?.[loc]; if(!m) return null; for(let i=11;i>=0;i--){ if(m[i]&&m[i].uber>0) return m[i].uber; } return null; }catch(e){return null;} })();
   // Health score trend (last 2 available months)
