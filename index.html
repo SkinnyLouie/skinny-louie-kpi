@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v39 -->
+<!-- BUILD: 2026-04-15-v40 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2759,17 +2759,17 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-toggle input:checked + .adm-toggle-slider::before{transform:translateX(16px);}
 /* Action bar */
 .adm-action-bar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:#fff;border-top:1px solid #e8e2d8;position:sticky;bottom:0;}
-.adm-act-save{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 24px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
+.adm-act-save{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 22px;border-radius:8px;border:1.5px solid #7e2023;cursor:pointer;transition:opacity .15s;}
 .adm-act-save:hover{opacity:.88;}
-.adm-act-full{background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
-.adm-act-full:hover{opacity:.8;}
-.adm-act-clear{background:#fee2e2;color:#991b1b;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
-.adm-act-clear:hover{opacity:.8;}
+.adm-act-full{background:transparent;color:#1e3a5f;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 16px;border-radius:8px;border:1.5px solid #1e3a5f;cursor:pointer;transition:all .15s;}
+.adm-act-full:hover{background:#1e3a5f;color:#fff;}
+.adm-act-clear{background:transparent;color:#991b1b;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 16px;border-radius:8px;border:1.5px solid #991b1b;cursor:pointer;transition:all .15s;}
+.adm-act-clear:hover{background:#991b1b;color:#fff;}
 .adm-act-msg{font-size:12px;margin-left:4px;}
 .adm-act-msg.ok{color:#166534;}
 .adm-act-msg.err{color:#b91c1c;}
 /* Invite section */
-.adm-invite-wrap{padding:24px 32px 0;border-top:1px solid #e8e2d8;margin-top:8px;}
+.adm-invite-wrap{padding:20px 16px 16px;border-top:1px solid #e8e2d8;margin-top:4px;}
 .adm-perm-section-title2{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
 .adm-invite-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
 .adm-invite-input{font-size:13px;padding:8px 10px;border:1px solid #d4c9b8;border-radius:7px;background:#fff;color:#1e293b;box-sizing:border-box;}
@@ -5573,7 +5573,7 @@ function _renderAdmPermGrid(perms){
   }
   grid.innerHTML = _ADM_MODULES.map(m => {
     const on = perms.has(m.id);
-    return `<label class="adm-perm-module ${on?'on':''}" id="adm-pm-${m.id}" onclick="_admToggleModule('${m.id}')">
+    return `<div class="adm-perm-module ${on?'on':''}" id="adm-pm-${m.id}" onclick="_admToggleModule('${m.id}')" style="cursor:pointer;">
       <span class="adm-perm-mod-icon">${m.icon}</span>
       <div class="adm-perm-mod-info">
         <div class="adm-perm-mod-name">${m.label}</div>
@@ -5581,11 +5581,11 @@ function _renderAdmPermGrid(perms){
       </div>
       <div class="adm-toggle-wrap">
         <div class="adm-toggle">
-          <input type="checkbox" ${on?'checked':''} id="adm-chk-${m.id}" style="pointer-events:none;" />
+          <input type="checkbox" ${on?'checked':''} id="adm-chk-${m.id}" tabindex="-1" style="pointer-events:none;" />
           <div class="adm-toggle-slider"></div>
         </div>
       </div>
-    </label>`;
+    </div>`;
   }).join('');
 }
 
@@ -15132,6 +15132,36 @@ migrate();
       <div class="adm-user-scroll" id="adm-user-scroll">
         <div class="adm-loading">Loading…</div>
       </div>
+      <!-- Invite New User — global admin action, always visible -->
+      <div class="adm-invite-wrap">
+        <div class="adm-perm-section-title2">Invite New User</div>
+        <div class="adm-invite-row">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Email</div>
+            <input class="adm-invite-input" id="adm-inv-email" type="email" placeholder="name@example.com" style="width:100%;box-sizing:border-box;" />
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Role</div>
+              <select class="adm-invite-input adm-sel" id="adm-inv-role" style="padding:7px 8px;width:110px;">
+                <option value="user">User</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">State</div>
+              <select class="adm-invite-input adm-sel" id="adm-inv-state" style="padding:7px 8px;width:110px;">
+                <option value="all">All States</option>
+                <option value="FL">Florida</option>
+                <option value="NY">New York</option>
+              </select>
+            </div>
+          </div>
+          <button class="adm-invite-btn" onclick="_adminInviteUser()" style="width:100%;">Send Invite →</button>
+        </div>
+        <div id="adm-inv-msg" style="display:none;" class="adm-msg"></div>
+      </div>
     </div>
     <!-- Right: permission editor -->
     <div class="adm-perm-panel" id="adm-perm-panel">
@@ -15140,7 +15170,7 @@ migrate();
         <span>Select a user to manage their permissions</span>
       </div>
       <!-- Permission editor (hidden until user selected) -->
-      <div id="adm-perm-editor" style="display:none;display:flex;flex-direction:column;height:100%;">
+      <div id="adm-perm-editor" style="display:none;flex-direction:column;height:100%;">
         <div class="adm-perm-body" style="flex:1;overflow-y:auto;">
           <!-- User header -->
           <div class="adm-perm-user-hdr">
@@ -15153,34 +15183,6 @@ migrate();
           <!-- Permission toggles -->
           <div class="adm-perm-section-title">Dashboard Access</div>
           <div class="adm-perm-grid" id="adm-perm-grid"></div>
-          <!-- Invite section -->
-          <div class="adm-invite-wrap">
-            <div class="adm-perm-section-title2">Invite New User</div>
-            <div class="adm-invite-row">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Email</div>
-                <input class="adm-invite-input" id="adm-inv-email" type="email" placeholder="name@example.com" style="width:220px;" />
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Role</div>
-                <select class="adm-invite-input adm-sel" id="adm-inv-role" style="padding:7px 8px;width:110px;">
-                  <option value="user">User</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">State</div>
-                <select class="adm-invite-input adm-sel" id="adm-inv-state" style="padding:7px 8px;width:110px;">
-                  <option value="all">All States</option>
-                  <option value="FL">Florida</option>
-                  <option value="NY">New York</option>
-                </select>
-              </div>
-              <button class="adm-invite-btn" onclick="_adminInviteUser()" style="margin-top:auto;">Send Invite →</button>
-            </div>
-            <div id="adm-inv-msg" style="display:none;" class="adm-msg"></div>
-          </div>
         </div>
         <!-- Sticky action bar -->
         <div class="adm-action-bar">
