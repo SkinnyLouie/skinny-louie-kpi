@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v27 -->
+<!-- BUILD: 2026-04-15-v29 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -266,7 +266,8 @@ function _slAuditSST(){
 // sl_{pg}_quarantine_v1 so they can be inspected and recovered.
 // Returns { modules: { [pg]: { before, after, dupsRemoved, quarantined } }, ok }
 
-const _SL_MIGRATION_KEY = 'sl_migrate_v3'; // v3: purge pre-2025 records + zero-netSales P&L
+const _SL_MIGRATION_KEY    = 'sl_migrate_v3'; // v3: purge pre-2025 records + zero-netSales P&L
+const _SL_MIGRATION_KEY_V4 = 'sl_migrate_v4'; // v4: rename stale loc values (Dania→Dania Beach, Nomad→NoMad)
 
 function _slMigrateAll(silent){
   const results = { modules: {}, ok: true };
@@ -349,6 +350,43 @@ function _slRunMigrationIfNeeded(){
   // Post-migration audit to confirm everything is clean
   _slAuditSST();
   return r;
+}
+
+// ── v4 migration: rename stale loc values introduced before LOC_MAP correction in v26.
+// Runs once per device, AFTER _loadFromCloud(), so it also corrects any stale data
+// pulled from Supabase. Using _slSaveRecords triggers the localStorage interceptor,
+// which immediately re-syncs corrected data back to Supabase.
+function _slRunLocRenameMigration(){
+  if(localStorage.getItem(_SL_MIGRATION_KEY_V4)) return;
+  const LOC_RENAMES = { 'Dania': 'Dania Beach', 'Nomad': 'NoMad' };
+  let totalChanged = 0;
+  // ── 1. Module stores (sales, mix, pnl)
+  for(const pg of ['sales','mix','pnl']){
+    try{
+      const recs = _slGetRecords(pg);
+      let dirty = false;
+      const updated = recs.map(function(r){
+        if(LOC_RENAMES[r.loc]){ dirty=true; totalChanged++; return Object.assign({},r,{loc:LOC_RENAMES[r.loc]}); }
+        return r;
+      });
+      if(dirty) _slSaveRecords(pg, updated); // normalise+dedup+Supabase push via interceptor
+    } catch(e){ console.error('[SL v4] migration error for',pg,e); }
+  }
+  // ── 2. Upload log (sl_uploads_v1) — also in SL_SYNC_KEYS, interceptor will re-sync
+  try{
+    const uploads = JSON.parse(localStorage.getItem('sl_uploads_v1')||'[]');
+    let logDirty = false;
+    const updatedUploads = uploads.map(function(u){
+      if(LOC_RENAMES[u.loc]){ logDirty=true; totalChanged++; return Object.assign({},u,{loc:LOC_RENAMES[u.loc]}); }
+      return u;
+    });
+    if(logDirty) saveUploads(updatedUploads);
+  } catch(e){ console.error('[SL v4] migration error for uploads log',e); }
+  if(totalChanged)
+    console.log('[SL v4 migration] renamed',totalChanged,'stale loc entries (Dania→Dania Beach, Nomad→NoMad) — data re-synced to Supabase');
+  else
+    console.log('[SL v4 migration] no stale loc names found — storage already clean');
+  localStorage.setItem(_SL_MIGRATION_KEY_V4, new Date().toISOString());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2733,6 +2771,47 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   </div>
 </div>
 
+<!-- ═══ SET / RESET PASSWORD PAGE (invite + recovery) ═══ -->
+<div id="pg-set-password" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#1a0809 0%,#3a1012 50%,#1a0809 100%);display:none;align-items:center;justify-content:center;padding:20px;">
+  <!-- Background watermark -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;user-select:none;">
+    <div style="font-family:'Oswald',sans-serif;font-size:clamp(80px,18vw,200px);font-weight:900;color:rgba(255,255,255,.07);letter-spacing:-.02em;text-transform:uppercase;text-align:center;line-height:1;white-space:nowrap;">SKINNY<br>LOUIE'S</div>
+  </div>
+  <div style="position:relative;background:#fff;border:1px solid rgba(126,32,35,.12);border-radius:24px;padding:52px 44px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(126,32,35,.15);">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#7e2023;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">LOUIE'S HOUSE</div>
+      <div id="sp-heading" style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:8px;">Set Your Password</div>
+      <div id="sp-sub" style="font-size:13px;color:#6b7280;line-height:1.5;">Welcome! Create a password to activate your account.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#7e2023;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:5px;">New Password</label>
+        <input id="sp-password" type="password" placeholder="At least 8 characters" autocomplete="new-password"
+          style="width:100%;box-sizing:border-box;padding:13px 16px;border-radius:10px;border:1.5px solid rgba(126,32,35,.2);background:#faf7f5;color:#1a1a1a;font-size:14px;outline:none;transition:border-color .15s;"
+          onfocus="this.style.borderColor='rgba(126,32,35,.8)'" onblur="this.style.borderColor='rgba(126,32,35,.2)'"
+          onkeydown="if(event.key==='Enter')document.getElementById('sp-confirm').focus()" />
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#7e2023;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:5px;">Confirm Password</label>
+        <input id="sp-confirm" type="password" placeholder="Re-enter password" autocomplete="new-password"
+          style="width:100%;box-sizing:border-box;padding:13px 16px;border-radius:10px;border:1.5px solid rgba(126,32,35,.2);background:#faf7f5;color:#1a1a1a;font-size:14px;outline:none;transition:border-color .15s;"
+          onfocus="this.style.borderColor='rgba(126,32,35,.8)'" onblur="this.style.borderColor='rgba(126,32,35,.2)'"
+          onkeydown="if(event.key==='Enter')doSetPassword()" />
+      </div>
+      <button id="sp-btn" onclick="doSetPassword()"
+        style="padding:15px;border-radius:10px;border:none;background:linear-gradient(135deg,#7e2023,#9b292c);color:#fff;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:2px;margin-top:6px;transition:all .15s;box-shadow:0 4px 16px rgba(126,32,35,.45);"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 24px rgba(126,32,35,.6)'"
+        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(126,32,35,.45)'">
+        SET PASSWORD →
+      </button>
+      <div id="sp-error" style="color:#9b292c;font-size:12px;text-align:center;min-height:18px;"></div>
+      <div id="sp-success" style="display:none;color:#15803d;font-size:13px;font-weight:600;text-align:center;padding:10px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+        ✓ Password set! Signing you in…
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ HOME PAGE ═══ -->
 <div id="pg-home">
   <div class="home-hero">
@@ -3435,6 +3514,69 @@ function _setLastSyncLabel(date){
   el.textContent = label;
 }
 
+// ══════════════════════════════════════════════════
+//  INVITE / PASSWORD RESET FLOW
+// ══════════════════════════════════════════════════
+
+// Show the set-password panel with correct heading for invite vs recovery.
+function _slShowSetPassword(type){
+  document.getElementById('pg-login').style.display = 'none';
+  const panel = document.getElementById('pg-set-password');
+  if(!panel) return;
+  const isInvite = (type === 'invite');
+  const headEl = document.getElementById('sp-heading');
+  const subEl  = document.getElementById('sp-sub');
+  if(headEl) headEl.textContent = isInvite ? 'Set Your Password' : 'Reset Your Password';
+  if(subEl)  subEl.textContent  = isInvite
+    ? 'Welcome! Create a password to activate your Louie\'s House account.'
+    : 'Enter your new password below to regain access.';
+  panel.style.display = 'flex';
+  setTimeout(() => document.getElementById('sp-password')?.focus(), 100);
+}
+
+// Called by the Set Password form button.
+async function doSetPassword(){
+  const pw   = (document.getElementById('sp-password')?.value  || '');
+  const conf = (document.getElementById('sp-confirm')?.value   || '');
+  const errEl = document.getElementById('sp-error');
+  const okEl  = document.getElementById('sp-success');
+  const btn   = document.getElementById('sp-btn');
+  if(errEl) errEl.textContent = '';
+  if(okEl)  okEl.style.display = 'none';
+
+  if(!pw || pw.length < 8){
+    if(errEl) errEl.textContent = 'Password must be at least 8 characters.'; return;
+  }
+  if(pw !== conf){
+    if(errEl) errEl.textContent = 'Passwords do not match.'; return;
+  }
+  if(btn){ btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    const { error } = await _supa.auth.updateUser({ password: pw });
+    if(error){
+      if(errEl) errEl.textContent = error.message;
+      if(btn){ btn.textContent = 'SET PASSWORD →'; btn.disabled = false; }
+      return;
+    }
+    // Show success message briefly, then enter the app
+    if(okEl) okEl.style.display = 'block';
+    if(btn)  btn.style.display  = 'none';
+    // Clean invite/recovery token from URL so refreshes don't re-trigger the form
+    window.history.replaceState({}, document.title, window.location.pathname);
+    const { data: { session } } = await _supa.auth.getSession();
+    setTimeout(async () => {
+      document.getElementById('pg-set-password').style.display = 'none';
+      if(session) await _initApp(session.user);
+      else { document.getElementById('pg-login').style.display = 'flex'; }
+    }, 1200);
+  } catch(e) {
+    console.error('[SL] doSetPassword error:', e);
+    if(errEl) errEl.textContent = 'Error setting password. Please try again.';
+    if(btn){ btn.textContent = 'SET PASSWORD →'; btn.disabled = false; }
+  }
+}
+
 async function doLogin(){
   const email = (document.getElementById('login-email')?.value || '').trim();
   const pass  = document.getElementById('login-password')?.value || '';
@@ -3509,6 +3651,8 @@ async function _initApp(user){
   try{ const d = localStorage.getItem('sl_v2'); if(d) _mergeDB(JSON.parse(d)); }catch(e){}
   // Normalise stored data — runs once per migration version, then skips on every subsequent init
   try{ _slRunMigrationIfNeeded(); } catch(e){ console.error('[SL] Migration error:', e); }
+  // v4: rename stale loc values (Dania→Dania Beach, Nomad→NoMad) — runs after cloud load
+  try{ _slRunLocRenameMigration(); } catch(e){ console.error('[SL] v4 migration error:', e); }
   _applyRoleUI();
   render();
 }
@@ -3537,15 +3681,39 @@ function _applyRoleUI(){
 window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('login-password')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('login-email')?.addEventListener('keydown',    e => { if(e.key==='Enter') document.getElementById('login-password')?.focus(); });
-  // Always show login first — hide if session is valid
+
   const loginEl = document.getElementById('pg-login');
   if(!_supa) {
     if(loginEl) loginEl.style.display = 'flex';
     return;
   }
+
+  // ── Detect invite / recovery type from URL ───────────────────────────────
+  // Supabase appends #access_token=...&type=invite|recovery to the redirect URL.
+  // Parse both the hash (implicit flow) and query string (PKCE flow).
+  const _hashParams   = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const _searchParams = new URLSearchParams(window.location.search);
+  const _urlAuthType  = _hashParams.get('type') || _searchParams.get('type'); // 'invite' | 'recovery' | null
+
+  // Listen for PASSWORD_RECOVERY event — fires when a recovery link is clicked
+  // and Supabase has auto-exchanged the token before our getSession() call completes.
+  _supa.auth.onAuthStateChange((event, session) => {
+    if(event === 'PASSWORD_RECOVERY'){
+      console.log('[SL] PASSWORD_RECOVERY event — showing reset-password form');
+      _slShowSetPassword('recovery');
+    }
+  });
+
   try {
     const { data: { session } } = await _supa.auth.getSession();
-    if(session){
+
+    if(session && (_urlAuthType === 'invite' || _urlAuthType === 'recovery')){
+      // Token was exchanged → user is signed in, but must set a password first.
+      // Clean the token fragment so a page refresh doesn't re-trigger the form.
+      console.log('[SL] Auth type from URL:', _urlAuthType, '— showing set-password form');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      _slShowSetPassword(_urlAuthType);
+    } else if(session){
       await _initApp(session.user);
     } else {
       if(loginEl) loginEl.style.display = 'flex';
@@ -11924,6 +12092,10 @@ function renderPnLLocBar(filteredRecs){
   if(!bar) return;
   // Build from canonical LOC_MAP — stores with no data shown disabled, not hidden
   const available=new Set(filteredRecs.map(r=>r.loc));
+  // Diagnostic: log any stored loc values that don't match any LOC_MAP entry
+  const allLOCMAPLocs=Object.values(LOC_MAP).flat();
+  const unrecognised=[...available].filter(l=>!allLOCMAPLocs.includes(l));
+  if(unrecognised.length) console.warn('[P&L selector] Unrecognised loc values in stored data (will not show as enabled):', unrecognised);
   let opts='';
   for(const [st, stLocs] of Object.entries(LOC_MAP)){
     opts+=`<optgroup label="── ${st} ──">`;
