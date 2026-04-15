@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v40 -->
+<!-- BUILD: 2026-04-15-v43 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2770,6 +2770,21 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-act-msg.err{color:#b91c1c;}
 /* Invite section */
 .adm-invite-wrap{padding:20px 16px 16px;border-top:1px solid #e8e2d8;margin-top:4px;}
+.adm-invite-note{font-size:12px;color:#94a3b8;line-height:1.6;}
+/* No-access state */
+#home-no-access{display:flex;align-items:center;justify-content:center;padding:60px 20px;width:100%;max-width:900px;}
+.home-no-access-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:18px;padding:48px 40px;text-align:center;max-width:440px;width:100%;box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.home-no-access-icon{font-size:40px;margin-bottom:16px;}
+.home-no-access-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;letter-spacing:.04em;color:#1e3a5f;margin-bottom:10px;}
+.home-no-access-msg{font-size:13px;color:#64748b;line-height:1.7;}
+/* Location scope selector */
+.adm-scope-row{display:flex;gap:8px;margin-bottom:24px;}
+.adm-scope-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 8px;border:1.5px solid #e8e2d8;border-radius:10px;cursor:pointer;background:#fff;transition:all .15s;}
+.adm-scope-opt:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-scope-opt.on{border-color:#7e2023;background:#fff5f0;}
+.adm-scope-opt.on .adm-scope-label{color:#7e2023;font-weight:700;}
+.adm-scope-icon{font-size:20px;}
+.adm-scope-label{font-size:11px;font-weight:600;color:#64748b;letter-spacing:.02em;}
 .adm-perm-section-title2{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
 .adm-invite-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
 .adm-invite-input{font-size:13px;padding:8px 10px;border:1px solid #d4c9b8;border-radius:7px;background:#fff;color:#1e293b;box-sizing:border-box;}
@@ -2892,7 +2907,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <h1>LOUIE'S HOUSE</h1>
     <p>Better data. Better decisions. Better stores.</p>
   </div>
-  <div class="home-grid">
+  <!-- No-access state: shown when user has no permissions or no location scope -->
+  <div id="home-no-access" style="display:none;">
+    <div class="home-no-access-card">
+      <div class="home-no-access-icon">🔒</div>
+      <div class="home-no-access-title">Access Pending</div>
+      <div class="home-no-access-msg">Your account has been created, but access has not been assigned yet.<br>Please contact an administrator.</div>
+    </div>
+  </div>
+  <div id="home-grid" class="home-grid">
     <div id="hcard-kpi" class="hcard c1" onclick="goKPI()">
       <span class="hcard-icon">📊</span>
       <div class="hcard-title">KPI Dashboard</div>
@@ -3509,9 +3532,12 @@ try {
 }
 const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
 
-let _slUser  = null;
-let _slRole  = null;
-let _slState = 'all'; // 'all', 'FL', or 'NY'
+let _slUser     = null;
+let _slRole     = null;
+let _slState    = 'all';  // 'all', 'FL', or 'NY'
+// _slHasScope: true only when a user_scopes row exists for this user.
+// false = no scope assigned → no location access (fail-closed).
+let _slHasScope = false;
 // _slPerms: null = not yet loaded; Set of module strings = explicit permission list.
 // FAIL-CLOSED: admins bypass, null = blocked, empty Set = no access.
 let _slPerms = null;
@@ -3688,7 +3714,7 @@ async function doLogin(){
 
 async function doLogout(){
   await _supa.auth.signOut();
-  _slUser = null; _slRole = null; _slState = 'all'; _slPerms = null;
+  _slUser = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
   S.page = 'home';
   // Reset MN state so maintenance filters start clean on next login
@@ -3708,15 +3734,20 @@ async function doLogout(){
 
 async function _initApp(user){
   _slUser = user;
-  // Fetch profile (role, name, state) AND user_permissions in parallel — fail gracefully
+  // Fetch profile, user_permissions, and user_scopes in parallel — fail gracefully
   try {
-    const [profileRes, permsRes] = await Promise.all([
-      _supa.from('profiles').select('role,name,state').eq('id', user.id).single(),
-      _supa.from('user_permissions').select(_PERM_COL).eq('user_id', user.id)
+    const [profileRes, permsRes, scopeRes] = await Promise.all([
+      _supa.from('profiles').select('role,name').eq('id', user.id).single(),
+      _supa.from('user_permissions').select(_PERM_COL).eq('user_id', user.id),
+      _supa.from('user_scopes').select('scope').eq('user_id', user.id).single()
     ]);
     const profile = profileRes.data;
-    _slRole  = profile?.role  || 'manager';
-    _slState = profile?.state || 'all';
+    _slRole  = profile?.role || 'manager';
+    // Location scope: user_scopes is the source of truth.
+    // _slHasScope = false if no row exists → no location access (fail-closed).
+    _slHasScope = !!scopeRes.data;
+    const rawScope = scopeRes.data?.scope || 'ALL';
+    _slState = rawScope === 'ALL' ? 'all' : rawScope; // 'all' | 'FL' | 'NY'
     // Build permissions Set — FAIL-CLOSED: empty Set = no module access (not permissive)
     const permRows = permsRes.data || [];
     _slPerms = new Set((permRows || []).map(r => r[_PERM_COL]));
@@ -3733,10 +3764,11 @@ async function _initApp(user){
       uinfo.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);border-radius:8px;">'+'<div style="width:26px;height:26px;border-radius:6px;background:rgba(196,160,53,.3);border:1.5px solid rgba(196,160,53,.5);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#e8c870;flex-shrink:0;">'+_initial+'</div>'+'<div style="display:flex;flex-direction:column;line-height:1.25;min-width:0;">'+'<span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">'+( profile?.name || user.email )+'</span>'+'<span style="font-size:9.5px;font-weight:600;color:'+roleColor+';letter-spacing:.03em;">'+roleLabel+'</span>'+'</div></div>';
     }
   } catch(e) {
-    console.error('Profile fetch failed:', e);
-    _slRole  = 'manager';
-    _slState = 'all';
-    _slPerms = new Set(); // empty = all allowed on error
+    console.error('[SL] Profile/scope fetch failed:', e);
+    _slRole     = 'manager';
+    _slState    = 'all';
+    _slHasScope = false; // fail-closed: no scope on error
+    _slPerms    = new Set(); // fail-closed: no permissions on error
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
   }
@@ -3798,6 +3830,28 @@ function _hasPermission(module){
 
 // Updates home grid card visibility based on _slPerms.
 function _applyPermissionsUI(){
+  // FAIL-CLOSED: no permissions OR no scope assigned → show no-access screen.
+  // Admins bypass this check entirely.
+  const noAccess = _slRole !== 'admin' && (_slPerms !== null) &&
+                   (_slPerms.size === 0 || !_slHasScope);
+
+  const homeGrid    = document.getElementById('home-grid');
+  const noAccessEl  = document.getElementById('home-no-access');
+  const admFooter   = document.getElementById('adm-home-footer');
+  const nbAdminBtn  = document.getElementById('nb-admin-btn');
+
+  if(noAccess){
+    if(homeGrid)   homeGrid.style.display   = 'none';
+    if(noAccessEl) noAccessEl.style.display = 'flex';
+    if(admFooter)  admFooter.style.display  = 'none';
+    if(nbAdminBtn) nbAdminBtn.style.display = 'none';
+    return; // skip per-card visibility — everything is hidden
+  }
+
+  // User has at least some access — show grid, hide no-access message
+  if(homeGrid)   homeGrid.style.display   = '';
+  if(noAccessEl) noAccessEl.style.display = 'none';
+
   const MODULE_CARDS = {
     kpi:         'hcard-kpi',
     sales:       'hcard-sales',
@@ -3813,12 +3867,8 @@ function _applyPermissionsUI(){
     if(!card) continue;
     card.style.display = _hasPermission(module) ? '' : 'none';
   }
-  // Show/hide navbar Admin button
-  const nbAdminBtn = document.getElementById('nb-admin-btn');
   if(nbAdminBtn) nbAdminBtn.style.display = _hasPermission('admin') ? 'flex' : 'none';
-  // Show/hide home page footer admin button
-  const admFooter = document.getElementById('adm-home-footer');
-  if(admFooter) admFooter.style.display = _hasPermission('admin') ? '' : 'none';
+  if(admFooter)  admFooter.style.display  = _hasPermission('admin') ? '' : 'none';
 }
 
 // Shows a brief full-screen access-denied overlay then returns user to Home.
@@ -5466,11 +5516,56 @@ const _ADM_MODULES = [
 ];
 
 // Session state for admin editor
-let _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
+let _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', perms: new Set() };
+
+// Location scope options — maps to user_scopes.scope values
+const SCOPE_OPTIONS = [
+  { value: 'ALL', label: 'All Cities', icon: '🌎' },
+  { value: 'FL',  label: 'Florida',    icon: '🌴' },
+  { value: 'NY',  label: 'New York',   icon: '🗽' },
+];
+
+function _renderAdmScopeRow(scope){
+  const row = document.getElementById('adm-scope-row');
+  if(!row) return;
+  row.innerHTML = SCOPE_OPTIONS.map(opt => {
+    const on = scope === opt.value;
+    return `<div class="adm-scope-opt${on?' on':''}" onclick="_admSetScope('${opt.value}')">
+      <span class="adm-scope-icon">${opt.icon}</span>
+      <span class="adm-scope-label">${opt.label}</span>
+    </div>`;
+  }).join('');
+}
+
+function _admSetScope(scope){
+  if(!_admCtx.userId) return;
+  _admCtx.scope = scope;
+  _renderAdmScopeRow(scope);
+  _admSetActionMsg('');
+}
 
 // renderAdminPage reads from `profiles` via the anon key.
 // RLS policy on profiles uses a security-definer helper that checks user_permissions
 // for an 'admin' row — avoids recursive self-reference on the profiles table.
+//
+// SUPABASE SETUP — run once in SQL editor to create user_scopes table:
+//
+//   CREATE TABLE public.user_scopes (
+//     user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+//     scope   text NOT NULL DEFAULT 'ALL' CHECK (scope IN ('ALL','FL','NY'))
+//   );
+//   ALTER TABLE public.user_scopes ENABLE ROW LEVEL SECURITY;
+//
+//   -- Users can read their own scope
+//   CREATE POLICY "users_read_own_scope" ON public.user_scopes
+//     FOR SELECT USING (auth.uid() = user_id);
+//
+//   -- Admins can read and write all scopes
+//   CREATE POLICY "admins_manage_scopes" ON public.user_scopes
+//     FOR ALL USING (
+//       EXISTS (SELECT 1 FROM public.user_permissions
+//               WHERE user_id = auth.uid() AND permission = 'admin')
+//     );
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
   const scroll = document.getElementById('adm-user-scroll');
@@ -5481,7 +5576,7 @@ async function renderAdminPage(){
   const editor = document.getElementById('adm-perm-editor');
   if(empty)  empty.style.display = 'flex';
   if(editor) editor.style.display = 'none';
-  _admCtx = { userId: null, displayName: null, role: null, state: null, perms: new Set() };
+  _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', perms: new Set() };
 
   try {
     const { data: profiles, error } = await _supa
@@ -5545,22 +5640,30 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(nameEl)   nameEl.textContent   = displayName;
   if(subEl)    subEl.textContent    = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${state==='all'?'All States':state}`;
 
-  // Load permissions for this user
-  _admCtx = { userId, displayName, role, state, perms: new Set() };
+  // Load permissions and scope for this user in parallel
+  _admCtx = { userId, displayName, role, state, scope: 'ALL', perms: new Set() };
   _admSetActionMsg('');
   _renderAdmPermGrid(null); // show loading state
+  _renderAdmScopeRow('ALL'); // default while loading
 
   try {
-    const { data, error } = await _supa
-      .from('user_permissions')
-      .select(_PERM_COL)
-      .eq('user_id', userId);
-    if(error) throw error;
-    _admCtx.perms = new Set((data||[]).map(r => r[_PERM_COL]));
+    const [permsRes, scopeRes] = await Promise.all([
+      _supa.from('user_permissions').select(_PERM_COL).eq('user_id', userId),
+      _supa.from('user_scopes').select('scope').eq('user_id', userId).single()
+    ]);
+    if(permsRes.error) throw permsRes.error;
+    _admCtx.perms = new Set((permsRes.data||[]).map(r => r[_PERM_COL]));
+    _admCtx.scope = scopeRes.data?.scope || 'ALL';
     _renderAdmPermGrid(_admCtx.perms);
+    _renderAdmScopeRow(_admCtx.scope);
+    // Update sub-label with live scope value
+    const subEl = document.getElementById('adm-sel-sub');
+    const scopeLabel = _admCtx.scope === 'ALL' ? 'All Cities' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
+    if(subEl) subEl.textContent = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${scopeLabel}`;
   } catch(e){
-    console.error('[Admin] _adminSelectUser perms fetch error:', e);
-    _renderAdmPermGrid(new Set()); // show empty toggles on error
+    console.error('[Admin] _adminSelectUser fetch error:', e);
+    _renderAdmPermGrid(new Set());
+    _renderAdmScopeRow('ALL');
   }
 }
 
@@ -5622,7 +5725,13 @@ async function _adminSavePerms(){
       const { error: insErr } = await _supa.from('user_permissions').insert(rows);
       if(insErr) throw insErr;
     }
-    console.log('[Admin] Saved permissions for', _admCtx.displayName, ':', [..._admCtx.perms]);
+    // Upsert scope — exactly one row per user (PRIMARY KEY on user_id)
+    const { error: scopeErr } = await _supa
+      .from('user_scopes')
+      .upsert({ user_id: _admCtx.userId, scope: _admCtx.scope }, { onConflict: 'user_id' });
+    if(scopeErr) throw scopeErr;
+
+    console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope);
     _admSetActionMsg(`✓ Saved for ${_admCtx.displayName}`, 'ok');
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
@@ -5676,50 +5785,11 @@ async function _adminDeleteUser(userId, displayName){
   }
 }
 
-// See ARCHITECTURE NOTE above. inviteUserByEmail also requires service_role.
-// Graceful fallback: shows a message directing admin to Supabase dashboard.
-async function _adminInviteUser(){
-  const emailEl = document.getElementById('adm-inv-email');
-  const roleEl  = document.getElementById('adm-inv-role');
-  const stateEl = document.getElementById('adm-inv-state');
-  const msgEl   = document.getElementById('adm-inv-msg');
-  if(!emailEl||!roleEl||!stateEl||!msgEl) return;
-
-  const email = emailEl.value.trim();
-  const role  = roleEl.value;
-  const state = stateEl.value;
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    msgEl.className = 'adm-msg err';
-    msgEl.textContent = 'Please enter a valid email address.';
-    msgEl.style.display = 'block';
-    return;
-  }
-  msgEl.className = 'adm-msg';
-  msgEl.textContent = 'Sending invite…';
-  msgEl.style.display = 'block';
-
-  try {
-    const { data, error } = await _supa.auth.admin.inviteUserByEmail(email, {
-      data: { role, state }
-    });
-    if(error) throw error;
-    try {
-      await _supa.from('profiles').upsert({ id: data.user?.id, role, state }, { onConflict: 'id' });
-    } catch(pe){ console.warn('[Admin] Profile upsert after invite (non-fatal):', pe); }
-    msgEl.className = 'adm-msg ok';
-    msgEl.textContent = `✓ Invite sent to ${email}.`;
-    emailEl.value = '';
-    setTimeout(() => renderAdminPage(), 600);
-  } catch(e){
-    console.error('[Admin] _adminInviteUser error:', e);
-    const msg = e.message||String(e);
-    msgEl.className = 'adm-msg err';
-    if(msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('permission')){
-      msgEl.textContent = 'Invites require elevated permissions. Use Supabase dashboard → Auth → Users → Invite user.';
-    } else {
-      msgEl.textContent = 'Failed: ' + msg;
-    }
-  }
+// Invite disabled from frontend — requires service_role key (server-side only).
+// To invite users: Supabase Dashboard → Auth → Users → Invite user.
+function _adminInviteUser(){
+  // no-op: invite path is not available via anon key.
+  // Left in place for future backend integration via Edge Function.
 }
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
@@ -15132,35 +15202,13 @@ migrate();
       <div class="adm-user-scroll" id="adm-user-scroll">
         <div class="adm-loading">Loading…</div>
       </div>
-      <!-- Invite New User — global admin action, always visible -->
+      <!-- Invite New User — informational note only; invite requires server-side admin path -->
       <div class="adm-invite-wrap">
         <div class="adm-perm-section-title2">Invite New User</div>
-        <div class="adm-invite-row">
-          <div>
-            <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Email</div>
-            <input class="adm-invite-input" id="adm-inv-email" type="email" placeholder="name@example.com" style="width:100%;box-sizing:border-box;" />
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <div>
-              <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">Role</div>
-              <select class="adm-invite-input adm-sel" id="adm-inv-role" style="padding:7px 8px;width:110px;">
-                <option value="user">User</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div>
-              <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;margin-bottom:4px;">State</div>
-              <select class="adm-invite-input adm-sel" id="adm-inv-state" style="padding:7px 8px;width:110px;">
-                <option value="all">All States</option>
-                <option value="FL">Florida</option>
-                <option value="NY">New York</option>
-              </select>
-            </div>
-          </div>
-          <button class="adm-invite-btn" onclick="_adminInviteUser()" style="width:100%;">Send Invite →</button>
+        <div class="adm-invite-note">
+          Inviting users requires admin-level backend access.<br>
+          For now, please use <strong>Supabase Dashboard → Auth → Users → Invite user</strong>.
         </div>
-        <div id="adm-inv-msg" style="display:none;" class="adm-msg"></div>
       </div>
     </div>
     <!-- Right: permission editor -->
@@ -15180,6 +15228,9 @@ migrate();
               <div class="adm-perm-user-sub" id="adm-sel-sub"></div>
             </div>
           </div>
+          <!-- Location scope -->
+          <div class="adm-perm-section-title">Location Access</div>
+          <div class="adm-scope-row" id="adm-scope-row"></div>
           <!-- Permission toggles -->
           <div class="adm-perm-section-title">Dashboard Access</div>
           <div class="adm-perm-grid" id="adm-perm-grid"></div>
