@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v20 -->
+<!-- BUILD: 2026-04-15-v25 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1854,6 +1854,46 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .mx-month-pill:hover { background:var(--mustard); border-color:var(--mustard); color:#5a4c2e; }
 .mx-month-pill.on { background:var(--accent); border-color:var(--accent); color:#fcfaf4; }
 
+/* View mode toggle (Month | Day) */
+.mx-vm-toggle { display:flex; gap:0; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; }
+.mx-vm-btn    { padding:5px 14px; font-size:12px; font-weight:700; border:none; background:var(--surf);
+                color:var(--muted); cursor:pointer; transition:all .15s; }
+.mx-vm-btn:hover { background:var(--mustard); color:#5a4c2e; }
+.mx-vm-btn.on    { background:var(--accent); color:#fcfaf4; }
+
+/* Day view — date navigator */
+.mx-day-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.mx-day-nav-btn { padding:8px 16px; border-radius:8px; border:1.5px solid var(--border); background:white;
+                  color:var(--ink); font-size:13px; font-weight:700; cursor:pointer; transition:background .15s; }
+.mx-day-nav-btn:disabled { background:#f5f5f5; color:var(--muted); cursor:default; }
+.mx-day-nav-center { text-align:center; }
+.mx-day-nav-title  { font-size:16px; font-weight:800; }
+.mx-day-nav-sub    { font-size:13px; color:var(--muted); margin-top:2px; }
+
+/* Day view — summary KPI bar */
+.mx-day-kpi-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+.mx-day-kpi     { background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+.mx-day-kpi .kpi-lbl { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.mx-day-kpi .kpi-val { font-size:18px; font-weight:800; color:var(--text); }
+.mx-day-kpi .kpi-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+.mx-day-kpi.accent   { background:var(--accent); border-color:transparent; }
+.mx-day-kpi.accent .kpi-lbl,.mx-day-kpi.accent .kpi-val,.mx-day-kpi.accent .kpi-sub { color:#fcfaf4; }
+.mx-day-kpi.accent .kpi-lbl { opacity:.75; }
+
+/* Day view — items table (reuse mx-table styles, adding wrapper) */
+.mx-day-items-wrap { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.mx-day-items-wrap .mx-sec-title { font-family:'Oswald',sans-serif; font-size:13px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; padding:12px 16px;
+  background:#f0ece3; border-bottom:1px solid var(--border); }
+
+/* Day view — category filter chips */
+.mx-day-cat-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.mx-day-cat-chip  { padding:4px 12px; border-radius:99px; border:1px solid var(--border);
+                    background:var(--surf); color:var(--muted); font-size:11px; font-weight:600;
+                    cursor:pointer; transition:all .15s; }
+.mx-day-cat-chip:hover { background:var(--mustard); border-color:var(--mustard); color:#5a4c2e; }
+.mx-day-cat-chip.on    { background:var(--accent); border-color:var(--accent); color:#fcfaf4; }
+
 /* ABC Analysis badges */
 .abc-badge { display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:800;
              margin-left:7px; vertical-align:middle; letter-spacing:.04em; font-family:inherit; }
@@ -2300,31 +2340,52 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 }
 
 /* ══ MAINTENANCE TRACKER ═════════════════════════════ */
-.maint-tab-btn { font-size:12px;font-weight:700;padding:14px 18px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s; }
+/* ── Maintenance tabs ── */
+.maint-tab-btn { font-size:12px;font-weight:700;padding:14px 20px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s;letter-spacing:.02em; }
 .maint-tab-btn.active { color:#7e2023;border-bottom-color:#7e2023; }
-.maint-filter-bar { display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.maint-filter-group { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
-.maint-filter-label { font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap; }
-.maint-filter-pills { display:flex;gap:4px;flex-wrap:wrap; }
-.maint-fpill { font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s; }
+/* ── Filter bar ── */
+.maint-filter-bar { display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
+.maint-filter-group { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.maint-filter-label { font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap; }
+.maint-filter-pills { display:flex;gap:5px;flex-wrap:wrap; }
+.maint-fpill { font-size:11px;font-weight:600;padding:5px 14px;border-radius:99px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s; }
+.maint-fpill:hover { border-color:#94a3b8; }
 .maint-fpill.on { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
-.maint-cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:20px; }
-.maint-card { background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid #e8e2d8;display:flex;flex-direction:column;gap:0;transition:box-shadow .2s; }
-.maint-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); }
-.maint-sla-warn { background:#fef2f2;color:#dc2626;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;margin-bottom:10px; }
-.maint-card-hdr { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px; }
-.maint-card-title { font-size:14px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1; }
-.maint-cat-badge { font-size:10px;font-weight:700;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0; }
-.maint-stat-badge { font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;flex-shrink:0; }
-.maint-card-meta { display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#6b7280;margin-bottom:8px; }
-.maint-card-desc { font-size:12px;color:#374151;line-height:1.5;margin-bottom:4px;border-top:1px solid #f1f5f9;padding-top:8px; }
-.maint-card-actions { display:flex;gap:8px;margin-top:12px;flex-wrap:wrap; }
-.maint-action-btn { font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s; }
+/* ── Cards grid ── */
+.maint-cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;padding:24px 0; }
+/* ── Card shell ── */
+.maint-card { background:#fff;border-radius:14px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e8e2d8;display:flex;flex-direction:column;transition:box-shadow .2s,transform .15s;overflow:hidden; }
+.maint-card:hover { box-shadow:0 6px 22px rgba(0,0,0,.11);transform:translateY(-1px); }
+/* ── Card sections ── */
+.maint-card-body { padding:16px 18px 14px;display:flex;flex-direction:column;gap:11px;flex:1; }
+.maint-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }
+.maint-card-title { font-size:15px;font-weight:700;color:#1e293b;line-height:1.4;flex:1;word-break:break-word; }
+.maint-stat-badge { font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em; }
+.maint-card-meta { display:flex;gap:0;flex-wrap:wrap;font-size:11px;color:#6b7280;align-items:center;line-height:1.8; }
+.maint-meta-chip { display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1px solid #e8e2d8;border-radius:6px;padding:2px 8px;font-size:11px;color:#475569;font-weight:500;white-space:nowrap; }
+.maint-meta-row { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
+.maint-badge-row { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
+.maint-cat-badge { font-size:10px;font-weight:700;background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:99px;white-space:nowrap;border:1px solid #e2e8f0; }
+.maint-prio-badge { font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap; }
+.maint-card-desc { font-size:12px;color:#374151;line-height:1.6;padding-top:10px;border-top:1px solid #f1f5f9; }
+.maint-sla-warn { background:#fef2f2;color:#dc2626;font-size:11px;font-weight:700;padding:8px 18px;border-bottom:1px solid #fecaca;display:flex;align-items:center;gap:6px; }
+.maint-sla-bar-section { display:flex;flex-direction:column;gap:3px; }
+.maint-sla-bar-labels { display:flex;justify-content:space-between;align-items:center; }
+.maint-sla-bar-track { background:#f1f5f9;border-radius:4px;height:5px;overflow:hidden; }
+.maint-sla-bar-fill { height:100%;border-radius:4px;transition:width .3s; }
+.maint-card-footer { padding:12px 18px;border-top:1px solid #f1f5f9;display:flex;gap:8px;flex-wrap:wrap;background:#fafaf9; }
+.maint-closed-row { font-size:11px;color:#6b7280;padding-top:10px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:6px; }
+/* ── Action buttons ── */
+.maint-action-btn { font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s;white-space:nowrap;letter-spacing:.01em; }
+.maint-action-btn:hover { filter:brightness(.93); }
+.maint-action-btn.primary { flex:1;text-align:center; }
 .maint-action-btn.blue   { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
 .maint-action-btn.green  { background:#15803d;border-color:#15803d;color:#fff; }
 .maint-action-btn.orange { background:#d97706;border-color:#d97706;color:#fff; }
 .maint-action-btn.gray   { background:#f1f5f9;border-color:#e2e8f0;color:#475569; }
-.maint-empty { padding:60px;text-align:center;color:#9ca3af;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px; }
+/* ── Empty state ── */
+.maint-empty { padding:64px 40px;text-align:center;color:#9ca3af;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:14px; }
+/* ── Modals ── */
 .maint-modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px); }
 .maint-modal-box { position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:90%;max-width:540px;max-height:90vh;overflow-y:auto;z-index:1; }
 .maint-modal-hdr { display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:16px;color:#1e293b;font-family:'Oswald',sans-serif;letter-spacing:.03em; }
@@ -2335,8 +2396,39 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .maint-form-row label { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.04em; }
 .mn-input { padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:100%;box-sizing:border-box;transition:border .15s; }
 .mn-input:focus { outline:none;border-color:#7e2023; }
-.mn-prio-btn { font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;border:2px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s;flex:1; }
-.maint-stats-bar { display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 24px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;font-size:12px; }
+.mn-prio-btn { font-size:12px;font-weight:600;padding:8px 14px;border-radius:8px;border:2px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s;flex:1; }
+/* ── Summary KPI bar ── */
+.maint-summary-bar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
+.maint-kpi-chip { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;color:#374151;cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.01em; }
+.maint-kpi-chip:not(span):hover { border-color:#94a3b8;background:#f1f5f9; }
+.maint-kpi-chip.kpi-active { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
+.maint-kpi-chip.kpi-high { border-color:#fca5a5;background:#fef2f2;color:#dc2626; }
+.maint-kpi-chip.kpi-high.kpi-active { background:#dc2626;border-color:#dc2626;color:#fff; }
+.maint-kpi-chip.kpi-overdue { border-color:#fbbf24;background:#fffbeb;color:#92400e; }
+.maint-kpi-chip.kpi-overdue.kpi-active { background:#d97706;border-color:#d97706;color:#fff; }
+/* ── Store select ── */
+.maint-store-sel { appearance:none;padding:7px 34px 7px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#374151;background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="%2394a3b8" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>') no-repeat right 10px center;cursor:pointer;min-width:180px;font-weight:600;transition:border .15s; }
+.maint-store-sel:focus { outline:none;border-color:#7e2023; }
+/* ── Store groups (all-stores view) ── */
+.maint-store-group { margin-bottom:36px; }
+.maint-store-group:last-child { margin-bottom:0; }
+.maint-store-hdr { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:2px solid #e8e2d8;margin-bottom:2px; }
+.maint-store-hdr-left { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.maint-store-name { font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;white-space:nowrap; }
+.maint-store-count { font-size:11px;font-weight:700;color:#6b7280;background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 10px;border-radius:99px;white-space:nowrap; }
+.maint-store-tag { font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap; }
+.maint-tag-high { background:#fef2f2;color:#dc2626;border:1px solid #fca5a5; }
+.maint-tag-overdue { background:#fffbeb;color:#92400e;border:1px solid #fbbf24; }
+.maint-store-focus-btn { font-size:11px;font-weight:700;padding:5px 14px;border-radius:8px;border:1.5px solid #1e3a5f;color:#1e3a5f;background:transparent;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0; }
+.maint-store-focus-btn:hover { background:#1e3a5f;color:#fff; }
+/* ── Single-store focus banner ── */
+.maint-focus-banner { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 14px;border-bottom:2px solid #1e3a5f;margin-bottom:4px; }
+.maint-focus-banner-left { display:flex;align-items:center;gap:10px; }
+.maint-focus-store-name { font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;letter-spacing:.04em; }
+.maint-back-btn { font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;border:1.5px solid #e2e8f0;color:#475569;background:#f8fafc;cursor:pointer;transition:all .15s;white-space:nowrap; }
+.maint-back-btn:hover { border-color:#94a3b8;background:#f1f5f9; }
+/* ── Stats bar (legacy, kept for avg resolution) ── */
+.maint-stats-bar { display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 24px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;font-size:12px; }
 .maint-stats-label { font-weight:700;color:#15803d;white-space:nowrap; }
 .maint-stats-overall { color:#166534;font-weight:600; }
 .maint-stats-sep { color:#86efac; }
@@ -3368,7 +3460,7 @@ async function doLogout(){
   S.page = 'home';
   // Reset MN state so maintenance filters start clean on next login
   MN.state = 'ALL'; MN.filterStore = 'ALL'; MN.filterPriority = 'ALL';
-  MN.filterStatus = 'ALL'; MN.filterCategory = 'ALL'; MN.search = ''; MN.tab = 'orders';
+  MN.filterStatus = 'ALL'; MN.filterCategory = 'ALL'; MN.filterOverdue = false; MN.search = ''; MN.tab = 'orders';
   // Note: localStorage data intentionally kept so data persists on next login
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
@@ -7803,7 +7895,42 @@ function renderSalesCompare(rec, allRecs){
 }
 
 // ── Active mix selection state
-let MX = { state:'FL', loc:null, year:'2026', month:null, activeTab:'ALL', sortBy:'net', cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null };
+let MX = { state:'FL', loc:null, year:'2026', month:null, activeTab:'ALL', sortBy:'net', cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null, viewMode:'month', selectedDay:null };
+
+// ── Daily pmix — in-memory cache only (never written to localStorage)
+let _mxDailyCache   = null;  // null = not fetched yet; [] = fetched, empty; [...] = data
+let _mxDailyFetching = false;
+
+async function mxLoadDailyFromSupa(){
+  if(_mxDailyCache !== null) return _mxDailyCache;
+  if(_mxDailyFetching) return null; // in flight
+  _mxDailyFetching = true;
+  try {
+    if(!_supa){ _mxDailyCache=[]; return []; }
+    const { data, error } = await _supa.from('app_data')
+      .select('value').eq('key','sl_pmix_daily_v1').single();
+    _mxDailyCache = (!error && data && Array.isArray(data.value)) ? data.value : [];
+  } catch(e) {
+    console.warn('[MX Daily] Supabase fetch failed:', e);
+    _mxDailyCache = [];
+  }
+  _mxDailyFetching = false;
+  return _mxDailyCache;
+}
+
+function mxSetViewMode(vm){
+  MX.viewMode = vm;
+  if(vm === 'day'){
+    if(_mxDailyCache === null){
+      renderMixPage(); // shows loading spinner immediately
+      mxLoadDailyFromSupa().then(() => renderMixPage());
+    } else {
+      renderMixPage();
+    }
+  } else {
+    renderMixPage();
+  }
+}
 
 // ── Parse the Excel file and return structured data
 // ── Auto-detect location+state from row 2 of the file
@@ -7996,6 +8123,16 @@ function renderMixPage(){
   const locBar        = document.getElementById('mix-loc-bar');
   if(!uploadView || !dashboardView) return;
 
+  // ── Day view routing — does not require monthly data ──────────────────
+  if(MX.viewMode === 'day'){
+    uploadView.style.display='none';
+    dashboardView.style.display='block';
+    if(locBar) locBar.style.display='flex';
+    renderMixLocBar(getPMixRecords().filter(r=>r.state===MX.state && r.year===MX.year));
+    renderMixDayView();
+    return;
+  }
+
   const allRecs = getPMixRecords();
 
   if(allRecs.length === 0){
@@ -8111,11 +8248,213 @@ function renderMixLocBar(filteredRecs){
       opts += `<option value="${l}"${MX.loc===l?' selected':''}>${l}</option>`;
     opts += `</optgroup>`;
   }
+  const vmMonth = MX.viewMode==='month';
+  const vmDay   = MX.viewMode==='day';
   bar.innerHTML = `<div class="sl-store-wrap">
     <span class="sl-store-label">📍 Choose Store</span>
     <select class="sl-store-sel" onchange="mxSetLoc(this.value)">${opts}</select>
+    <div class="mx-vm-toggle">
+      <button class="mx-vm-btn ${vmMonth?'on':''}" onclick="mxSetViewMode('month')">📅 Month</button>
+      <button class="mx-vm-btn ${vmDay  ?'on':''}" onclick="mxSetViewMode('day')">📆 Day</button>
+    </div>
     <button class="sl-store-upl" onclick="mxShowUpload()">+ Upload</button>
   </div>`;
+}
+
+// ── Product Mix Day View ─────────────────────────────────────────────────────
+// Reads from _mxDailyCache (in-memory only — never localStorage)
+function renderMixDayView(){
+  const el = document.getElementById('mix-dashboard-view');
+  if(!el) return;
+
+  // ── Loading state while Supabase fetch is in flight ──────────────────────
+  if(_mxDailyCache === null){
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
+      <div style="font-size:24px;margin-bottom:12px;">⏳</div>
+      <div style="font-size:14px;font-weight:700;">Loading daily product mix…</div>
+      <div style="font-size:12px;margin-top:6px;">Fetching from cloud, this takes a moment.</div>
+    </div>`;
+    return;
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if(!_mxDailyCache.length){
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
+      <div style="font-size:32px;margin-bottom:12px;">📆</div>
+      <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;">No Daily Product Mix Data Yet</div>
+      <div style="font-size:13px;line-height:1.6;max-width:400px;margin:0 auto;">
+        Daily product mix records are written by the automated GitHub Actions sync (runs at 7am ET).<br>
+        Data will appear here starting the morning after the first successful sync.
+      </div>
+    </div>`;
+    return;
+  }
+
+  // ── Filter to current state + loc ─────────────────────────────────────────
+  const locRecs = _mxDailyCache.filter(r => r.state === MX.state && r.loc === MX.loc);
+
+  // If no loc selected or loc has no data, try to auto-select
+  if(!locRecs.length){
+    const anyLoc = _mxDailyCache.find(r=>r.state===MX.state);
+    if(anyLoc && anyLoc.loc !== MX.loc){
+      MX.loc = anyLoc.loc;
+      renderMixLocBar(getPMixRecords().filter(r=>r.state===MX.state&&r.year===MX.year));
+      renderMixDayView();
+      return;
+    }
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
+      <div style="font-size:14px;font-weight:700;">No daily data for ${MX.loc||'selected store'}</div>
+      <div style="font-size:12px;margin-top:6px;">Check back after the next sync (7am ET).</div>
+    </div>`;
+    return;
+  }
+
+  const availDates = [...new Set(locRecs.map(r=>r.date))].sort();
+
+  // Default to most recent date
+  if(!MX.selectedDay || !availDates.includes(MX.selectedDay)){
+    MX.selectedDay = availDates[availDates.length-1];
+  }
+  const dayIdx  = availDates.indexOf(MX.selectedDay);
+  const prevDay = dayIdx > 0 ? availDates[dayIdx-1] : null;
+  const nextDay = dayIdx < availDates.length-1 ? availDates[dayIdx+1] : null;
+
+  const dayRec  = locRecs.find(r=>r.date===MX.selectedDay);
+  if(!dayRec){
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">No data for ${MX.selectedDay}.</div>`;
+    return;
+  }
+
+  // ── Day label & KPI bar ───────────────────────────────────────────────────
+  const dObj     = new Date(MX.selectedDay+'T12:00:00');
+  const dayLabel = dObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const fmt$     = v => '$'+Math.round(v).toLocaleString('en-US');
+
+  const EXCLUDED_CATS = ['Open Food','OPEN FOOD'];
+  const cats     = (dayRec.categories||[]).filter(c=>!EXCLUDED_CATS.includes(c.name)&&(c.qty>0||c.net>0));
+  const topCat   = cats.length ? cats.reduce((a,b)=>b.net>a.net?b:a) : null;
+  const items    = (dayRec.items||[]).filter(i=>i.qty>0||i.net>0);
+  const topItem  = items.length ? items.reduce((a,b)=>b.net>a.net?b:a) : null;
+  const mods     = dayRec.modifiers || {single:0,double:0,triple:0};
+  const totalMod = mods.single + mods.double + mods.triple;
+
+  const kpiBar = `<div class="mx-day-kpi-bar">
+    <div class="mx-day-kpi accent">
+      <div class="kpi-lbl">Net Revenue</div>
+      <div class="kpi-val">${fmt$(dayRec.totalNet||0)}</div>
+      <div class="kpi-sub">${MX.loc} · ${dObj.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+    </div>
+    <div class="mx-day-kpi">
+      <div class="kpi-lbl">Items Sold</div>
+      <div class="kpi-val">${(dayRec.totalQty||0).toLocaleString('en-US')}</div>
+      <div class="kpi-sub">${items.length} unique items</div>
+    </div>
+    <div class="mx-day-kpi">
+      <div class="kpi-lbl">Top Category</div>
+      <div class="kpi-val" style="font-size:14px;font-weight:800;">${topCat?topCat.name:'—'}</div>
+      <div class="kpi-sub">${topCat?fmt$(topCat.net):''}</div>
+    </div>
+    <div class="mx-day-kpi">
+      <div class="kpi-lbl">Top Item</div>
+      <div class="kpi-val" style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${topItem?topItem.name:'—'}</div>
+      <div class="kpi-sub">${topItem?'qty '+topItem.qty+' · '+fmt$(topItem.net):''}</div>
+    </div>
+  </div>`;
+
+  // ── Date navigator & pills ─────────────────────────────────────────────────
+  const recentDates = availDates.slice(-14);
+  const datePills   = recentDates.map(d=>{
+    const dd  = new Date(d+'T12:00:00');
+    const lbl = dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<button class="mx-month-pill ${d===MX.selectedDay?'on':''}" onclick="MX.selectedDay='${d}';renderMixDayView()">${lbl}</button>`;
+  }).join('');
+
+  const dayNav = `<div class="mx-day-nav">
+    <button class="mx-day-nav-btn" ${prevDay?`onclick="MX.selectedDay='${prevDay}';renderMixDayView()"`:' disabled'}>
+      ← ${prevDay ? new Date(prevDay+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '–'}
+    </button>
+    <div class="mx-day-nav-center">
+      <div class="mx-day-nav-title">${dayLabel}</div>
+      <div class="mx-day-nav-sub">${fmt$(dayRec.totalNet||0)} · ${(dayRec.totalQty||0).toLocaleString('en-US')} items sold</div>
+    </div>
+    <button class="mx-day-nav-btn" ${nextDay?`onclick="MX.selectedDay='${nextDay}';renderMixDayView()"`:' disabled'}>
+      ${nextDay ? new Date(nextDay+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '–'} →
+    </button>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;">${datePills}</div>`;
+
+  // ── Category filter chips ─────────────────────────────────────────────────
+  if(!window._mxDayCatFilter) window._mxDayCatFilter = 'ALL';
+  const activeCat = window._mxDayCatFilter;
+  const catChips = `<div class="mx-day-cat-chips">
+    <button class="mx-day-cat-chip ${activeCat==='ALL'?'on':''}" onclick="window._mxDayCatFilter='ALL';renderMixDayView()">All</button>
+    ${cats.map(c=>`<button class="mx-day-cat-chip ${activeCat===c.name?'on':''}" onclick="window._mxDayCatFilter='${c.name.replace(/'/g,"\\'")}';renderMixDayView()">${c.name}</button>`).join('')}
+  </div>`;
+
+  // ── Categories summary table ───────────────────────────────────────────────
+  const totalNet = dayRec.totalNet || cats.reduce((s,c)=>s+c.net,0);
+  const catRows  = cats.map(c=>{
+    const pct = totalNet>0 ? (c.net/totalNet*100) : 0;
+    return `<tr>
+      <td style="font-weight:600;">${c.name}</td>
+      <td class="num">${c.qty.toLocaleString('en-US')}</td>
+      <td class="num" style="font-weight:700;">${fmt$(c.net)}</td>
+      <td class="num">
+        <div class="mx-pct-bar-wrap">
+          <div class="mx-pct-bar"><div class="mx-pct-fill" style="width:${Math.min(pct,100).toFixed(1)}%;"></div></div>
+          <span class="mx-pct-txt">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const catTable = `<div style="margin-bottom:24px;">
+    <div style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;color:var(--muted);">Category Breakdown</div>
+    <div class="mx-table-wrap">
+      <table class="mx-table">
+        <thead><tr><th>Category</th><th class="num">Qty</th><th class="num">Net Revenue</th><th class="num">% of Day</th></tr></thead>
+        <tbody>${catRows}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // ── Items table (filtered by active cat) ──────────────────────────────────
+  const filteredItems = activeCat==='ALL' ? items : items.filter(i=>i.cat===activeCat);
+  const sortedItems   = [...filteredItems].sort((a,b)=>b.net-a.net);
+  const itemRows = sortedItems.map((it,idx)=>{
+    const pct = totalNet>0 ? (it.net/totalNet*100) : 0;
+    return `<tr>
+      <td style="font-weight:500;">${idx+1}. ${it.name}</td>
+      <td style="font-size:11px;color:var(--muted);">${it.cat}</td>
+      <td class="num">${it.qty.toLocaleString('en-US')}</td>
+      <td class="num" style="font-weight:700;">${fmt$(it.net)}</td>
+      <td class="num">
+        <div class="mx-pct-bar-wrap">
+          <div class="mx-pct-bar"><div class="mx-pct-fill" style="width:${Math.min(pct,100).toFixed(1)}%;"></div></div>
+          <span class="mx-pct-txt">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const itemCount = activeCat==='ALL' ? `${sortedItems.length} items` : `${sortedItems.length} in ${activeCat}`;
+  const itemTable = `<div class="mx-day-items-wrap">
+    <div class="mx-sec-title">Items · ${itemCount}</div>
+    <table class="mx-table">
+      <thead><tr><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Net Revenue</th><th class="num">% of Day</th></tr></thead>
+      <tbody>${itemRows||`<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted);">No items match this filter.</td></tr>`}</tbody>
+    </table>
+  </div>`;
+
+  // ── Modifiers panel (if any) ──────────────────────────────────────────────
+  const modPanel = totalMod > 0 ? `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Burger Patties</span>
+    ${mods.single>0?`<span style="font-size:13px;font-weight:700;">Single <span style="color:var(--accent);">${mods.single.toLocaleString('en-US')}</span></span>`:''}
+    ${mods.double>0?`<span style="font-size:13px;font-weight:700;">Double <span style="color:var(--accent);">${mods.double.toLocaleString('en-US')}</span></span>`:''}
+    ${mods.triple>0?`<span style="font-size:13px;font-weight:700;">Triple <span style="color:var(--accent);">${mods.triple.toLocaleString('en-US')}</span></span>`:''}
+  </div>` : '';
+
+  el.innerHTML = `<div class="mx-page">${dayNav}${kpiBar}${catTable}${modPanel}${catChips}${itemTable}</div>`;
 }
 
 function renderMixDashboard(rec, locRecs, allRecs){
@@ -12640,7 +12979,7 @@ function pxToggleCmpFull(){
 // ══════════════════════════════════════════════════
 //  STORE MAINTENANCE TRACKER
 // ══════════════════════════════════════════════════
-let MN = { state:'ALL', filterStore:'ALL', filterPriority:'ALL', filterStatus:'ALL', filterCategory:'ALL', search:'', tab:'orders' };
+let MN = { state:'ALL', filterStore:'ALL', filterPriority:'ALL', filterStatus:'ALL', filterCategory:'ALL', filterOverdue:false, search:'', tab:'orders' };
 // MN.state is set properly in goMaint() based on _slState
 
 function updateMaintBadge(){
@@ -12661,9 +13000,96 @@ const MN_STAT_COLOR  = { open:'#dc2626', inprogress:'#d97706', pendingReview:'#2
 const MN_STAT_LABEL  = { open:'Open', inprogress:'In Progress', pendingReview:'Pending Review', finished:'Finished' };
 const MN_CATEGORIES  = ['Electrical','Plumbing','Equipment','Furniture','HVAC','Cleaning','Other'];
 
-function getMaintRecords(){ try{ return JSON.parse(localStorage.getItem('sl_maintenance_v1')||'[]'); }catch(e){ return []; } }
-function saveMaintRecords(arr){ localStorage.setItem('sl_maintenance_v1', JSON.stringify(arr)); }
+// ── Schema sanitizer ─────────────────────────────────────────────────────────
+// Normalises any record to the canonical shape. Returns null if the record is
+// so broken it cannot be represented (missing id). Sets _incomplete:true when
+// state or loc is absent so the card can surface a visible warning.
+function mnSanitizeRecord(r){
+  if(!r || typeof r !== 'object' || Array.isArray(r)) return null;
+  if(!r.id || typeof r.id !== 'string') return null; // id is non-repairable
+  const VALID_STATES    = ['FL','NY'];
+  const VALID_STATUSES  = ['open','inprogress','pendingReview','finished'];
+  const VALID_PRIORITIES= ['red','yellow','green'];
+  const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/;
+  const todayISO        = new Date().toISOString().slice(0,10);
+  const out = {
+    id:           r.id,
+    state:        VALID_STATES.includes(r.state)       ? r.state          : (typeof r.state==='string'?r.state:null),
+    loc:          (typeof r.loc==='string' && r.loc)   ? r.loc            : null,
+    date:         DATE_RE.test(r.date||'')             ? r.date           : todayISO,
+    priority:     VALID_PRIORITIES.includes(r.priority)? r.priority        : 'yellow',
+    category:     MN_CATEGORIES.includes(r.category)  ? r.category        : 'Other',
+    title:        (typeof r.title==='string' && r.title)? r.title.slice(0,120): '(untitled)',
+    description:  typeof r.description==='string'      ? r.description     : null,
+    photos:       Array.isArray(r.photos)              ? r.photos          : [],
+    assignedTo:   (typeof r.assignedTo==='string' && r.assignedTo) ? r.assignedTo : null,
+    dueDate:      DATE_RE.test(r.dueDate||'')          ? r.dueDate         : null,
+    status:       VALID_STATUSES.includes(r.status)    ? r.status          : 'open',
+    createdBy:    typeof r.createdBy==='string'        ? r.createdBy       : null,
+    createdAt:    (typeof r.createdAt==='string' && r.createdAt) ? r.createdAt : new Date().toISOString(),
+    techName:     typeof r.techName==='string'         ? r.techName        : null,
+    techNote:     typeof r.techNote==='string'         ? r.techNote        : null,
+    performedAt:  typeof r.performedAt==='string'      ? r.performedAt     : null,
+    closingPhotos:Array.isArray(r.closingPhotos)       ? r.closingPhotos   : [],
+    reviewedBy:   typeof r.reviewedBy==='string'       ? r.reviewedBy      : null,
+    reviewedAt:   typeof r.reviewedAt==='string'       ? r.reviewedAt      : null,
+  };
+  if(!out.state || !out.loc) out._incomplete = true;
+  return out;
+}
+
+// ── Storage gateway ───────────────────────────────────────────────────────────
+function getMaintRecords(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('sl_maintenance_v1')||'[]');
+    if(!Array.isArray(raw)){
+      console.warn('[Maintenance] sl_maintenance_v1 is not an array — returning empty');
+      return [];
+    }
+    const sanitized = raw.map(mnSanitizeRecord).filter(r=>r!==null);
+    const dropped   = raw.length - sanitized.length;
+    if(dropped > 0) console.warn(`[Maintenance] ${dropped} record(s) dropped during sanitization (null/missing id)`);
+    return sanitized;
+  }catch(e){
+    console.error('[Maintenance] Failed to parse sl_maintenance_v1:', e);
+    return [];
+  }
+}
+function saveMaintRecords(arr){
+  if(!Array.isArray(arr)){
+    console.error('[Maintenance] saveMaintRecords: expected Array, got', typeof arr);
+    return;
+  }
+  const clean = arr.map(mnSanitizeRecord).filter(r=>r!==null);
+  localStorage.setItem('sl_maintenance_v1', JSON.stringify(clean));
+}
 function mnGenId(){ return 'mn_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+// ── Create-form validator ─────────────────────────────────────────────────────
+function mnValidateCreate(fields){
+  const errors = [];
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const { title, state, loc, date, prio, cat, author } = fields;
+  if(!title || !title.trim())
+    errors.push('Title is required.');
+  else if(title.trim().length > 120)
+    errors.push('Title must be 120 characters or fewer.');
+  if(!['FL','NY'].includes(state))
+    errors.push('State must be FL or NY.');
+  if(!loc || !loc.trim())
+    errors.push('Store is required.');
+  else if(state && LOC_MAP[state] && !LOC_MAP[state].includes(loc))
+    errors.push(`"${loc}" is not a recognised store for ${state}.`);
+  if(!date || !DATE_RE.test(date))
+    errors.push('A valid date (YYYY-MM-DD) is required.');
+  if(!['red','yellow','green'].includes(prio))
+    errors.push('Priority must be High, Medium, or Low.');
+  if(!MN_CATEGORIES.includes(cat))
+    errors.push(`Category must be one of: ${MN_CATEGORIES.join(', ')}.`);
+  if(!author || !author.trim())
+    errors.push('Your name is required.');
+  return { ok: errors.length===0, errors };
+}
 
 function renderMaintPage(){
   try {
@@ -12685,58 +13111,91 @@ function renderMaintPage(){
 function renderMaintFilters(){
   const el = document.getElementById('maint-filters');
   if(!el) return;
-  const allRecs = getMaintRecords().filter(r => MN.state==='ALL' || r.state===MN.state);
-  const allLocs = [...new Set(allRecs.map(r=>r.loc))].sort();
-  const stores = ['ALL', ...allLocs];
+  const allRecs  = getMaintRecords().filter(r => MN.state==='ALL' || r.state===MN.state);
+  const allLocs  = [...new Set(allRecs.map(r=>r.loc))].sort();
   const usedCats = [...new Set(allRecs.map(r=>r.category||'Other'))].sort();
+  const today    = new Date().toISOString().slice(0,10);
 
-  // Avg resolution time per store (finished only)
-  const finished = allRecs.filter(r=>r.status==='finished'&&r.reviewedAt&&r.createdAt);
-  let statsHTML = '';
-  if(finished.length){
-    const byStore = {};
-    finished.forEach(r=>{
-      const days = (new Date(r.reviewedAt)-new Date(r.createdAt))/(1000*60*60*24);
-      if(!byStore[r.loc]) byStore[r.loc]={total:0,count:0};
-      byStore[r.loc].total+=days; byStore[r.loc].count++;
-    });
-    const storeStats = Object.entries(byStore)
-      .map(([loc,v])=>({loc, avg:v.total/v.count}))
-      .sort((a,b)=>a.avg-b.avg);
-    const overallAvg = finished.reduce((s,r)=>s+(new Date(r.reviewedAt)-new Date(r.createdAt))/(1000*60*60*24),0)/finished.length;
-    statsHTML = `<div class="maint-stats-bar">
-      <span class="maint-stats-label">⏱ Avg Resolution:</span>
-      <span class="maint-stats-overall">${overallAvg.toFixed(1)} days fleet avg</span>
-      <span class="maint-stats-sep">·</span>
-      ${storeStats.map(s=>`<span class="maint-stats-store" title="${s.loc}"><strong>${s.loc.split(' ')[0]}</strong> ${s.avg.toFixed(1)}d</span>`).join('')}
-    </div>`;
+  // Build loc→state map for grouped select optgroups
+  const locStateMap = {};
+  allRecs.forEach(r=>{ locStateMap[r.loc]=r.state; });
+  const flLocs = allLocs.filter(l=>locStateMap[l]==='FL');
+  const nyLocs = allLocs.filter(l=>locStateMap[l]==='NY');
+
+  // ── Summary KPIs — scoped to current store filter ─────────
+  const scopedRecs   = MN.filterStore==='ALL' ? allRecs : allRecs.filter(r=>r.loc===MN.filterStore);
+  const activeRecs   = scopedRecs.filter(r=>r.status!=='finished');
+  const cntOpen      = activeRecs.filter(r=>r.status==='open').length;
+  const cntInProg    = activeRecs.filter(r=>r.status==='inprogress').length;
+  const cntPending   = activeRecs.filter(r=>r.status==='pendingReview').length;
+  const cntHighPrio  = activeRecs.filter(r=>r.priority==='red').length;
+  const cntOverdue   = activeRecs.filter(r=>r.dueDate && r.dueDate < today).length;
+  const cntFinished  = scopedRecs.filter(r=>r.status==='finished').length;
+
+  // Avg resolution time (scoped to current store filter)
+  const finishedRecs = scopedRecs.filter(r=>r.status==='finished'&&r.reviewedAt&&r.createdAt);
+  let avgResHTML = '';
+  if(finishedRecs.length){
+    const overallAvg = finishedRecs.reduce((s,r)=>s+(new Date(r.reviewedAt)-new Date(r.createdAt))/(1000*60*60*24),0)/finishedRecs.length;
+    avgResHTML = `<span class="maint-kpi-chip" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;cursor:default;">⏱ ${overallAvg.toFixed(1)}d avg close</span>`;
   }
 
+  // Store select — grouped by state with optgroups
+  const storeSelectOpts = `
+    <option value="ALL" ${MN.filterStore==='ALL'?'selected':''}>All Stores${allLocs.length?' ('+allLocs.length+')':''}</option>
+    ${flLocs.length?`<optgroup label="🌴 Florida">${flLocs.map(l=>`<option value="${l}" ${MN.filterStore===l?'selected':''}>${l}</option>`).join('')}</optgroup>`:''}
+    ${nyLocs.length?`<optgroup label="🗽 New York">${nyLocs.map(l=>`<option value="${l}" ${MN.filterStore===l?'selected':''}>${l}</option>`).join('')}</optgroup>`:''}`;
+
+  const summaryBar = `<div class="maint-summary-bar">
+    <button class="maint-kpi-chip ${MN.filterStatus==='open'?'kpi-active':''}"
+      onclick="MN.filterStatus=MN.filterStatus==='open'?'ALL':'open';MN.filterOverdue=false;renderMaintOrders();">
+      🔧 ${cntOpen} Open
+    </button>
+    <button class="maint-kpi-chip ${MN.filterStatus==='inprogress'?'kpi-active':''}"
+      onclick="MN.filterStatus=MN.filterStatus==='inprogress'?'ALL':'inprogress';MN.filterOverdue=false;renderMaintOrders();">
+      ▶ ${cntInProg} In Progress
+    </button>
+    <button class="maint-kpi-chip ${MN.filterStatus==='pendingReview'?'kpi-active':''}"
+      onclick="MN.filterStatus=MN.filterStatus==='pendingReview'?'ALL':'pendingReview';MN.filterOverdue=false;renderMaintOrders();">
+      🕐 ${cntPending} Pending Review
+    </button>
+    <button class="maint-kpi-chip kpi-high ${MN.filterPriority==='red'&&!MN.filterOverdue?'kpi-active':''}"
+      onclick="MN.filterPriority=MN.filterPriority==='red'?'ALL':'red';MN.filterOverdue=false;renderMaintOrders();">
+      🔴 ${cntHighPrio} High Priority
+    </button>
+    <button class="maint-kpi-chip kpi-overdue ${MN.filterOverdue?'kpi-active':''}"
+      onclick="MN.filterOverdue=!MN.filterOverdue;MN.filterStatus='ALL';MN.filterPriority='ALL';renderMaintOrders();">
+      ⚠️ ${cntOverdue} Overdue
+    </button>
+    <span class="maint-kpi-chip" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;cursor:default;">✅ ${cntFinished} Closed</span>
+    ${avgResHTML}
+  </div>`;
+
   el.innerHTML = `
-    ${statsHTML}
+    ${summaryBar}
     <div class="maint-filter-bar">
       <div class="maint-filter-group">
         <span class="maint-filter-label">Store</span>
-        <div class="maint-filter-pills">
-          ${stores.map(s=>`<button class="maint-fpill ${MN.filterStore===s?'on':''}" onclick="MN.filterStore='${s}';renderMaintOrders();">${s==='ALL'?'All Stores':s}</button>`).join('')}
-        </div>
+        <select class="maint-store-sel" onchange="MN.filterStore=this.value;renderMaintPage();">
+          ${storeSelectOpts}
+        </select>
       </div>
       <div class="maint-filter-group">
         <span class="maint-filter-label">Priority</span>
         <div class="maint-filter-pills">
           <button class="maint-fpill ${MN.filterPriority==='ALL'?'on':''}" onclick="MN.filterPriority='ALL';renderMaintOrders();">All</button>
-          <button class="maint-fpill ${MN.filterPriority==='red'?'on':''}" onclick="MN.filterPriority='red';renderMaintOrders();">🔴 High</button>
-          <button class="maint-fpill ${MN.filterPriority==='yellow'?'on':''}" onclick="MN.filterPriority='yellow';renderMaintOrders();">🟡 Medium</button>
-          <button class="maint-fpill ${MN.filterPriority==='green'?'on':''}" onclick="MN.filterPriority='green';renderMaintOrders();">🟢 Low</button>
+          <button class="maint-fpill ${MN.filterPriority==='red'?'on':''}" onclick="MN.filterPriority='red';MN.filterOverdue=false;renderMaintOrders();">🔴 High</button>
+          <button class="maint-fpill ${MN.filterPriority==='yellow'?'on':''}" onclick="MN.filterPriority='yellow';MN.filterOverdue=false;renderMaintOrders();">🟡 Medium</button>
+          <button class="maint-fpill ${MN.filterPriority==='green'?'on':''}" onclick="MN.filterPriority='green';MN.filterOverdue=false;renderMaintOrders();">🟢 Low</button>
         </div>
       </div>
       <div class="maint-filter-group">
         <span class="maint-filter-label">Status</span>
         <div class="maint-filter-pills">
           <button class="maint-fpill ${MN.filterStatus==='ALL'?'on':''}" onclick="MN.filterStatus='ALL';renderMaintOrders();">All</button>
-          <button class="maint-fpill ${MN.filterStatus==='open'?'on':''}" onclick="MN.filterStatus='open';renderMaintOrders();">Open</button>
-          <button class="maint-fpill ${MN.filterStatus==='inprogress'?'on':''}" onclick="MN.filterStatus='inprogress';renderMaintOrders();">In Progress</button>
-          <button class="maint-fpill ${MN.filterStatus==='pendingReview'?'on':''}" onclick="MN.filterStatus='pendingReview';renderMaintOrders();">Pending Review</button>
+          <button class="maint-fpill ${MN.filterStatus==='open'?'on':''}" onclick="MN.filterStatus='open';MN.filterOverdue=false;renderMaintOrders();">Open</button>
+          <button class="maint-fpill ${MN.filterStatus==='inprogress'?'on':''}" onclick="MN.filterStatus='inprogress';MN.filterOverdue=false;renderMaintOrders();">In Progress</button>
+          <button class="maint-fpill ${MN.filterStatus==='pendingReview'?'on':''}" onclick="MN.filterStatus='pendingReview';MN.filterOverdue=false;renderMaintOrders();">Pending Review</button>
         </div>
       </div>
       ${usedCats.length>1?`<div class="maint-filter-group">
@@ -12772,17 +13231,25 @@ function renderMaintOrders(){
     }
   }
 
+  const todayStr = new Date().toISOString().slice(0,10);
   let recs = allRecs;
   if(MN.state!=='ALL')           recs = recs.filter(r=>r.state===MN.state);
   if(MN.filterStore!=='ALL')     recs = recs.filter(r=>r.loc===MN.filterStore);
   if(MN.filterPriority!=='ALL')  recs = recs.filter(r=>r.priority===MN.filterPriority);
   if(MN.filterStatus!=='ALL')    recs = recs.filter(r=>r.status===MN.filterStatus);
   if(MN.filterCategory!=='ALL')  recs = recs.filter(r=>(r.category||'Other')===MN.filterCategory);
-  if(MN.search){ const q=MN.search.toLowerCase(); recs=recs.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.description||'').toLowerCase().includes(q)); }
+  if(MN.filterOverdue)           recs = recs.filter(r=>r.dueDate && r.dueDate < todayStr && r.status!=='finished');
+  if(MN.search){ const q=MN.search.toLowerCase(); recs=recs.filter(r=>(r.title||'').toLowerCase().includes(q)||(r.description||'').toLowerCase().includes(q)||(r.assignedTo||'').toLowerCase().includes(q)); }
 
   const prioOrder={red:0,yellow:1,green:2};
+  // Sort active: overdue first, then by priority, then by createdAt desc
   const active = recs.filter(r=>r.status!=='finished')
-    .sort((a,b)=>prioOrder[a.priority]-prioOrder[b.priority]||new Date(b.createdAt)-new Date(a.createdAt));
+    .sort((a,b)=>{
+      const aOvd = a.dueDate && a.dueDate < todayStr ? 0 : 1;
+      const bOvd = b.dueDate && b.dueDate < todayStr ? 0 : 1;
+      if(aOvd!==bOvd) return aOvd-bOvd;
+      return prioOrder[a.priority]-prioOrder[b.priority]||new Date(b.createdAt)-new Date(a.createdAt);
+    });
   const finished = recs.filter(r=>r.status==='finished')
     .sort((a,b)=>new Date(b.reviewedAt||b.createdAt)-new Date(a.reviewedAt||a.createdAt));
 
@@ -12793,7 +13260,7 @@ function renderMaintOrders(){
   if(hstBtn) hstBtn.textContent = `🗂 History${finished.length?' ('+finished.length+')':''}`;
 
   // Differentiate "no data at all" vs "filtered out" in empty states
-  const isFiltered = MN.filterStore!=='ALL'||MN.filterPriority!=='ALL'||MN.filterStatus!=='ALL'||MN.filterCategory!=='ALL'||!!MN.search;
+  const isFiltered = MN.filterStore!=='ALL'||MN.filterPriority!=='ALL'||MN.filterStatus!=='ALL'||MN.filterCategory!=='ALL'||MN.filterOverdue||!!MN.search;
   const emptyOrdersMsg = totalAll === 0
     ? `<div class="maint-empty">
         <div style="font-size:48px;margin-bottom:8px;">🔧</div>
@@ -12805,83 +13272,200 @@ function renderMaintOrders(){
       ? `<div class="maint-empty"><div style="font-size:40px;">🔍</div>No work orders match your current filters.<br><button onclick="MN.filterStore='ALL';MN.filterPriority='ALL';MN.filterStatus='ALL';MN.filterCategory='ALL';MN.search='';renderMaintPage();" style="margin-top:12px;padding:8px 20px;background:#f1f5f9;border:1.5px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">Clear filters</button></div>`
       : `<div class="maint-empty"><div style="font-size:40px;">✅</div>All caught up — no open work orders.</div>`;
 
+  // ── Helper: build grouped HTML by store ──────────────────
+  function mnGroupByStore(items, isHist){
+    const groups = {};
+    items.forEach(r=>{
+      if(!groups[r.loc]) groups[r.loc]={loc:r.loc,state:r.state,items:[]};
+      groups[r.loc].items.push(r);
+    });
+    const sorted = Object.values(groups).sort((a,b)=>{
+      if(!isHist){
+        const aOvd=a.items.filter(r=>r.dueDate&&r.dueDate<todayStr).length;
+        const bOvd=b.items.filter(r=>r.dueDate&&r.dueDate<todayStr).length;
+        if(aOvd!==bOvd) return bOvd-aOvd;
+      }
+      return b.items.length-a.items.length||a.loc.localeCompare(b.loc);
+    });
+    return sorted.map(g=>{
+      const stateEmoji = g.state==='FL'?'🌴':g.state==='NY'?'🗽':'';
+      const ovdCount = !isHist ? g.items.filter(r=>r.dueDate&&r.dueDate<todayStr).length : 0;
+      const highCount = !isHist ? g.items.filter(r=>r.priority==='red').length : 0;
+      const countLabel = isHist ? `${g.items.length} closed` : `${g.items.length} open`;
+      return `<div class="maint-store-group">
+        <div class="maint-store-hdr">
+          <div class="maint-store-hdr-left">
+            <span class="maint-store-name">${stateEmoji} ${g.loc}</span>
+            <span class="maint-store-count">${countLabel}</span>
+            ${highCount?`<span class="maint-store-tag maint-tag-high">🔴 ${highCount} high</span>`:''}
+            ${ovdCount?`<span class="maint-store-tag maint-tag-overdue">⚠️ ${ovdCount} overdue</span>`:''}
+          </div>
+          <button class="maint-store-focus-btn" onclick="MN.filterStore='${g.loc}';renderMaintPage();">Focus on ${g.loc} →</button>
+        </div>
+        <div class="maint-cards-grid">${g.items.map(r=>mnCard(r,isHist)).join('')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Focus banner (single store selected) ─────────────────
+  const stateEmoji = MN.filterStore!=='ALL'
+    ? (allRecs.find(r=>r.loc===MN.filterStore)?.state==='FL'?'🌴':allRecs.find(r=>r.loc===MN.filterStore)?.state==='NY'?'🗽':'')
+    : '';
+  const focusBanner = MN.filterStore!=='ALL'
+    ? `<div class="maint-focus-banner">
+        <div class="maint-focus-banner-left">
+          <span class="maint-focus-store-name">${stateEmoji} ${MN.filterStore}</span>
+          <span class="maint-store-count">${active.length} open · ${finished.length} closed</span>
+        </div>
+        <button class="maint-back-btn" onclick="MN.filterStore='ALL';renderMaintPage();">← All Stores</button>
+      </div>`
+    : '';
+
   if(MN.tab==='orders'){
     ordersEl.style.display='block'; histEl.style.display='none';
-    ordersEl.innerHTML = active.length
-      ? `<div class="maint-cards-grid">${active.map(r=>mnCard(r,false)).join('')}</div>`
-      : emptyOrdersMsg;
+    if(!active.length){ ordersEl.innerHTML=focusBanner+emptyOrdersMsg; }
+    else if(MN.filterStore==='ALL'){
+      ordersEl.innerHTML = mnGroupByStore(active, false);
+    } else {
+      ordersEl.innerHTML = focusBanner+`<div class="maint-cards-grid">${active.map(r=>mnCard(r,false)).join('')}</div>`;
+    }
   } else {
     ordersEl.style.display='none'; histEl.style.display='block';
-    histEl.innerHTML = finished.length
-      ? `<div class="maint-cards-grid">${finished.map(r=>mnCard(r,true)).join('')}</div>`
-      : `<div class="maint-empty"><div style="font-size:40px;">📋</div>No completed work orders yet.</div>`;
+    if(!finished.length){
+      histEl.innerHTML = focusBanner+`<div class="maint-empty"><div style="font-size:40px;">📋</div>No completed work orders yet.</div>`;
+    } else if(MN.filterStore==='ALL'){
+      histEl.innerHTML = mnGroupByStore(finished, true);
+    } else {
+      histEl.innerHTML = focusBanner+`<div class="maint-cards-grid">${finished.map(r=>mnCard(r,true)).join('')}</div>`;
+    }
   }
 }
 
 function mnCard(r, isHistory){
-  const now      = Date.now();
-  const created  = new Date(r.createdAt).getTime();
-  const hoursOpen= Math.floor((now-created)/(1000*60*60));
-  const daysOpen = Math.floor(hoursOpen/24);
-  const slaH     = MN_SLA[r.priority];
+  const now       = Date.now();
+  const created   = new Date(r.createdAt).getTime();
+  const hoursOpen = Math.floor((now-created)/(1000*60*60));
+  const daysOpen  = Math.floor(hoursOpen/24);
+  const slaH      = MN_SLA[r.priority];
   const slaBreached = !isHistory && hoursOpen>slaH;
-  const slaPct   = Math.min(hoursOpen/slaH*100,100);
-  const pc       = MN_PRIO_COLOR[r.priority];
-  const sc       = MN_STAT_COLOR[r.status];
+  const slaPct    = Math.min(hoursOpen/slaH*100,100);
+  const pc        = MN_PRIO_COLOR[r.priority];
+  const sc        = MN_STAT_COLOR[r.status];
+  const todayStr  = new Date().toISOString().slice(0,10);
+  const isOverdue = !isHistory && r.dueDate && r.dueDate < todayStr;
 
-  let actions='';
+  // Age label with color cue
+  const ageColor  = !isHistory && daysOpen>3 ? '#dc2626' : '#6b7280';
+  const ageLabel  = isHistory ? '' : daysOpen===0?'Today':daysOpen===1?'1 day open':`${daysOpen} days open`;
+
+  // Primary action button (full-width in footer)
+  let primaryAction='', secondaryAction='';
   if(!isHistory){
     if(r.status==='open')
-      actions=`<button class="maint-action-btn blue" onclick="mnSetStatus('${r.id}','inprogress')">▶ Mark In Progress</button>`;
+      primaryAction=`<button class="maint-action-btn blue primary" onclick="mnSetStatus('${r.id}','inprogress')">▶ Mark In Progress</button>`;
     else if(r.status==='inprogress')
-      actions=`<button class="maint-action-btn orange" onclick="mnOpenTechModal('${r.id}')">✓ Mark Job Done</button>`;
-    else if(r.status==='pendingReview')
-      actions=`<button class="maint-action-btn green" onclick="mnOpenReviewModal('${r.id}')">✅ Confirm Completed</button>
-               <button class="maint-action-btn gray" onclick="mnSetStatus('${r.id}','inprogress')" style="font-size:11px;">↩ Reopen</button>`;
+      primaryAction=`<button class="maint-action-btn orange primary" onclick="mnOpenTechModal('${r.id}')">✓ Mark Job Done</button>`;
+    else if(r.status==='pendingReview'){
+      primaryAction=`<button class="maint-action-btn green primary" onclick="mnOpenReviewModal('${r.id}')">✅ Confirm Completed</button>`;
+      secondaryAction=`<button class="maint-action-btn gray" onclick="mnSetStatus('${r.id}','inprogress')">↩ Reopen</button>`;
+    }
   }
 
+  // Photos
   const photosHTML = (r.photos||[]).map(p=>
-    `<img src="${p}" onclick="mnViewPhoto('${r.id}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:1.5px solid #e5e7eb;">`
+    `<img src="${p}" onclick="mnViewPhoto('${r.id}')" title="View photo" style="width:68px;height:68px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #e5e7eb;transition:border-color .15s;" onmouseover="this.style.borderColor='#7e2023'" onmouseout="this.style.borderColor='#e5e7eb'">`
   ).join('');
 
+  // Tech note block
   const techHTML = r.techName ? `
-    <div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;font-size:11px;">
-      <strong style="color:#15803d;">🔧 ${r.techName}</strong>${r.techNote?` — ${r.techNote}`:''}
-      ${r.performedAt?`<span style="color:#6b7280;margin-left:8px;">${new Date(r.performedAt).toLocaleDateString()}</span>`:''}
+    <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:11px;line-height:1.5;">
+      <div style="font-weight:700;color:#15803d;margin-bottom:2px;">🔧 ${r.techName}</div>
+      ${r.techNote?`<div style="color:#374151;">${r.techNote}</div>`:''}
+      ${r.performedAt?`<div style="color:#6b7280;margin-top:3px;font-size:10px;">Completed ${new Date(r.performedAt).toLocaleDateString()}</div>`:''}
     </div>` : '';
 
-  const ageLabel = isHistory ? '' : daysOpen===0?'Today':daysOpen===1?'1 day open':`${daysOpen} days open`;
+  // Closing photos (history)
+  const closingPhotosHTML = isHistory && (r.closingPhotos||[]).length
+    ? `<div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">After photo</div>
+        <div style="display:flex;gap:6px;">${(r.closingPhotos||[]).map(p=>`<img src="${p}" onclick="mnViewClosingPhoto('${r.id}')" style="width:68px;height:68px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #bbf7d0;">`).join('')}</div>
+      </div>` : '';
 
-  return `<div class="maint-card" style="border-left:4px solid ${pc};">
-    ${slaBreached?`<div class="maint-sla-warn">⚠️ SLA exceeded — ${hoursOpen}h open (limit: ${slaH}h)</div>`:''}
-    <div class="maint-card-hdr">
-      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-        <div style="width:10px;height:10px;border-radius:50%;background:${pc};flex-shrink:0;"></div>
+  // SLA progress bar
+  const slaBar = !isHistory ? `
+    <div class="maint-sla-bar-section">
+      <div class="maint-sla-bar-labels">
+        <span style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;">Response SLA</span>
+        <span style="font-size:10px;font-weight:600;color:${slaBreached?'#dc2626':'#9ca3af'};">${hoursOpen}h / ${slaH}h</span>
+      </div>
+      <div class="maint-sla-bar-track">
+        <div class="maint-sla-bar-fill" style="width:${slaPct.toFixed(1)}%;background:${slaBreached?'#dc2626':pc};"></div>
+      </div>
+    </div>` : '';
+
+  // Footer: actions for active orders, reopen + close info for history
+  const footerHTML = (!isHistory && primaryAction)
+    ? `<div class="maint-card-footer">${primaryAction}${secondaryAction}</div>`
+    : isHistory
+      ? `<div class="maint-card-footer" style="align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;color:#6b7280;">✅ Closed${r.reviewedAt?' '+new Date(r.reviewedAt).toLocaleDateString():''}${r.reviewedBy?' · '+r.reviewedBy:''}</span>
+          <button class="maint-action-btn gray" onclick="mnReopenOrder('${r.id}')" style="font-size:11px;padding:6px 14px;">↩ Reopen</button>
+        </div>`
+      : '';
+
+  return `<div class="maint-card" style="${isOverdue?'border-color:#fca5a5;box-shadow:0 0 0 2px #fee2e260;':''}">
+    <!-- Priority stripe at top -->
+    <div style="height:5px;background:${isOverdue?'#dc2626':pc};width:100%;"></div>
+    ${r._incomplete?`<div class="maint-sla-warn" style="background:#fefce8;color:#92400e;border-color:#fde68a;">⚠️ Incomplete record — missing store or state data. Edit to fix.</div>`:''}
+    ${isOverdue&&!slaBreached?`<div class="maint-sla-warn" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;">⚠️ Overdue — due ${new Date(r.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
+    ${slaBreached?`<div class="maint-sla-warn">⚠️ SLA exceeded — ${hoursOpen}h open (limit: ${slaH}h for ${MN_PRIO_LABEL[r.priority]} priority)</div>`:''}
+
+    <div class="maint-card-body">
+      <!-- Title + status -->
+      <div class="maint-card-top">
         <span class="maint-card-title">${r.title}</span>
+        <span class="maint-stat-badge" style="background:${sc}15;color:${sc};border:1.5px solid ${sc}35;">${MN_STAT_LABEL[r.status]}</span>
+      </div>
+
+      <!-- Location + date + age + reporter + assigned + due -->
+      <div class="maint-meta-row">
+        <span class="maint-meta-chip">📍 ${r.loc}</span>
+        <span class="maint-meta-chip">📅 ${r.date}</span>
+        ${ageLabel?`<span class="maint-meta-chip" style="color:${ageColor};border-color:${daysOpen>3&&!isHistory?'#fca5a5':'#e8e2d8'};">⏱ ${ageLabel}</span>`:''}
+        ${r.assignedTo?`<span class="maint-meta-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;">🙋 ${r.assignedTo}</span>`:''}
+        ${r.dueDate?`<span class="maint-meta-chip" style="${isOverdue?'background:#fef2f2;border-color:#fca5a5;color:#dc2626;font-weight:700;':'background:#fefce8;border-color:#fde68a;color:#92400e;'}">
+          ${isOverdue?'⚠️ Overdue:':'📆'} ${new Date(r.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+        </span>`:''}
+        ${r.createdBy?`<span class="maint-meta-chip">👤 ${r.createdBy}</span>`:''}
+      </div>
+
+      <!-- Category + priority badges -->
+      <div class="maint-badge-row">
         <span class="maint-cat-badge">${r.category||'Other'}</span>
+        <span class="maint-prio-badge" style="background:${pc}15;color:${pc};border:1px solid ${pc}30;">${MN_PRIO_LABEL[r.priority]}</span>
       </div>
-      <span class="maint-stat-badge" style="background:${sc}18;color:${sc};border:1px solid ${sc}40;">${MN_STAT_LABEL[r.status]}</span>
+
+      <!-- Description -->
+      ${r.description?`<div class="maint-card-desc">${r.description}</div>`:''}
+
+      <!-- Photos (opening) -->
+      ${photosHTML?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${photosHTML}</div>`:''}
+
+      <!-- Tech note -->
+      ${techHTML}
+
+      <!-- Closing photos -->
+      ${closingPhotosHTML}
+
+      <!-- SLA bar -->
+      ${slaBar}
+
+      <!-- Closed info row (history only, inside body) -->
+      ${isHistory&&!r.reviewedAt?`<div class="maint-closed-row">✅ Completed</div>`:''}
     </div>
-    <div class="maint-card-meta">
-      <span>📍 ${r.loc}</span>
-      <span>📅 ${r.date}</span>
-      ${ageLabel?`<span style="color:${daysOpen>3&&!isHistory?'#dc2626':'#6b7280'};">⏱ ${ageLabel}</span>`:''}
-      ${r.createdBy?`<span>👤 ${r.createdBy}</span>`:''}
-    </div>
-    ${r.description?`<div class="maint-card-desc">${r.description}</div>`:''}
-    ${techHTML}
-    ${photosHTML?`<div style="display:flex;gap:6px;margin-top:10px;">${photosHTML}</div>`:''}
-    ${!isHistory?`
-      <div style="margin-top:8px;background:#f1f5f9;border-radius:4px;height:4px;overflow:hidden;">
-        <div style="height:100%;width:${slaPct.toFixed(1)}%;background:${slaBreached?'#dc2626':pc};border-radius:4px;transition:width .3s;"></div>
-      </div>
-      <div style="font-size:10px;color:#9ca3af;margin-top:2px;">SLA: ${hoursOpen}h / ${slaH}h</div>`:''}
-    ${actions?`<div class="maint-card-actions">${actions}</div>`:''}
-    ${isHistory?`<div style="margin-top:10px;border-top:1px solid #f1f5f9;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-    <span style="font-size:11px;color:#6b7280;">✅ Closed ${r.reviewedAt?new Date(r.reviewedAt).toLocaleDateString():''}${r.reviewedBy?' · by '+r.reviewedBy:''}</span>
-    <button class="maint-action-btn gray" onclick="mnReopenOrder('${r.id}')" style="font-size:11px;">↩ Reopen</button>
-  </div>`:''}
-  ${isHistory&&(r.closingPhotos||[]).length?`<div style="margin-top:8px;"><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">After photo</div><div style="display:flex;gap:6px;">${(r.closingPhotos||[]).map(p=>`<img src="${p}" onclick="mnViewClosingPhoto('${r.id}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:1.5px solid #bbf7d0;">`).join('')}</div></div>`:''}
+
+    <!-- Footer: action buttons -->
+    ${footerHTML}
   </div>`;
 }
 
@@ -12954,6 +13538,14 @@ function mnOpenCreate(){
           <textarea id="mn-c-desc" class="mn-input" rows="3" style="resize:vertical;" placeholder="Describe the issue in detail…"></textarea>
         </div>
         <div class="maint-form-row">
+          <label>Assigned To</label>
+          <input type="text" id="mn-c-assigned" class="mn-input" placeholder="Person or role responsible (e.g. John, Facilities)">
+        </div>
+        <div class="maint-form-row">
+          <label>Due Date (optional)</label>
+          <input type="date" id="mn-c-due" class="mn-input">
+        </div>
+        <div class="maint-form-row">
           <label>Your Name *</label>
           <input type="text" id="mn-c-author" class="mn-input" placeholder="Who is submitting this?">
         </div>
@@ -13012,29 +13604,60 @@ function mnSelPrio(p){
 }
 
 async function mnSubmitCreate(){
-  const title  =document.getElementById('mn-c-title')?.value?.trim();
-  const loc    =document.getElementById('mn-c-loc')?.value;
-  const state  =document.getElementById('mn-c-state')?.value;
-  const date   =document.getElementById('mn-c-date')?.value;
-  const cat    =document.getElementById('mn-c-cat')?.value;
-  const desc   =document.getElementById('mn-c-desc')?.value?.trim();
-  const author =document.getElementById('mn-c-author')?.value?.trim();
-  const prio   =window._mnPrio||'red';
-  if(!title)  { alert('Please enter a title.');     return; }
-  if(!author) { alert('Please enter your name.'); return; }
-  const btn=document.querySelector('#maint-modal-create .maint-modal-ftr button:last-child');
+  const title      = document.getElementById('mn-c-title')?.value?.trim()||'';
+  const loc        = document.getElementById('mn-c-loc')?.value||'';
+  const state      = document.getElementById('mn-c-state')?.value||'';
+  const date       = document.getElementById('mn-c-date')?.value||'';
+  const cat        = document.getElementById('mn-c-cat')?.value||'';
+  const desc       = document.getElementById('mn-c-desc')?.value?.trim()||'';
+  const assignedTo = document.getElementById('mn-c-assigned')?.value?.trim()||null;
+  const dueDate    = document.getElementById('mn-c-due')?.value||null;
+  const author     = document.getElementById('mn-c-author')?.value?.trim()||'';
+  const prio       = window._mnPrio||'red';
+
+  // ── Deep validation ───────────────────────────────────────
+  const v = mnValidateCreate({ title, state, loc, date, prio, cat, author });
+  if(!v.ok){
+    alert('Please fix the following:\n\n• ' + v.errors.join('\n• '));
+    return;
+  }
+
+  // ── Duplicate detection ───────────────────────────────────
+  const normTitle = title.toLowerCase();
+  const dup = getMaintRecords().find(r =>
+    r.loc === loc &&
+    r.status !== 'finished' &&
+    r.title.toLowerCase() === normTitle
+  );
+  if(dup){
+    const proceed = confirm(
+      `A similar open work order already exists at ${loc}:\n\n"${dup.title}"\nStatus: ${MN_STAT_LABEL[dup.status]}\n\nCreate a duplicate anyway?`
+    );
+    if(!proceed) return;
+  }
+
+  const btn = document.querySelector('#maint-modal-create .maint-modal-ftr button:last-child');
   if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
+
   const photos=[];
   for(const f of (window._mnPhotoFiles||[]).slice(0,2)){
     photos.push(await mnCompressPhoto(f));
   }
-  const rec={
+
+  const rec = mnSanitizeRecord({
     id:mnGenId(), state, loc, date, priority:prio, category:cat,
-    title, description:desc, photos,
+    title, description:desc||null, photos,
+    assignedTo, dueDate:dueDate||null,
     status:'open', createdBy:author, createdAt:new Date().toISOString(),
-    techName:null, techNote:null, performedAt:null, reviewedBy:null, reviewedAt:null
-  };
-  const recs=getMaintRecords();
+    techName:null, techNote:null, performedAt:null,
+    closingPhotos:[], reviewedBy:null, reviewedAt:null
+  });
+  if(!rec){
+    alert('Failed to create work order — record failed validation. Please check all fields.');
+    if(btn){ btn.textContent='Create Work Order →'; btn.disabled=false; }
+    return;
+  }
+  const recs = getMaintRecords();
   recs.push(rec);
   saveMaintRecords(recs);
   mnCloseModal('create');
@@ -13109,23 +13732,35 @@ function mnOpenTechModal(id){
 }
 
 async function mnSubmitTech(id){
-  const name=document.getElementById('mn-tech-name')?.value?.trim();
-  const note=document.getElementById('mn-tech-note')?.value?.trim();
+  const name = document.getElementById('mn-tech-name')?.value?.trim();
+  const note = document.getElementById('mn-tech-note')?.value?.trim();
   if(!name){ alert('Please enter your name.'); return; }
-  const btn=document.querySelector('#maint-modal-tech .maint-action-btn.green');
+  const btn = document.querySelector('#maint-modal-tech .maint-action-btn.green');
   if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
   const closingPhotos=[];
   for(const f of (window._mnTechPhotoFiles||[]).slice(0,2)){
     closingPhotos.push(await mnCompressPhoto(f));
   }
-  const recs=getMaintRecords();
-  const idx=recs.findIndex(r=>r.id===id);
-  if(idx===-1) return;
-  recs[idx].status='pendingReview';
-  recs[idx].techName=name;
-  recs[idx].techNote=note||null;
-  recs[idx].performedAt=new Date().toISOString();
-  recs[idx].closingPhotos=closingPhotos;
+  const recs = getMaintRecords();
+  const idx  = recs.findIndex(r=>r.id===id);
+  if(idx===-1){
+    console.warn('[Maintenance] mnSubmitTech: record not found:', id);
+    mnCloseModal('tech');
+    return;
+  }
+  if(recs[idx].id !== id){
+    console.error('[Maintenance] mnSubmitTech: id mismatch at idx', idx);
+    mnCloseModal('tech');
+    return;
+  }
+  // Scoped update — only touch tech-resolution fields
+  recs[idx] = Object.assign({}, recs[idx], {
+    status:       'pendingReview',
+    techName:     name,
+    techNote:     note||null,
+    performedAt:  new Date().toISOString(),
+    closingPhotos,
+  });
   saveMaintRecords(recs);
   mnCloseModal('tech');
   renderMaintOrders();
@@ -13133,12 +13768,26 @@ async function mnSubmitTech(id){
 
 function mnReopenOrder(id){
   if(!confirm('Reopen this work order?')) return;
-  const recs=getMaintRecords();
-  const idx=recs.findIndex(r=>r.id===id);
-  if(idx===-1) return;
-  recs[idx].status='open';
-  recs[idx].techName=null; recs[idx].techNote=null; recs[idx].performedAt=null;
-  recs[idx].reviewedBy=null; recs[idx].reviewedAt=null; recs[idx].closingPhotos=[];
+  const recs = getMaintRecords();
+  const idx  = recs.findIndex(r=>r.id===id);
+  if(idx===-1){
+    console.warn('[Maintenance] mnReopenOrder: record not found:', id);
+    return;
+  }
+  if(recs[idx].id !== id){
+    console.error('[Maintenance] mnReopenOrder: id mismatch at idx', idx);
+    return;
+  }
+  // Scoped update — only reset resolution fields, preserve identity + history fields
+  recs[idx] = Object.assign({}, recs[idx], {
+    status:       'open',
+    techName:     null,
+    techNote:     null,
+    performedAt:  null,
+    closingPhotos:[],
+    reviewedBy:   null,
+    reviewedAt:   null,
+  });
   saveMaintRecords(recs);
   MN.tab='orders';
   document.querySelectorAll('.maint-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -13184,25 +13833,50 @@ function mnOpenReviewModal(id){
 }
 
 function mnSubmitReview(id){
-  const name=document.getElementById('mn-rev-name')?.value?.trim();
+  const name = document.getElementById('mn-rev-name')?.value?.trim();
   if(!name){ alert('Please enter your name.'); return; }
-  const recs=getMaintRecords();
-  const idx=recs.findIndex(r=>r.id===id);
-  if(idx===-1) return;
-  recs[idx].status='finished';
-  recs[idx].reviewedBy=name;
-  recs[idx].reviewedAt=new Date().toISOString();
+  const recs = getMaintRecords();
+  const idx  = recs.findIndex(r=>r.id===id);
+  if(idx===-1){
+    console.warn('[Maintenance] mnSubmitReview: record not found:', id);
+    mnCloseModal('review');
+    return;
+  }
+  if(recs[idx].id !== id){
+    console.error('[Maintenance] mnSubmitReview: id mismatch at idx', idx);
+    mnCloseModal('review');
+    return;
+  }
+  // Scoped update — only touch review-close fields
+  recs[idx] = Object.assign({}, recs[idx], {
+    status:     'finished',
+    reviewedBy: name,
+    reviewedAt: new Date().toISOString(),
+  });
   saveMaintRecords(recs);
   mnCloseModal('review');
   renderMaintOrders();
   updateMaintBadge();
 }
 
-function mnSetStatus(id,status){
-  const recs=getMaintRecords();
-  const idx=recs.findIndex(r=>r.id===id);
-  if(idx===-1) return;
-  recs[idx].status=status;
+function mnSetStatus(id, status){
+  const VALID_STATUSES = ['open','inprogress','pendingReview','finished'];
+  if(!VALID_STATUSES.includes(status)){
+    console.error('[Maintenance] mnSetStatus: invalid status value:', status);
+    return;
+  }
+  const recs = getMaintRecords();
+  const idx  = recs.findIndex(r=>r.id===id);
+  if(idx===-1){
+    console.warn('[Maintenance] mnSetStatus: record not found:', id);
+    return;
+  }
+  if(recs[idx].id !== id){
+    console.error('[Maintenance] mnSetStatus: id mismatch at idx', idx);
+    return;
+  }
+  // Scoped update — only change status
+  recs[idx] = Object.assign({}, recs[idx], { status });
   saveMaintRecords(recs);
   renderMaintOrders();
   updateMaintBadge();
