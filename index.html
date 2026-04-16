@@ -14455,7 +14455,7 @@ function renderPnLDashboard(rec, locRecs){
         if(isGroup){
           const gArrow = `<span class="pnl-grp-arrow open" id="pnl-grp-arrow-${secIdx}-${grpIdx}">&#9654;</span>`;
           const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-          return `<tr class="pnl-detail-row pnl-grp-toggle" data-pnl-sec="${secIdx}" onclick="pnlToggleGroup('${secIdx}-${grpIdx}', event)">
+          return `<tr class="pnl-detail-row pnl-grp-toggle" data-pnl-sec="${secIdx}" data-pnl-grp="${secIdx}-${grpIdx}" onclick="pnlToggleGroup('${secIdx}-${grpIdx}', event)">
             <td style="${cellBase}padding-left:${indentPx}px;">${gArrow}${li.label}${codeTag}${kpiTag}</td>
             <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
             <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
