@@ -2211,6 +2211,13 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pnl-tbl-row-ss td { border-top:1px dashed #e8e2d8; padding:7px 20px 7px 0; font-size:12px; color:#475569; background:#fdfcfa; }
 .pnl-tbl-row-b  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; background:#f0ede7; }
 .pnl-tbl-row-t  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; }
+/* P&L expand / collapse */
+tr.pnl-detail-row { transition: opacity .15s ease; }
+tr.pnl-detail-row.pnl-collapsed { display:none !important; }
+.pnl-sec-toggle { cursor:pointer; user-select:none; }
+.pnl-sec-toggle:hover { opacity:.85; }
+.pnl-sec-arrow { display:inline-block; font-size:9px; margin-right:6px; transition:transform .15s ease; }
+.pnl-sec-arrow.open { transform:rotate(90deg); }
 .pnl-tbl-ind    { padding-left:38px !important; }
 .pnl-tbl-neg    { color:#b91c1c; }
 /* ── Shared utility classes (replaces repeated inline styles in P&L and Sales) */
@@ -13388,6 +13395,28 @@ let PX = { state:'FL', loc:null, year:'2026', month:null,
 // ── P&L detail-view toggle (Summary ↔ Full Detail)
 function pxSetPnLView(v){ PX.pnlView=v; renderPnLPage(); }
 
+// ── P&L expand / collapse (Full Detail table)
+let _pnlAllExpanded = true; // default: expanded (show all)
+
+function pnlToggleSection(secIdx){
+  const rows = document.querySelectorAll(`tr[data-pnl-sec="${secIdx}"]`);
+  if(!rows.length) return;
+  const isHidden = rows[0].classList.contains('pnl-collapsed');
+  rows.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
+  const arrow = document.querySelector(`#pnl-arrow-${secIdx}`);
+  if(arrow) arrow.classList.toggle('open', isHidden);
+}
+
+function pnlExpandCollapseAll(){
+  _pnlAllExpanded = !_pnlAllExpanded;
+  const allDetail = document.querySelectorAll('tr.pnl-detail-row');
+  allDetail.forEach(r => r.classList.toggle('pnl-collapsed', !_pnlAllExpanded));
+  const allArrows = document.querySelectorAll('.pnl-sec-arrow');
+  allArrows.forEach(a => a.classList.toggle('open', _pnlAllExpanded));
+  const btn = document.getElementById('pnl-expand-btn');
+  if(btn) btn.textContent = _pnlAllExpanded ? '▼ Collapse All' : '▶ Expand All';
+}
+
 // ── P&L period view helpers
 function pxSetViewMode(vm){
   PX.viewMode=vm;
@@ -14357,8 +14386,15 @@ function renderPnLDashboard(rec, locRecs){
       const INDENT_PX=[16,32,44,56];
       const KPI_CODES=['1000','2000','3000','3101','3102'];
 
+      // Assign section indices: section/total/subtotal/highlight rows are always visible;
+      // group/item/subitem rows are collapsible detail rows under the nearest preceding section.
+      let secIdx = -1;
+      const ALWAYS_VISIBLE = new Set(['section','total','highlight']);
+
       const rows = rec.lineItems.map(li=>{
         const tp = li.type || 'item';
+        if(tp==='section') secIdx++;
+        const isDetail = !ALWAYS_VISIBLE.has(tp);
         const bg   = BGSTY[tp]   || BGSTY.item;
         const font = FONTSTY[tp] || FONTSTY.item;
         const bord = BORDERSTY[tp] || BORDERSTY.item;
@@ -14377,10 +14413,12 @@ function renderPnLDashboard(rec, locRecs){
           ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
 
         if(isHeader){
-          return `<tr><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
+          const arrow = `<span class="pnl-sec-arrow open" id="pnl-arrow-${secIdx}">&#9654;</span>`;
+          return `<tr class="pnl-sec-toggle" onclick="pnlToggleSection(${secIdx})"><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${arrow}${li.label}</td></tr>`;
         }
+        const detailAttr = isDetail ? ` class="pnl-detail-row" data-pnl-sec="${secIdx}"` : '';
         const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-        return `<tr>
+        return `<tr${detailAttr}>
           <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
@@ -14390,9 +14428,12 @@ function renderPnLDashboard(rec, locRecs){
       const totalLines = rec.lineItems.length;
       const valueLines = rec.lineItems.filter(li=>li.value!=null).length;
       return `<div class="pnl-tbl-wrap">
-        <div class="pnl-tbl-hdr" style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div class="pnl-tbl-hdr" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <span class="pnl-tbl-hdr-title">Profit & Loss · ${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</span>
-          <span style="font-size:10px;color:#94a3b8;font-weight:400;">${totalLines} rows · ${valueLines} with values · full QuickBooks structure</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:#94a3b8;font-weight:400;">${totalLines} rows · ${valueLines} with values</span>
+            <button id="pnl-expand-btn" onclick="pnlExpandCollapseAll()" style="padding:4px 12px;background:rgba(30,58,95,.08);color:#1e3a5f;border:1.5px solid #1e3a5f;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">▼ Collapse All</button>
+          </div>
         </div>
         <table class="pnl-tbl" style="width:100%;border-collapse:collapse;">
           <thead>
