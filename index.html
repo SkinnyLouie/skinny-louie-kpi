@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v45.2 -->
+<!-- BUILD: 2026-04-15-v46.0 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2762,6 +2762,50 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-toggle input:checked + .adm-toggle-slider::before{transform:translateX(16px);}
 /* Action bar */
 .adm-action-bar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:#fff;border-top:1px solid #e8e2d8;position:sticky;bottom:0;}
+
+/* ── My Stores · Portfolio Intelligence ─────────── */
+#pg-portfolio{display:none;background:#faf9f7;min-height:calc(100vh - 62px);}
+.pf-topbar{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;position:sticky;top:62px;z-index:50;}
+.pf-topbar-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;flex:1;}
+.pf-body{padding:28px 32px 60px;max-width:1400px;margin:0 auto;}
+.pf-section-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
+.pf-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px;}
+.pf-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;}
+.pf-card-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;}
+.pf-card-value{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;color:#1e3a5f;line-height:1.1;}
+.pf-card-sub{font-size:11px;color:#94a3b8;}
+.pf-card.accent{border-color:#7e2023;background:linear-gradient(135deg,#fff5f0,#fff);}
+.pf-card.accent .pf-card-value{color:#7e2023;}
+.pf-card.good{border-color:#16a34a;background:linear-gradient(135deg,#f0fdf4,#fff);}
+.pf-card.good .pf-card-value{color:#166534;}
+.pf-card.warn{border-color:#ea580c;background:linear-gradient(135deg,#fff7ed,#fff);}
+.pf-card.warn .pf-card-value{color:#9a3412;}
+.pf-performers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;}
+.pf-performer{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;}
+.pf-performer-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:6px;}
+.pf-performer-name{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;}
+.pf-performer-score{font-size:13px;font-weight:600;margin-top:4px;}
+.pf-performer.best{border-color:#16a34a;background:linear-gradient(135deg,#f0fdf4,#fff);}
+.pf-performer.best .pf-performer-name{color:#166534;}
+.pf-performer.worst{border-color:#ea580c;background:linear-gradient(135deg,#fff7ed,#fff);}
+.pf-performer.worst .pf-performer-name{color:#9a3412;}
+.pf-tbl-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid #e8e2d8;background:#fff;}
+.pf-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.pf-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:12px 16px;text-align:right;border-bottom:1.5px solid #e8e2d8;white-space:nowrap;cursor:pointer;user-select:none;}
+.pf-tbl th:first-child{text-align:left;}
+.pf-tbl th:hover{color:#1e3a5f;}
+.pf-tbl th.sort-on{color:#7e2023;}
+.pf-tbl td{padding:11px 16px;text-align:right;border-bottom:1px solid #f1ede6;color:#374151;white-space:nowrap;}
+.pf-tbl td:first-child{text-align:left;font-weight:600;color:#1e293b;}
+.pf-tbl tr:last-child td{border-bottom:none;}
+.pf-tbl tr:hover td{background:#faf5ef;}
+.pf-hs-pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;font-family:'Oswald',sans-serif;}
+.pf-hs-green{background:#dcfce7;color:#166534;}
+.pf-hs-yellow{background:#fef9c3;color:#854d0e;}
+.pf-hs-orange{background:#ffedd5;color:#9a3412;}
+.pf-hs-red{background:#fee2e2;color:#991b1b;}
+.pf-sort-arr{font-size:9px;margin-left:2px;opacity:.6;}
+.pf-empty{padding:48px;text-align:center;color:#94a3b8;font-size:13px;}
 .adm-act-save{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 22px;border-radius:8px;border:1.5px solid #7e2023;cursor:pointer;transition:opacity .15s;}
 .adm-act-save:hover{opacity:.88;}
 .adm-act-full{background:transparent;color:#1e3a5f;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 16px;border-radius:8px;border:1.5px solid #1e3a5f;cursor:pointer;transition:all .15s;}
@@ -2982,6 +3026,23 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-tag">Coming Soon</div>
       <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
         <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5a3a7e;background:rgba(90,58,126,.12);border:1.5px solid rgba(90,58,126,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
+      </div>
+    </div>
+    <div id="hcard-portfolio" class="hcard c1" onclick="goPortfolio()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
+      <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">🏪</span>
+      <div style="flex:1;">
+        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">My Stores</div>
+        <div class="hcard-desc">Portfolio-wide summary across all your stores. Food cost, labor, D&amp;C, health scores, and a sortable side-by-side comparison — all in one view.</div>
+        <div class="dm-rpt-meta">
+          <span class="dm-rpt-chip">📊 KPI Summary</span>
+          <span class="dm-rpt-chip">🏆 Top Performer</span>
+          <span class="dm-rpt-chip">⚠️ Needs Attention</span>
+          <span class="dm-rpt-chip">📋 Store Comparison</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;text-align:center;">
+        <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;box-shadow:0 4px 16px rgba(30,58,95,.3);">View Portfolio →</div>
+        <div style="color:rgba(30,58,95,.55);font-size:10px;margin-top:8px;">Requires KPI data</div>
       </div>
     </div>
     <div id="hcard-dm_report" class="hcard c6" onclick="generateDMReportCard()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
@@ -3902,6 +3963,7 @@ function _applyPermissionsUI(){
     inventory:   'hcard-inventory',
     dm_report:   'hcard-dm_report',
     events:      'hcard-events',
+    portfolio:   'hcard-portfolio',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -5538,6 +5600,11 @@ function goAdmin(){
   render();
   renderAdminPage();
 }
+function goPortfolio(){
+  if(!_hasPermission('portfolio')) return;
+  S.page = 'portfolio';
+  render();
+}
 
 // ══════════════════════════════════════════════════
 //  ADMIN PANEL — User Permission Management
@@ -5550,6 +5617,7 @@ const _ADM_MODULES = [
   { id:'mix',   label:'Product Mix',      icon:'🍔', desc:'Top sellers, category breakdown' },
   { id:'pnl',   label:'P&L Dashboard',   icon:'📋', desc:'Profit & loss by location' },
   { id:'maint',       label:'Store Maintenance',icon:'🔧', desc:'Work orders & history' },
+  { id:'portfolio',  label:'My Stores',        icon:'🏪', desc:'Portfolio summary & store comparison' },
   { id:'inventory',   label:'Inventory',         icon:'📦', desc:'Stock levels, usage & waste by location' },
   { id:'dm_report',   label:'DM Scorecard',       icon:'📋', desc:'19-KPI PDF report for district managers' },
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
@@ -5669,13 +5737,12 @@ async function renderAdminPage(){
       const initial = display[0].toUpperCase();
       const safeDisplay = display.replace(/'/g, "\\'");
       const roleLabel = (p.role||'user');
-      const stateLabel = (!p.state || p.state==='all') ? 'All States' : p.state;
       return `<div class="adm-user-item" id="adm-uid-${p.id}"
           onclick="_adminSelectUser('${p.id}','${safeDisplay}','${roleLabel}','${p.state||'all'}')">
         <div class="adm-user-avatar">${initial}</div>
         <div>
           <div class="adm-user-name">${display}</div>
-          <div class="adm-user-sub">${roleLabel.charAt(0).toUpperCase()+roleLabel.slice(1)} · ${stateLabel}</div>
+          <div class="adm-user-sub">${roleLabel.charAt(0).toUpperCase()+roleLabel.slice(1)}</div>
         </div>
       </div>`;
     }).join('');
@@ -5709,7 +5776,7 @@ async function _adminSelectUser(userId, displayName, role, state){
   const subEl    = document.getElementById('adm-sel-sub');
   if(avatarEl) avatarEl.textContent = displayName[0].toUpperCase();
   if(nameEl)   nameEl.textContent   = displayName;
-  if(subEl)    subEl.textContent    = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${state==='all'?'All States':state}`;
+  if(subEl)    subEl.textContent    = role.charAt(0).toUpperCase()+role.slice(1);
 
   // Load permissions, scope, and store locations in parallel
   _admCtx = { userId, displayName, role, state, scope: 'ALL', locations: new Set(), perms: new Set() };
@@ -5947,8 +6014,8 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
-  // admin uses display:flex (flex column layout) — all other non-home pages use block
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
@@ -5957,6 +6024,7 @@ function render(){
   else if(S.page==='maint'){ try{ if(typeof renderMaintPage!=='undefined') renderMaintPage(); }catch(e){ console.error('renderMaintPage',e); } }
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
   else if(S.page==='admin'){ try{ renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
+  else if(S.page==='portfolio'){ try{ renderPortfolioPage(); }catch(e){ console.error('renderPortfolioPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -6058,6 +6126,10 @@ function renderNavRight(){
     r.innerHTML=crumb+(mnStateBtns ? `<div class="yr-pills">${mnStateBtns}</div>` : '');
   } else if(S.page==='admin'){
     r.innerHTML=crumb+`<button class="btn" onclick="renderAdminPage()" style="font-size:11px;">↺ Refresh</button>`;
+  } else if(S.page==='portfolio'){
+    const pfYears = Object.keys(DB).filter(y=>!isNaN(y)).sort().reverse();
+    const pfYrPills = pfYears.map(y=>`<button class="yr-pill ${_pfYear===y?'on':''}" onclick="pfSetYear('${y}')">${y}</button>`).join('');
+    r.innerHTML=crumb+(pfYrPills?`<div class="yr-pills">${pfYrPills}</div>`:'');
   } else {
     r.innerHTML=crumb;
   }
@@ -15288,6 +15360,294 @@ function toggleDebugPanel(){
   _dbgRefreshTimer = setInterval(_dbgRefresh, 3000);
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  MY STORES · PORTFOLIO INTELLIGENCE
+//  Phase 1: Portfolio Summary  |  Phase 2: Store Comparison
+//
+//  Access control: every calculation operates only on _allowedLocs().
+//  _pfLocD() is state-agnostic (searches all states) so the portfolio always
+//  works regardless of which state the KPI page last had selected.
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _pfYear    = String(new Date().getFullYear());
+let _pfSortCol = 'hs';
+let _pfSortDir = 'desc';
+
+// State-agnostic locD — searches FL + NY for loc in _pfYear.
+function _pfLocD(loc){
+  for(const st of ['FL','NY']){ const d=DB[_pfYear]?.[st]?.[loc]; if(d)return d; }
+  return null;
+}
+
+// YTD aggregation — identical to ytdCalc() but uses _pfLocD and exposes raw bases.
+function _pfYTD(loc){
+  const d=_pfLocD(loc); if(!d)return null;
+  let ts=0,tf=0,tla=0,tdc=0,lps=0,lpw=0,months=0;
+  let fBase=0,lBase=0,dBase=0;
+  for(let i=0;i<12;i++){
+    const s=totalNS(d,i); if(!s||s<=0)continue;
+    months++; ts+=s;
+    if(d.fa[i]!=null){tf+=d.fa[i];fBase+=s;}
+    if(d.la[i]!=null){tla+=d.la[i];lBase+=s;}
+    if(d.da[i]!=null){tdc+=d.da[i];dBase+=s;}
+    if(d.lp[i]!=null){lpw+=d.lp[i]*s;lps+=s;}
+  }
+  return{ ts,tf,tla,tdc,months,fBase,lBase,dBase,
+    fpct:fBase>0?tf/fBase:null,
+    lpct:lBase>0?tla/lBase:lps>0?lpw/lps:null,
+    dpct:dBase>0?tdc/dBase:null
+  };
+}
+
+// YTD average Uber rating for a store.
+function _pfUber(loc){
+  const d=_pfLocD(loc); if(!d||!d.uberRating)return null;
+  let sum=0,n=0;
+  for(let i=0;i<12;i++){ if(d.uberRating[i]!=null){sum+=d.uberRating[i];n++;} }
+  return n>0?sum/n:null;
+}
+
+// New Google Reviews this year (sum of monthly grEnd - grStart).
+function _pfGRNew(loc){
+  const d=_pfLocD(loc); if(!d)return null;
+  let t=0;
+  for(let i=0;i<12;i++){
+    if(d.grStart?.[i]!=null&&d.grEnd?.[i]!=null) t+=(d.grEnd[i]-d.grStart[i]);
+  }
+  return t>0?t:null;
+}
+
+// YTD avg check from imported sales records.
+function _pfAvgCheck(loc){
+  const yr=_slFilterRecords(_slGetRecords('sales'),{loc}).filter(r=>String(r.year)===_pfYear);
+  if(!yr.length)return null;
+  const ts=yr.reduce((s,r)=>s+(r.netSales||0),0);
+  const to=yr.reduce((s,r)=>s+(r.totalOrders||0),0);
+  return to>0?ts/to:null;
+}
+
+// Health score — state-agnostic rebuild using _pfYTD + _pfUber.
+function _pfHealthScore(loc){
+  const y=_pfYTD(loc); if(!y)return null;
+  const uber=_pfUber(loc);
+  const cc=(a,t)=>{if(a==null)return null;return a<=t?100:Math.max(0,100*(2-a/t));};
+  const rc=(a,t)=>{if(a==null)return null;return Math.min(100,(a/t)*100);};
+  const W={fp:40,lp:30,dp:10,rat:20};
+  const comps=[
+    {score:cc(y.fpct,DEFAULT_TGTS.fp),w:W.fp},
+    {score:cc(y.lpct,DEFAULT_TGTS.lp),w:W.lp},
+    {score:cc(y.dpct,DEFAULT_TGTS.dp),w:W.dp},
+    {score:rc(uber,DEFAULT_TGTS.uber),w:W.rat},
+  ];
+  let wSum=0,wTotal=0;
+  for(const c of comps){if(c.score!=null){wSum+=c.score*c.w;wTotal+=c.w;}}
+  return wTotal===0?null:Math.round(wSum/wTotal*10)/10;
+}
+
+// Health score pill HTML.
+function _pfHSPill(s){
+  if(s==null)return'<span style="color:#94a3b8;">—</span>';
+  const cls=s>=85?'pf-hs-green':s>=70?'pf-hs-yellow':s>=55?'pf-hs-orange':'pf-hs-red';
+  return`<span class="pf-hs-pill ${cls}">${s}</span>`;
+}
+
+// Sort column toggle.
+function pfSort(col){
+  _pfSortDir=(_pfSortCol===col&&_pfSortDir==='desc')?'asc':'desc';
+  _pfSortCol=col;
+  renderPortfolioPage();
+}
+
+// Year selector.
+function pfSetYear(yr){ _pfYear=yr; renderPortfolioPage(); renderNavRight(); }
+
+// Build per-store data array (allowed stores only, with data in _pfYear).
+function _pfBuildData(){
+  return _allowedLocs().map(loc=>({
+    loc,
+    ytd:      _pfYTD(loc),
+    hs:       _pfHealthScore(loc),
+    uber:     _pfUber(loc),
+    grNew:    _pfGRNew(loc),
+    avgCheck: _pfAvgCheck(loc),
+  })).filter(s=>s.ytd&&s.ytd.ts>0);
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+function renderPortfolioPage(){
+  const wrap=document.getElementById('pf-body');
+  if(!wrap)return;
+  const stores=_pfBuildData();
+  if(!stores.length){
+    wrap.innerHTML=`<div class="pf-empty">No KPI data available for ${_pfYear} in your allowed stores.<br>Make sure store data is entered in the KPI dashboard.</div>`;
+    return;
+  }
+
+  // ── Phase 1: Portfolio Summary ────────────────────────────────────────────
+  let totalSales=0,tfFood=0,fBase=0,tfLabor=0,lBase=0,tfDC=0,dBase=0;
+  let uberSum=0,uberN=0,grTotal=0;
+  for(const s of stores){
+    const y=s.ytd;
+    totalSales+=y.ts;
+    tfFood+=y.tf;  fBase+=y.fBase;
+    tfLabor+=y.tla; lBase+=y.lBase;
+    tfDC+=y.tdc;   dBase+=y.dBase;
+    if(s.uber!=null){uberSum+=s.uber;uberN++;}
+    if(s.grNew)grTotal+=s.grNew;
+  }
+  const avgFP=fBase>0?tfFood/fBase:null;
+  const avgLP=lBase>0?tfLabor/lBase:null;
+  const avgDP=dBase>0?tfDC/dBase:null;
+  const avgUber=uberN>0?uberSum/uberN:null;
+  const n=stores.length;
+
+  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
+  const best=ranked[0]||null;
+  const worst=ranked[ranked.length-1]||null;
+  const showWorst=worst&&worst.loc!==best?.loc;
+
+  let html=`<div class="pf-section-hdr">Portfolio Summary · ${_pfYear}</div>`;
+
+  // Summary cards
+  html+=`<div class="pf-cards">
+    <div class="pf-card accent">
+      <div class="pf-card-label">My Stores</div>
+      <div class="pf-card-value">${n}</div>
+      <div class="pf-card-sub">${n===1?'store':'stores'} under access</div>
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-label">Net Sales YTD</div>
+      <div class="pf-card-value">${fmtK(totalSales)}</div>
+      <div class="pf-card-sub">across ${n} ${n===1?'store':'stores'}</div>
+    </div>
+    <div class="pf-card ${avgFP!=null?(avgFP<=DEFAULT_TGTS.fp?'good':'warn'):''}">
+      <div class="pf-card-label">Avg Food Cost</div>
+      <div class="pf-card-value">${fmtP(avgFP)||'—'}</div>
+      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.fp*100).toFixed(0)}%</div>
+    </div>
+    <div class="pf-card ${avgLP!=null?(avgLP<=DEFAULT_TGTS.lp?'good':'warn'):''}">
+      <div class="pf-card-label">Avg Labor</div>
+      <div class="pf-card-value">${fmtP(avgLP)||'—'}</div>
+      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.lp*100).toFixed(0)}%</div>
+    </div>
+    <div class="pf-card">
+      <div class="pf-card-label">Avg D&amp;C</div>
+      <div class="pf-card-value">${fmtP(avgDP)||'—'}</div>
+      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.dp*100).toFixed(0)}%</div>
+    </div>
+    <div class="pf-card ${avgUber!=null?(avgUber>=DEFAULT_TGTS.uber?'good':'warn'):''}">
+      <div class="pf-card-label">Avg Uber Rating</div>
+      <div class="pf-card-value">${avgUber!=null?avgUber.toFixed(2):'—'}</div>
+      <div class="pf-card-sub">Target ≥ ${DEFAULT_TGTS.uber}</div>
+    </div>
+    ${grTotal>0?`<div class="pf-card good">
+      <div class="pf-card-label">Google Reviews</div>
+      <div class="pf-card-value">+${grTotal}</div>
+      <div class="pf-card-sub">new reviews in ${_pfYear}</div>
+    </div>`:''}
+  </div>`;
+
+  // Best / needs-attention performers
+  if(best||showWorst){
+    html+=`<div class="pf-performers">`;
+    if(best)      html+=`<div class="pf-performer best">
+      <div class="pf-performer-lbl">🏆 Best Performer</div>
+      <div class="pf-performer-name">${best.loc}</div>
+      <div class="pf-performer-score">Health Score: ${best.hs}</div>
+      <div class="pf-card-sub" style="margin-top:4px;">${[
+        best.ytd.fpct!=null?'Food '+fmtP(best.ytd.fpct):null,
+        best.ytd.lpct!=null?'Labor '+fmtP(best.ytd.lpct):null,
+      ].filter(Boolean).join(' · ')}</div>
+    </div>`;
+    if(showWorst) html+=`<div class="pf-performer worst">
+      <div class="pf-performer-lbl">⚠️ Needs Attention</div>
+      <div class="pf-performer-name">${worst.loc}</div>
+      <div class="pf-performer-score">Health Score: ${worst.hs}</div>
+      <div class="pf-card-sub" style="margin-top:4px;">${[
+        worst.ytd.fpct!=null?'Food '+fmtP(worst.ytd.fpct):null,
+        worst.ytd.lpct!=null?'Labor '+fmtP(worst.ytd.lpct):null,
+      ].filter(Boolean).join(' · ')}</div>
+    </div>`;
+    html+=`</div>`;
+  }
+
+  // ── Phase 2: Store Comparison ──────────────────────────────────────────────
+  const COLS=[
+    {k:'sales',lbl:'Net Sales YTD', asc:false},
+    {k:'fp',   lbl:'Food Cost',     asc:true },
+    {k:'lp',   lbl:'Labor',         asc:true },
+    {k:'dp',   lbl:'D&amp;C',       asc:true },
+    {k:'check',lbl:'Avg Check',     asc:false},
+    {k:'uber', lbl:'Uber',          asc:false},
+    {k:'hs',   lbl:'Health',        asc:false},
+  ];
+  const getVal=(s,k)=>{
+    if(k==='sales') return s.ytd?.ts??null;
+    if(k==='fp')    return s.ytd?.fpct??null;
+    if(k==='lp')    return s.ytd?.lpct??null;
+    if(k==='dp')    return s.ytd?.dpct??null;
+    if(k==='check') return s.avgCheck;
+    if(k==='uber')  return s.uber;
+    if(k==='hs')    return s.hs;
+    return null;
+  };
+
+  // Per-column best/worst (best=lowest for cost cols, highest for rest).
+  const bw={};
+  for(const {k,asc} of COLS){
+    const vals=stores.map(s=>getVal(s,k)).filter(v=>v!=null);
+    if(!vals.length){bw[k]={b:null,w:null};continue;}
+    bw[k]={b:asc?Math.min(...vals):Math.max(...vals),w:asc?Math.max(...vals):Math.min(...vals)};
+  }
+
+  // Sort
+  const sorted=[...stores].sort((a,b)=>{
+    const av=getVal(a,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
+    const bv=getVal(b,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
+    return _pfSortDir==='asc'?(av>bv?1:-1):(av<bv?1:-1);
+  });
+
+  const arr=k=>{
+    if(_pfSortCol!==k) return'<span class="pf-sort-arr">↕</span>';
+    return`<span class="pf-sort-arr">${_pfSortDir==='desc'?'↓':'↑'}</span>`;
+  };
+
+  const fmtCell=(k,s)=>{
+    const v=getVal(s,k);
+    if(v==null) return`<td style="color:#94a3b8;">—</td>`;
+    if(k==='hs') return`<td>${_pfHSPill(v)}</td>`;
+    let txt;
+    if(k==='sales')  txt=fmtK(v);
+    else if(['fp','lp','dp'].includes(k)) txt=fmtP(v)||'—';
+    else if(k==='check') txt=fmt$(v);
+    else if(k==='uber')  txt=v.toFixed(2);
+    else txt=String(v);
+    const {b,w}=bw[k]||{};
+    let st='';
+    if(b!=null&&b!==w){
+      if(Math.abs(v-b)<0.00001)      st='color:#166534;font-weight:700;';
+      else if(Math.abs(v-w)<0.00001) st='color:#991b1b;font-weight:700;';
+    }
+    return`<td${st?` style="${st}"`:''}>${txt}</td>`;
+  };
+
+  html+=`<div class="pf-section-hdr" style="margin-top:32px;">Store Comparison</div>
+  <div class="pf-tbl-wrap"><table class="pf-tbl">
+    <thead><tr>
+      <th style="text-align:left;" onclick="pfSort('loc')">Store ${arr('loc')}</th>
+      ${COLS.map(({k,lbl})=>`<th class="${_pfSortCol===k?'sort-on':''}" onclick="pfSort('${k}')">${lbl} ${arr(k)}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+    ${sorted.map(s=>`<tr>
+      <td style="font-weight:600;color:#1e293b;">${s.loc}</td>
+      ${COLS.map(({k})=>fmtCell(k,s)).join('')}
+    </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+
+  wrap.innerHTML=html;
+}
+
 document.addEventListener('keydown', function(e){
   if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key==='D'){
     e.preventDefault();
@@ -15321,6 +15681,15 @@ migrate();
   <div id="maint-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-tech"   style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-review" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
+</div>
+
+<!-- ═══ PORTFOLIO PAGE ═══ -->
+<div id="pg-portfolio" style="display:none;">
+  <div class="pf-topbar">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span class="pf-topbar-title">🏪 MY STORES</span>
+  </div>
+  <div class="pf-body" id="pf-body"></div>
 </div>
 
 <!-- ═══ ADMIN PAGE ═══ -->
