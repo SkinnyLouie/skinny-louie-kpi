@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.03 -->
+<!-- BUILD: 2026-04-16-v49.04 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1325,6 +1325,23 @@ function renderUpload(pg){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
         <div style="flex:1;height:1px;background:var(--brd);"></div>
         <span style="font-size:11px;color:var(--muted);white-space:nowrap;">or upload Tenzo file manually (one location at a time)</span>
+        <div style="flex:1;height:1px;background:var(--brd);"></div>
+      </div>`:``}
+
+      <!-- Toast Direct Import (Product Mix only) -->
+      ${pg==='mix'?`
+      <div style="margin-bottom:20px;">
+        <div class="upl-section-label" style="margin-bottom:8px;">🍞 Load from Toast terminal (recommended)</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <input type="file" id="mix-json-input" accept=".json" style="display:none" onchange="loadMixJson(this)">
+          <button onclick="document.getElementById('mix-json-input').click()" style="padding:10px 20px;background:#9b292c;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📂 Select Mix JSON file</button>
+          <span style="font-size:12px;color:var(--muted);">Select the <code>toast_mix_YYYY-MM-DD.json</code> file — loads all locations at once</span>
+        </div>
+        <div id="mix-json-status" style="margin-top:8px;font-size:13px;display:none;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <div style="flex:1;height:1px;background:var(--brd);"></div>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap;">or upload Toast XLSX file manually (one location at a time)</span>
         <div style="flex:1;height:1px;background:var(--brd);"></div>
       </div>`:``}
 
@@ -8811,6 +8828,109 @@ function generateMonthlyReport(){
 // ══════════════════════════════════════════════════
 function getPMixRecords(){ return _slGetRecords('mix'); }
 function savePMixRecords(arr){ _slSaveRecords('mix', arr); }
+
+// ── Load Product Mix directly from toast_mix_fetch.py JSON output
+function loadMixJson(input){
+  const file = input.files[0];
+  if(!file) return;
+  const status = document.getElementById('mix-json-status');
+  if(status){ status.style.display='block'; status.style.color='var(--muted)'; status.textContent='⏳ Reading file…'; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      const startStr = data.period && data.period.start ? data.period.start : '';
+      if(!startStr || !data.locations){ throw new Error('Not a valid Toast Mix file — expected {period:{start}, locations:[…]}'); }
+      const d = new Date(startStr + 'T12:00:00');
+      const year  = String(d.getFullYear());
+      const month = d.getMonth(); // 0-indexed
+      const fetched = data.fetchedAt || new Date().toISOString();
+      const fname = file.name;
+
+      const records = [];
+      for(const loc of data.locations){
+        // Require at minimum one of: totalNet, totalQty, or categories array
+        const hasData = (loc.totalNet != null || loc.totalQty != null || (loc.categories && loc.categories.length > 0));
+        if(!hasData) continue;
+
+        // Normalise categories: [{name, qty, net}]
+        const categories = (loc.categories || []).map(c => ({
+          name : String(c.name  || '').trim(),
+          qty  : +(c.qty  || 0),
+          net  : +(c.net  || 0)
+        })).filter(c => c.name);
+
+        // Normalise items: [{name, cat, qty, net}]
+        const items = (loc.items || []).map(it => ({
+          name : String(it.name || '').trim(),
+          cat  : String(it.cat  || '').trim(),
+          qty  : +(it.qty  || 0),
+          net  : +(it.net  || 0)
+        })).filter(it => it.name);
+
+        // Normalise modifiers: {single, double, triple}
+        const modifiers = loc.modifiers
+          ? { single: +(loc.modifiers.single||0), double: +(loc.modifiers.double||0), triple: +(loc.modifiers.triple||0) }
+          : null;
+
+        // Derive totals if not supplied
+        const totalNet = loc.totalNet != null
+          ? +loc.totalNet
+          : categories.reduce((s,c)=>s+c.net, 0) || items.reduce((s,it)=>s+it.net, 0);
+        const totalQty = loc.totalQty != null
+          ? +loc.totalQty
+          : categories.reduce((s,c)=>s+c.qty, 0) || items.reduce((s,it)=>s+it.qty, 0);
+
+        const record = _slNormalizeRecord({
+          page      : 'mix',
+          state     : loc.state     || 'FL',
+          loc       : loc.location  || loc.loc || 'Unknown',
+          year, month,
+          importedAt: fetched,
+          fileName  : fname,
+          totalQty, totalNet,
+          categories, items,
+          ...(modifiers ? { modifiers } : {})
+        });
+        records.push(record);
+      }
+
+      if(!records.length){ throw new Error('No location data found in file'); }
+
+      // Merge: replace existing records for same year+month+loc, keep everything else
+      const existing = getPMixRecords().filter(r =>
+        !(String(r.year)===year && r.month===month && records.some(n=>n.loc===r.loc))
+      );
+      _slSaveRecords('mix', existing.concat(records));
+
+      // Update upload log
+      let uploads = getUploads();
+      records.forEach(r => {
+        const idx = uploads.findIndex(u=>u.page==='mix'&&u.state===r.state&&u.loc===r.loc&&String(u.year)===r.year&&u.month===r.month);
+        const entry = {page:'mix',state:r.state,loc:r.loc,year:r.year,month:r.month,fileName:r.fileName,fileSize:file.size,importedAt:r.importedAt};
+        if(idx>-1) uploads[idx]=entry; else uploads.push(entry);
+      });
+      saveUploads(uploads);
+
+      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${records.length} location${records.length!==1?'s':''} — reloading…`; }
+      // Navigate to the mix page for the first loaded location
+      const first = records[0];
+      setTimeout(()=>{
+        MX.state = first.state;
+        MX.loc   = first.loc;
+        MX.year  = year;
+        MX.month = month;
+        navigate('mix');
+        renderMixPage();
+        renderNavRight();
+      }, 900);
+    } catch(err){
+      if(status){ status.style.color='#b91c1c'; status.textContent='❌ Error: '+err.message; }
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
 
 // ══════════════════════════════════════════════════
 //  SALES SUMMARY — COMPARE
