@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v47.11 -->
+<!-- BUILD: 2026-04-15-v48.00 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -75,9 +75,10 @@ const SL_SCHEMA = {
   sales: {
     identity:  ['state','loc','year','month'],
     required:  ['netSales','totalOrders'],
-    optional:  ['avgCheck','laborCost','laborPct','voidAmount','voidOrders','voidPct','channels','dayparts','rankData'],
+    optional:  ['avgCheck','laborCost','laborPct','voidAmount','voidOrders','voidItems','voidPct','voidIncomplete','channels','dayparts','rankData'],
     // year is a STRING ("2024") — kept as string so keys/comparisons are uniform
-    types:     { state:'string', loc:'string', year:'string', month:'number', netSales:'number', totalOrders:'number' }
+    types:     { state:'string', loc:'string', year:'string', month:'number', netSales:'number', totalOrders:'number',
+                 voidAmount:'number', voidOrders:'number', voidItems:'number', voidPct:'number', voidIncomplete:'boolean' }
   },
   mix: {
     identity:  ['state','loc','year','month'],
@@ -678,8 +679,10 @@ function _slValidateBatch(pg, records){
 function _slShowImportConfirm(pg, parsedRecords, fileName, onConfirm){
   const existing = _slGetRecords(pg);
   const MS = MONTHS_SHORT;
-  const fmt$ = v => '$'+Math.round(v||0).toLocaleString('en-US');
-  const fmtN = v => Math.round(v||0).toLocaleString('en-US');
+  // Null-safe formatters for import confirmation: show "?" for missing required fields
+  // rather than silently displaying $0 or 0.
+  const fmt$ = v => v!=null ? '$'+Math.round(v).toLocaleString('en-US') : '?';
+  const fmtN = v => v!=null ? Math.round(v).toLocaleString('en-US') : '?';
   const recLabel = r => (r.loc||r.state||'?')+' · '+MS[r.month]+' '+r.year;
 
   // ── Layer 3: batch-level checks (runs first so we can show banner) ──
@@ -723,16 +726,23 @@ function _slShowImportConfirm(pg, parsedRecords, fileName, onConfirm){
   const getMetricDiff = (old, rec) => {
     const rows = [];
     if(pg==='sales'){
-      rows.push(['Net Sales', old.netSales||0, rec.netSales||0, true]);
-      rows.push(['Orders',    old.totalOrders||0, rec.totalOrders||0, false]);
+      rows.push(['Net Sales', old.netSales??null, rec.netSales??null, true]);
+      rows.push(['Orders',    old.totalOrders??null, rec.totalOrders??null, false]);
     } else if(pg==='mix'){
-      rows.push(['Net Sales', old.totalNet||0, rec.totalNet||0, true]);
-      rows.push(['Total Qty', old.totalQty||0, rec.totalQty||0, false]);
+      rows.push(['Net Sales', old.totalNet??null, rec.totalNet??null, true]);
+      rows.push(['Total Qty', old.totalQty??null, rec.totalQty??null, false]);
     } else if(pg==='pnl'){
-      rows.push(['Net Sales',  old.netSales||0,  rec.netSales||0,  true]);
-      rows.push(['Net Income', old.netIncome||0, rec.netIncome||0, true]);
+      rows.push(['Net Sales',  old.netSales??null,  rec.netSales??null,  true]);
+      rows.push(['Net Income', old.netIncome??null, rec.netIncome??null, true]);
     }
     return rows.map(([lbl, ov, nv, isMoney])=>{
+      // If either value is null (field missing), show "—" for that entry.
+      if(ov==null||nv==null){
+        const oStr=ov!=null?(isMoney?fmt$(ov):fmtN(ov)):'?';
+        const nStr=nv!=null?(isMoney?fmt$(nv):fmtN(nv)):'?';
+        return '<div class="sl-ic-row-detail">'+lbl+': <strong>'+oStr+'</strong> → <strong>'+nStr+'</strong>'
+          +' <span style="color:#94a3b8;font-size:10px;">(data unavailable)</span></div>';
+      }
       const diff = nv - ov;
       const pct  = ov!==0 ? Math.abs(diff/ov*100).toFixed(1)+'%' : '—';
       const col  = diff>0?'#15803d':diff<0?'#b91c1c':'#6b7280';
@@ -780,9 +790,9 @@ function _slShowImportConfirm(pg, parsedRecords, fileName, onConfirm){
     bodyHtml += '<div class="sl-ic-section-hdr"><span>New records</span></div>';
     bodyHtml += newRecs.map(function(n){
       const rec = n.rec;
-      const m = pg==='sales' ? fmt$(rec.netSales||0)+' net sales · '+fmtN(rec.totalOrders||0)+' orders'
-              : pg==='mix'   ? fmt$(rec.totalNet||0)+' net · '+(rec.items?rec.items.length:0)+' items'
-              : fmt$(rec.netSales||0)+' sales · '+fmt$(rec.netIncome||0)+' income';
+      const m = pg==='sales' ? fmt$(rec.netSales)+' net sales · '+fmtN(rec.totalOrders)+' orders'
+              : pg==='mix'   ? fmt$(rec.totalNet)+' net · '+(rec.items?rec.items.length:0)+' items'
+              : fmt$(rec.netSales)+' sales · '+fmt$(rec.netIncome)+' income';
       return '<div class="sl-ic-row new">'
         +'<div class="sl-ic-row-title" style="color:#15803d;">+ '+recLabel(rec)+'</div>'
         +'<div class="sl-ic-row-detail">'+m+'</div>'
@@ -4538,8 +4548,8 @@ function askMe(){
     }catch(e){return null;}
   };
   const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const fmt$ = v => '$'+Math.round(v||0).toLocaleString('en-US');
-  const fmtPct = v => (v||0).toFixed(1)+'%';
+  const fmt$ = v => v!=null ? '$'+Math.round(v).toLocaleString('en-US') : '?';
+  const fmtPct = v => v!=null ? v.toFixed(1)+'%' : '?';
 
   // ── Intent classifiers (keyword buckets)
   const is = (...words) => words.some(w => q.includes(w));
@@ -8939,15 +8949,26 @@ function renderSalesCompare(rec, allRecs){
   };
 
   // ── Helper: comparison row (invert=true → lower is better, e.g. discounts/voids)
+  // Null-safe: if either value is null/undefined, shows "—" for that column instead
+  // of silently displaying $0 or 0.0% which would be misleading.
   const cmpRow=(label,vA,vB,money=false,invert=false)=>{
-    const d=aIsNewer?(vA-vB):(vB-vA);
-    const sign=invert?(d<0?'up':d>0?'dn':'eq'):(d>0?'up':d<0?'dn':'eq');
-    const dStr=money?((d>=0?'+':'')+fmt$(d)):((d>=0?'+':'')+d.toFixed(1)+'%');
-    const dDisp=Math.abs(d)<(money?0.5:0.05)?'<span class="mx-delta eq">—</span>':`<span class="mx-delta ${sign}">${dStr}</span>`;
+    const aNull=vA==null, bNull=vB==null;
+    const _fmtCell=(v,isNull)=>isNull
+      ?'<span style="color:var(--muted);">—</span>'
+      :(money?fmt$(v):v.toFixed(1)+'%');
+    let dDisp;
+    if(aNull||bNull){
+      dDisp='<span class="mx-delta eq" style="font-size:10px;">n/a</span>';
+    } else {
+      const d=aIsNewer?(vA-vB):(vB-vA);
+      const sign=invert?(d<0?'up':d>0?'dn':'eq'):(d>0?'up':d<0?'dn':'eq');
+      const dStr=money?((d>=0?'+':'')+fmt$(d)):((d>=0?'+':'')+d.toFixed(1)+'%');
+      dDisp=Math.abs(d)<(money?0.5:0.05)?'<span class="mx-delta eq">—</span>':`<span class="mx-delta ${sign}">${dStr}</span>`;
+    }
     return `<tr>
       <td style="padding:9px 16px;font-size:12px;color:var(--text);font-weight:600;">${label}</td>
-      <td style="padding:9px 16px;text-align:right;font-size:13px;font-weight:700;">${money?fmt$(vA):vA.toFixed(1)+'%'}</td>
-      <td style="padding:9px 16px;text-align:right;font-size:13px;color:var(--muted);">${money?fmt$(vB):vB.toFixed(1)+'%'}</td>
+      <td style="padding:9px 16px;text-align:right;font-size:13px;font-weight:700;">${_fmtCell(vA,aNull)}</td>
+      <td style="padding:9px 16px;text-align:right;font-size:13px;color:var(--muted);">${_fmtCell(vB,bNull)}</td>
       <td style="padding:9px 16px;text-align:right;">${dDisp}</td>
     </tr>`;
   };
@@ -8995,8 +9016,8 @@ function renderSalesCompare(rec, allRecs){
   // ── Net Sales section
   let netHTML=tblHead('💰 Net Sales');
   netHTML+=cmpRow('Net Sales',rec.netSales,recB.netSales,true);
-  netHTML+=cmpRow('Gross Sales',rec.grossSales||0,recB.grossSales||0,true);
-  netHTML+=cmpRow('Discounts',Math.abs(rec.discounts||0),Math.abs(recB.discounts||0),true,true);
+  netHTML+=cmpRow('Gross Sales',rec.grossSales??null,recB.grossSales??null,true);
+  netHTML+=cmpRow('Discounts',rec.discounts!=null?Math.abs(rec.discounts):null,recB.discounts!=null?Math.abs(recB.discounts):null,true,true);
   netHTML+=tblFoot;
 
   // ── Channels
@@ -9055,11 +9076,44 @@ function renderSalesCompare(rec, allRecs){
   }
   discHTML+=tblFoot;
 
-  // ── Voids
+  // ── Voids — null-safe: never coerce null → 0; missing field shows "—"
+  // cmpRow assumes numeric inputs; use _voidRow for nullable void fields instead.
+  const _voidRow=(label,vA,vB,fmt)=>{
+    const aOk=vA!=null, bOk=vB!=null;
+    const cellA=aOk?`<span style="font-weight:700;">${fmt(vA)}</span>`:`<span style="color:var(--muted);">—</span>`;
+    const cellB=bOk?fmt(vB):`<span style="color:var(--muted);">—</span>`;
+    let delta='<span style="color:var(--muted);font-size:11px;">n/a</span>';
+    if(aOk&&bOk){
+      const d=aIsNewer?(vA-vB):(vB-vA);
+      // For voids lower is better: negative delta = improvement → 'up' (green)
+      const sign=d<0?'up':d>0?'dn':'eq';
+      const threshold=typeof vA==='number'&&vA>100?0.5:0.05;
+      delta=Math.abs(d)<threshold?`<span class="mx-delta eq">—</span>`:
+        `<span class="mx-delta ${sign}">${d>=0?'+':''}${fmt(d)}</span>`;
+    } else if(!aOk&&!bOk){
+      delta='<span style="color:var(--muted);font-size:11px;">no data</span>';
+    }
+    return `<tr>
+      <td style="padding:9px 16px;font-size:12px;color:var(--text);font-weight:600;">${label}</td>
+      <td style="padding:9px 16px;text-align:right;font-size:13px;">${cellA}</td>
+      <td style="padding:9px 16px;text-align:right;font-size:13px;color:var(--muted);">${cellB}</td>
+      <td style="padding:9px 16px;text-align:right;">${delta}</td>
+    </tr>`;
+  };
+
   let voidHTML=tblHead('⚠️ Voids');
-  voidHTML+=cmpRow('Void Amount',rec.voidAmount||0,recB.voidAmount||0,true,true);
-  voidHTML+=cmpRow('Void %',rec.voidPct||0,recB.voidPct||0,false,true);
-  voidHTML+=cmpRow('Void Orders',rec.voidOrders||0,recB.voidOrders||0,false,true);
+  voidHTML+=_voidRow('Void Amount', rec.voidAmount, recB.voidAmount, v=>fmt$(Math.abs(v)));
+  voidHTML+=_voidRow('Void Orders', rec.voidOrders, recB.voidOrders, v=>Math.round(Math.abs(v)).toLocaleString('en-US'));
+  voidHTML+=_voidRow('Void Items',  rec.voidItems,  recB.voidItems,  v=>Math.round(Math.abs(v)).toLocaleString('en-US'));
+  voidHTML+=_voidRow('Void %',      rec.voidPct,    recB.voidPct,    v=>Math.abs(v).toFixed(2)+'%');
+  // Incomplete data warning inside the comparison block
+  const _voidIncWarn=(r,lbl)=>{
+    if(!r.voidIncomplete) return '';
+    return `<tr><td colspan="4" style="padding:8px 16px;font-size:11px;color:#92400e;background:#fffbeb;">
+      ⚠️ <strong>${lbl}</strong>: void data was partially imported — some fields may be missing. Re-import to recover full data.
+    </td></tr>`;
+  };
+  voidHTML+=_voidIncWarn(rec,labelA)+_voidIncWarn(recB,labelB);
   voidHTML+=tblFoot;
 
   el.innerHTML=`<div class="mx-cmp-page">${banner}${summaryCards}${netHTML}${chanHTML}${catHTML}${dpHTML}${discHTML}${voidHTML}</div>`;
@@ -10369,6 +10423,9 @@ function sxAggregateRecs(recs){
     itemDiscounts:aggByProp('itemDiscounts'),
     checkDiscounts:aggByProp('checkDiscounts'),
     voidAmount, voidOrders, voidItems, voidPct,
+    // Re-evaluate completeness across the aggregated window:
+    // voidIncomplete = true if ANY constituent record had a partial void import
+    voidIncomplete: recs.some(r=>r.voidIncomplete) || undefined,
     _aggregated:true, _recs:recs
   };
 }
@@ -10472,11 +10529,19 @@ function parseSalesFile(file, state, loc, year, month){
         const findRow = lbl => rows.findIndex(r=>r&&r[0]&&String(r[0]).trim().toLowerCase()===lbl.toLowerCase());
 
         // Net sales summary
+        // _pNum: parse a cell to a number; returns null (not 0) when the cell is
+        // absent, empty, or non-numeric. This separates "genuinely zero" from
+        // "field was not found in the file" — they must never look the same.
+        const _pNum = cell => {
+          if(cell==null||cell==='') return null;
+          const n=Number(cell);
+          return isNaN(n) ? null : n;
+        };
         const nssIdx = findRow('Net sales summary');
-        const grossSales = nssIdx>=0 && rows[nssIdx+1] ? (Number(rows[nssIdx+1][1])||0) : 0;
-        const discounts  = nssIdx>=0 && rows[nssIdx+2] ? (Number(rows[nssIdx+2][1])||0) : 0;
-        const refunds    = nssIdx>=0 && rows[nssIdx+3] ? (Number(rows[nssIdx+3][1])||0) : 0;
-        const netSales   = nssIdx>=0 && rows[nssIdx+4] ? (Number(rows[nssIdx+4][1])||0) : 0;
+        const grossSales = nssIdx>=0 && rows[nssIdx+1] ? _pNum(rows[nssIdx+1][1]) : null;
+        const discounts  = nssIdx>=0 && rows[nssIdx+2] ? _pNum(rows[nssIdx+2][1]) : null;
+        const refunds    = nssIdx>=0 && rows[nssIdx+3] ? _pNum(rows[nssIdx+3][1]) : null;
+        const netSales   = nssIdx>=0 && rows[nssIdx+4] ? _pNum(rows[nssIdx+4][1]) : null;
 
         // Generic table parser: header label → skip 2 rows → data until 'Total' or 2+ consecutive blank rows
         // Tolerates a single blank row within a section (some months have internal spacing gaps)
@@ -10561,6 +10626,19 @@ function parseSalesFile(file, state, loc, year, month){
           }
         }
 
+        // ── Cross-field void completeness validation ──────────────────────────
+        // voidIncomplete = true when the file contained SOME void data but not all
+        // three count/dollar fields. Downstream code uses this to show a warning
+        // instead of silently displaying a zero or dash for the missing field.
+        // Rules:
+        //   • If the void section was not found at all → all four are null → complete=false (absent, not partial)
+        //   • If at least one of [voidAmount, voidOrders, voidItems] was parsed
+        //     AND at least one of the three is still null → partial → voidIncomplete=true
+        const _voidParsed = [voidAmount, voidOrders, voidItems];
+        const _voidHasAny = _voidParsed.some(v=>v!==null);
+        const _voidHasAll = _voidParsed.every(v=>v!==null);
+        const voidIncomplete = _voidHasAny && !_voidHasAll;
+
         const totalOrders = dayparts.reduce((s,d)=>s+d.orders,0);
 
         // Normalise at source — defence-in-depth
@@ -10569,7 +10647,8 @@ function parseSalesFile(file, state, loc, year, month){
           fileName:file.name, importedAt:new Date().toISOString(),
           grossSales, discounts, refunds, netSales, totalOrders,
           categories, channels, dayparts, itemDiscounts, checkDiscounts,
-          voidAmount, voidOrders, voidItems, voidPct
+          voidAmount, voidOrders, voidItems, voidPct,
+          voidIncomplete: voidIncomplete || undefined  // omit from record when false (saves space)
         }));
       } catch(err){ reject(String(err)); }
     };
@@ -11431,24 +11510,49 @@ function renderSalesDashboard(rec, locRecs, allRecs){
     const vItm = rec.voidItems;
     const vPct = rec.voidPct;
 
-    // Null-aware validity checks
-    const amtOk = vAmt != null && vAmt >= 0 && vAmt <= ns;
+    // ── Null-aware validity checks ──────────────────────────────────────────
+    // amtOk/ordOk/itmOk/pctOk = true only when the field is present AND in range.
+    // A null field means "not found in the file", not "zero".
+    const amtOk = vAmt != null && vAmt >= 0 && vAmt <= ns * 1.1; // allow 10% rounding room
     const ordOk = vOrd != null && vOrd >= 0 && vOrd < 1e5;
     const itmOk = vItm != null && vItm >= 0 && vItm < 1e5;
     const pctOk = vPct != null && vPct >= 0 && vPct <= 100;
     const dispPct = pctOk ? vPct : (amtOk && vAmt > 0) ? +((vAmt / ns) * 100).toFixed(2) : null;
 
-    // Data quality banners
-    const inconsistent  = ordOk && vOrd > 0 && vAmt === null;
-    const corrupt       = (!amtOk && vAmt !== null) || (!ordOk && vOrd !== null) || (!itmOk && vItm !== null) || (!pctOk && vPct !== null);
+    // ── Data-quality classification ─────────────────────────────────────────
+    // corrupt: a field was present but rejected by range validation (bad parse)
+    const corrupt = (!amtOk && vAmt !== null) || (!ordOk && vOrd !== null) ||
+                    (!itmOk && vItm !== null) || (!pctOk && vPct !== null);
+
+    // incomplete: the file contained SOME void data but not all three primary fields.
+    // We use the stored voidIncomplete flag OR re-derive it from the current values.
+    // Re-derivation handles records imported before this flag existed.
+    const anyVoidField = amtOk || ordOk || itmOk || pctOk;
+    const missingFields = [];
+    if(!corrupt && anyVoidField){
+      if(vAmt === null) missingFields.push('Void Amount');
+      if(vOrd === null) missingFields.push('Void Orders');
+      if(vItm === null) missingFields.push('Void Items');
+    }
+    const incomplete = rec.voidIncomplete === true || missingFields.length > 0;
+
+    // ── Banner HTML ─────────────────────────────────────────────────────────
     const corruptBanner = corrupt ? `
       <div style="background:#fef3cd;border:1px solid #e6c96c;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7c5e00;display:flex;align-items:center;gap:8px;">
         <span>⚠️</span><span>Some void data was imported with a formatting error. <strong>Re-import the file</strong> to correct it.</span>
       </div>` : '';
-    const inconsistentBanner = (!corrupt && inconsistent) ? `
-      <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#9a3412;display:flex;align-items:center;gap:8px;">
-        <span>ℹ️</span><span><strong>${vOrd} void orders</strong> were recorded but the dollar amount could not be read from this file. Re-import to recover full data.</span>
-      </div>` : '';
+
+    // Incomplete banner: list exactly which fields are missing so the user knows
+    // what's wrong and why a card shows "—" while another shows a real value.
+    const incompleteBanner = (!corrupt && incomplete) ? (() => {
+      const parts = missingFields.length > 0
+        ? `The following field${missingFields.length>1?'s were':' was'} not found in the imported file: <strong>${missingFields.join(', ')}</strong>.`
+        : 'One or more void fields could not be read from the original import.';
+      return `<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#9a3412;display:flex;align-items:flex-start;gap:8px;">
+        <span style="flex-shrink:0;margin-top:1px;">ℹ️</span>
+        <span><strong>Incomplete void data.</strong> ${parts} Re-import the file to recover the missing fields. Cards showing&nbsp;<strong>—</strong>&nbsp;indicate data that could not be read.</span>
+      </div>`;
+    })() : '';
 
     // Trend vs previous month
     const _sortedRecs = [...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
@@ -11497,25 +11601,35 @@ function renderSalesDashboard(rec, locRecs, allRecs){
     }
 
     // ── KPI card helpers ────────────────────────────────────────────────────
+    // fmtV: render the metric value when ok=true; show "—" when field is missing.
+    // When the data is incomplete (other fields ARE present), add a tooltip so the
+    // user understands why one card shows "—" while others have values.
+    const _missingTip = incomplete
+      ? ' title="This field was not found in the imported file. Re-import to recover it."'
+      : '';
     const fmtV = (val, ok, isMoney=false) => ok
       ? (isMoney ? fmtD(val) : Math.round(val).toLocaleString('en-US'))
-      : `<span style="color:var(--muted);font-size:18px;">—</span>`;
+      : `<span style="color:var(--muted);font-size:18px;"${_missingTip}>—</span>`;
 
-    // % card gets full status treatment; other cards get neutral styling
-    const pctClass  = dispPct==null ? '' : dispPct > SX.voidTgt ? 'vc-bad' : 'vc-ok';
+    // % card gets full status treatment; other cards get neutral styling.
+    // A card that is missing in an incomplete context gets vc-warn border tint.
+    const pctClass  = dispPct==null ? (incomplete?'vc-warn':'') : dispPct > SX.voidTgt ? 'vc-bad' : 'vc-ok';
     const pctValClr = dispPct==null ? '' : dispPct > SX.voidTgt ? 'color:#b91c1c;' : 'color:#15803d;';
-    const pctBadge  = dispPct==null ? '' : dispPct > SX.voidTgt
-      ? `<div class="vc-badge" style="color:#b91c1c;">▲ Above ${SX.voidTgt}% target</div>`
-      : `<div class="vc-badge" style="color:#15803d;">✓ Within target</div>`;
+    const pctBadge  = dispPct==null ? (incomplete?'<div class="vc-badge" style="color:#92400e;">⚠ Not in file</div>':'')
+      : dispPct > SX.voidTgt
+        ? `<div class="vc-badge" style="color:#b91c1c;">▲ Above ${SX.voidTgt}% target</div>`
+        : `<div class="vc-badge" style="color:#15803d;">✓ Within target</div>`;
     const trendChip = trendDelta==null ? '' :
       `<div class="vc-trend" style="color:${trendUp?'#b91c1c':trendDown?'#15803d':'#6b7280'}">` +
       `${trendUp?'▲':trendDown?'▼':'→'} ${trendDelta>0?'+':''}${trendDelta.toFixed(1)}% vs ${prevMonLabel}</div>`;
 
-    // Amt card: tint red if rate is over target (same signal as %)
-    const amtClass = (amtOk && dispPct!=null && dispPct > SX.voidTgt) ? 'vc-bad' : '';
-    const amtValClr= (amtOk && dispPct!=null && dispPct > SX.voidTgt) ? 'color:#b91c1c;' : '';
+    // Card classes for amount, orders, items: vc-bad when over target; vc-warn when missing in incomplete set
+    const amtClass  = !amtOk && incomplete ? 'vc-warn' : (amtOk && dispPct!=null && dispPct > SX.voidTgt) ? 'vc-bad' : '';
+    const amtValClr = amtOk && dispPct!=null && dispPct > SX.voidTgt ? 'color:#b91c1c;' : '';
+    const ordClass  = !ordOk && incomplete ? 'vc-warn' : '';
+    const itmClass  = !itmOk && incomplete ? 'vc-warn' : '';
 
-    content=`${corruptBanner}${inconsistentBanner}
+    content=`${corruptBanner}${incompleteBanner}
       <!-- ── Problem Signal ───────────────────── -->
       <div class="sx-void-signal" style="background:${sigBg};border:1.5px solid ${sigBorder};">
         <div class="vs-icon">${sigIcon}</div>
@@ -11529,14 +11643,17 @@ function renderSalesDashboard(rec, locRecs, allRecs){
         <div class="sx-void-card ${amtClass}">
           <div class="vc-val" style="${amtValClr}">${fmtV(vAmt,amtOk,true)}</div>
           <div class="vc-lbl">Void Amount</div>
+          ${!amtOk&&incomplete?'<div class="vc-badge" style="color:#92400e;">⚠ Not in file</div>':''}
         </div>
-        <div class="sx-void-card">
+        <div class="sx-void-card ${ordClass}">
           <div class="vc-val">${fmtV(vOrd,ordOk)}</div>
           <div class="vc-lbl">Void Orders</div>
+          ${!ordOk&&incomplete?'<div class="vc-badge" style="color:#92400e;">⚠ Not in file</div>':''}
         </div>
-        <div class="sx-void-card">
+        <div class="sx-void-card ${itmClass}">
           <div class="vc-val">${fmtV(vItm,itmOk)}</div>
           <div class="vc-lbl">Void Items</div>
+          ${!itmOk&&incomplete?'<div class="vc-badge" style="color:#92400e;">⚠ Not in file</div>':''}
         </div>
         <div class="sx-void-card ${pctClass}">
           <div class="vc-val" style="${pctValClr}">${dispPct!=null?dispPct.toFixed(1)+'%':'<span style="color:var(--muted);font-size:18px;">—</span>'}</div>
@@ -13761,30 +13878,54 @@ function renderPnLDashboard(rec, locRecs){
 
   // ── Feature 2: Waterfall — HTML/CSS horizontal bars (no chart.js needed)
   const waterfallPanel=(()=>{
-    const fmtV=v=>v>=0?'$'+Math.round(v).toLocaleString('en-US'):'-$'+Math.round(Math.abs(v)).toLocaleString('en-US');
-    const pctOf=v=>ns>0?(v/ns*100).toFixed(1)+'%':'—';
+    // fmtV: format a dollar value; null = "—" (never silently display $0 for missing data)
+    const fmtV=v=>v==null?'—':(v>=0?'$'+Math.round(v).toLocaleString('en-US'):'-$'+Math.round(Math.abs(v)).toLocaleString('en-US'));
+    const pctOf=v=>v!=null&&ns>0?(v/ns*100).toFixed(1)+'%':'—';
     const base=rec.grossSales||rec.netSales||1;
+    // Disc & Refunds: only sum non-null fields; if both null → null (no data)
+    const discAndRef=(()=>{
+      const d=rec.discounts, r=rec.refunds;
+      if(d==null&&r==null) return null;
+      return (d||0)+(r||0);
+    })();
+    // Expenses: derive only when we have the required inputs
+    const expensesVal=(()=>{
+      if(rec.totalExpenses!=null) return -Math.abs(rec.totalExpenses);
+      if(rec.netOperatingIncome!=null&&rec.grossProfit!=null) return rec.netOperatingIncome-rec.grossProfit;
+      if(rec.netIncome!=null&&rec.grossProfit!=null) return rec.netIncome-rec.grossProfit;
+      return null; // cannot derive — do not show $0
+    })();
     const steps=[
-      {label:'Gross Sales',    val:rec.grossSales||ns,           type:'start',     hint:'Starting point'},
-      {label:'Discounts & Refunds', val:(rec.discounts||0)+(rec.refunds||0), type:'neg', hint:'% of gross sales'},
-      {label:'NET SALES',      val:rec.netSales,                 type:'sub',       hint:'= Gross – Disc/Ref', bold:true},
-      {label:'COGS',           val:rec.cogs,                     type:'neg',       hint:'Cost of goods sold'},
-      {label:'GROSS PROFIT',   val:rec.grossProfit,              type:'sub',       hint:'= Net Sales – COGS', bold:true},
-      {label:'Expenses',       val:rec.totalExpenses ? -Math.abs(rec.totalExpenses) : rec.netOperatingIncome ? (rec.netOperatingIncome-(rec.grossProfit||0)) : ((rec.netIncome||0)-(rec.grossProfit||0)), type:'neg', hint:'All operating expenses'},
-      {label:'NET INCOME',     val:rec.netIncome,                type:rec.netIncome>=0?'final_pos':'final_neg', hint:'Bottom line', bold:true},
+      {label:'Gross Sales',         val:rec.grossSales??rec.netSales,  type:'start', hint:'Starting point'},
+      {label:'Discounts & Refunds', val:discAndRef,                    type:'neg',   hint:'% of gross sales'},
+      {label:'NET SALES',           val:rec.netSales,                  type:'sub',   hint:'= Gross – Disc/Ref', bold:true},
+      {label:'COGS',                val:rec.cogs,                      type:'neg',   hint:'Cost of goods sold'},
+      {label:'GROSS PROFIT',        val:rec.grossProfit,               type:'sub',   hint:'= Net Sales – COGS', bold:true},
+      {label:'Expenses',            val:expensesVal,                   type:'neg',   hint:'All operating expenses'},
+      {label:'NET INCOME',          val:rec.netIncome,                 type:rec.netIncome!=null&&rec.netIncome>=0?'final_pos':'final_neg', hint:'Bottom line', bold:true},
     ];
     const COL={start:'#1e3a5f',neg:'#dc2626',sub:'#1d4ed8',final_pos:'#16a34a',final_neg:'#dc2626'};
     const BG ={start:'#dbeafe',neg:'#fee2e2',sub:'#eff6ff',final_pos:'#dcfce7',final_neg:'#fee2e2'};
     const rows=steps.map(s=>{
-      const absVal=Math.abs(s.val||0);
+      const isNull=s.val==null;
+      const absVal=isNull?0:Math.abs(s.val);
       const barW=Math.min(absVal/Math.abs(base)*100,100).toFixed(1);
       const isNeg=s.type==='neg';
       const col=COL[s.type]||'#374151';
       const bg=BG[s.type]||'#f3f4f6';
       const sign=isNeg?'-':'';
-      const pct=s.type==='neg'
-        ?`<span style="color:${col};font-size:10px;font-weight:600;">${sign}${pctOf(absVal)}</span>`
-        :`<span style="color:#64748b;font-size:10px;">${pctOf(absVal)}</span>`;
+      const pct=isNull?''
+        :s.type==='neg'
+          ?`<span style="color:${col};font-size:10px;font-weight:600;">${sign}${pctOf(absVal)}</span>`
+          :`<span style="color:#64748b;font-size:10px;">${pctOf(absVal)}</span>`;
+      // When a step value is null, render a "data not available" placeholder row
+      if(isNull){
+        return `<div class="pnl-wf-row" style="opacity:.5;">
+          <div class="pnl-wf-label" style="color:#94a3b8;">${s.label}</div>
+          <div class="pnl-wf-bar-wrap"><div class="pnl-wf-bar" style="width:0%;background:#cbd5e1;opacity:.4;"></div></div>
+          <div class="pnl-wf-vals"><span class="pnl-wf-amt" style="color:#94a3b8;font-style:italic;">—</span></div>
+        </div>`;
+      }
       return `<div class="pnl-wf-row ${s.bold?'pnl-wf-row-bold':''}">
         <div class="pnl-wf-label" style="color:${s.bold?col:'#374151'};">${s.label}</div>
         <div class="pnl-wf-bar-wrap">
@@ -13792,7 +13933,7 @@ function renderPnLDashboard(rec, locRecs){
           ${s.bold?`<div class="pnl-wf-bar-outline" style="width:${barW}%;border-color:${col};"></div>`:''}
         </div>
         <div class="pnl-wf-vals">
-          <span class="pnl-wf-amt" style="color:${col};font-weight:${s.bold?'800':'600'};">${fmtV(s.val||0)}</span>
+          <span class="pnl-wf-amt" style="color:${col};font-weight:${s.bold?'800':'600'};">${fmtV(s.val)}</span>
           ${pct}
         </div>
       </div>`;
@@ -14410,7 +14551,9 @@ function renderPnLCompare(rec, allRecs){
   const nsA=recA.netSales||1, nsB=recB.netSales||1;
   // Delta direction: positive = improvement over time (newer - older)
   const aIsNewer=PX.cmpType==='store'?true:(Number(recA.year)*12+recA.month>=(Number(recB.year||recA.year)*12+(PX.cmpMonth||0)));
+  // Null-safe: if either value is null, show "—" instead of a NaN delta.
   const deltaChip=(vA,vB,isNegGood=false)=>{
+    if(vA==null||vB==null) return `<span style="font-size:11px;color:var(--muted);">—</span>`;
     const d=aIsNewer?(vA-vB):(vB-vA);
     if(Math.abs(d)<0.5) return `<span style="font-size:11px;color:var(--muted);">—</span>`;
     const improving=isNegGood?d<0:d>0;
@@ -14418,7 +14561,9 @@ function renderPnLCompare(rec, allRecs){
     const sign=d>0?'+':'';
     return `<span style="font-size:12px;font-weight:700;color:${col};">${sign}$${Math.round(Math.abs(d)).toLocaleString()}</span>`;
   };
+  // Null-safe pp delta: omit if either base or value is null.
   const ppDelta=(vA,vB,baseA,baseB)=>{
+    if(vA==null||vB==null) return '';
     const pA=baseA>0?vA/baseA:0, pB=baseB>0?vB/baseB:0;
     const d=aIsNewer?(pA-pB):(pB-pA);
     if(Math.abs(d)<0.0005) return '';
@@ -14445,14 +14590,17 @@ function renderPnLCompare(rec, allRecs){
     {t:'s', label:'Utilities',              a:recA.utilities,          b:recB.utilities,          negGood:true},
     {t:'s', label:'Insurance',              a:recA.insurance,          b:recB.insurance,          negGood:true},
     {t:'s', label:'General Business',       a:recA.generalBusiness,    b:recB.generalBusiness,    negGood:true},
-    ...(recA.taxes||recB.taxes?[{t:'s',label:'Taxes & Licenses',a:recA.taxes||0,b:recB.taxes||0,negGood:true}]:[]),
+    // Conditional rows: shown only when at least one period has the field.
+    // Pass null (not 0) for the missing side — fmtPnL(null) renders "—" and
+    // deltaChip(null, x) renders "—" rather than a meaningless $NaN delta.
+    ...(recA.taxes??recB.taxes   ?[{t:'s',label:'Taxes & Licenses',a:recA.taxes   ??null,b:recB.taxes   ??null,negGood:true}]:[]),
     {t:'s', label:'Professional Fees',      a:recA.professionalFees,   b:recB.professionalFees,   negGood:true},
-    ...(recA.travel||recB.travel?[{t:'s',label:'Travel',a:recA.travel||0,b:recB.travel||0,negGood:true}]:[]),
-    ...(recA.penalties||recB.penalties?[{t:'s',label:'Penalties',a:recA.penalties||0,b:recB.penalties||0,negGood:true}]:[]),
+    ...(recA.travel??recB.travel  ?[{t:'s',label:'Travel',a:recA.travel  ??null,b:recB.travel  ??null,negGood:true}]:[]),
+    ...(recA.penalties??recB.penalties?[{t:'s',label:'Penalties',a:recA.penalties??null,b:recB.penalties??null,negGood:true}]:[]),
     {t:'T', label:'Total Expenses',         a:recA.totalExpenses,      b:recB.totalExpenses,      negGood:true},
     {t:'B', label:'Net Operating Income',   a:recA.netOperatingIncome, b:recB.netOperatingIncome},
-    ...(recA.otherIncome||recB.otherIncome?[{t:'s',label:'Other Income',a:recA.otherIncome||0,b:recB.otherIncome||0}]:[]),
-    ...(recA.otherExpenses||recB.otherExpenses?[{t:'s',label:'Other Expenses',a:recA.otherExpenses||0,b:recB.otherExpenses||0,negGood:true}]:[]),
+    ...(recA.otherIncome??recB.otherIncome  ?[{t:'s',label:'Other Income',a:recA.otherIncome  ??null,b:recB.otherIncome  ??null}]:[]),
+    ...(recA.otherExpenses??recB.otherExpenses?[{t:'s',label:'Other Expenses',a:recA.otherExpenses??null,b:recB.otherExpenses??null,negGood:true}]:[]),
     {t:'B', label:'Net Income',             a:recA.netIncome,          b:recB.netIncome},
   ];
 
@@ -14473,8 +14621,9 @@ function renderPnLCompare(rec, allRecs){
             const rowCls=r.t==='B'?'pnl-tbl-row-b':r.t==='T'?'pnl-tbl-row-t':'pnl-tbl-row-s';
             const indCls=r.t==='s'?'pnl-tbl-ind':'';
             const negCls=(r.a<0&&r.t==='s')?'pnl-tbl-neg':'';
-            const pctA=r.t!=='g'&&r.t!=='h2'?` <span class="ui-muted-xs">${(Math.abs(r.a)/nsA*100).toFixed(1)}%</span>`:'';
-            const pctB=r.t!=='g'&&r.t!=='h2'?` <span class="ui-muted-xs">${(Math.abs(r.b)/nsB*100).toFixed(1)}%</span>`:'';
+            // Only show % when the value is present (null → omit rather than show 0.0%)
+            const pctA=r.t!=='g'&&r.t!=='h2'&&r.a!=null?` <span class="ui-muted-xs">${(Math.abs(r.a)/nsA*100).toFixed(1)}%</span>`:'';
+            const pctB=r.t!=='g'&&r.t!=='h2'&&r.b!=null?` <span class="ui-muted-xs">${(Math.abs(r.b)/nsB*100).toFixed(1)}%</span>`:'';
             const ppd=(r.t==='B'||r.t==='T')?ppDelta(r.a,r.b,nsA,nsB):'';
             return `<tr class="${rowCls}">
               <td class="${indCls} ${negCls}" style="padding-left:${r.t==='s'?'38':'20'}px;">${r.label}</td>
