@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v48.03 -->
+<!-- BUILD: 2026-04-16-v48.04 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -10539,8 +10539,21 @@ function loadToastJson(input){
       const fname=file.name;
 
       const monthly=[]; const daily=[];
+      // Cross-field void integrity helper (mirrors Excel parser rule):
+      // JSON sources sometimes initialise numeric fields to 0 rather than omitting them.
+      // voidAmount=0 or voidItems=0 with voidOrders>0 is impossible — null them out.
+      const _jsonVoid = loc => {
+        let a = loc.voidAmount ?? null;
+        let o = loc.voidOrders ?? null;
+        let i = loc.voidItems  ?? null;
+        const p = loc.voidPct  ?? null;
+        if(o != null && o > 0){ if(a === 0) a = null; if(i === 0) i = null; }
+        const parsed=[a,o,i]; const hasAny=parsed.some(v=>v!==null); const hasAll=parsed.every(v=>v!==null);
+        return { voidAmount:a, voidOrders:o, voidItems:i, voidPct:p, voidIncomplete:(hasAny&&!hasAll)||undefined };
+      };
       for(const loc of data.locations){
         if(!loc.netSales) continue;
+        const _vf = _jsonVoid(loc);
         monthly.push({
           page:'sales', state:loc.state, loc:loc.location,
           year, month, fileName:fname, importedAt:fetched,
@@ -10551,7 +10564,8 @@ function loadToastJson(input){
           channels:(loc.channels||[]).map(ch=>({name:ch.name,netSales:+(ch.netSales||0).toFixed(2),orders:ch.orders,discount:0,items:0})),
           dayparts:(loc.dayparts||[]).map(dp=>({name:dp.name,orders:dp.orders,netSales:+(dp.netSales||0).toFixed(2),discount:0})),
           itemDiscounts:[], checkDiscounts:(loc.discounts||[]).map(d=>({name:d.name,count:d.count,orders:d.count,amount:+(d.amount||0).toFixed(2)})),
-          voidAmount:loc.voidAmount??null, voidOrders:loc.voidOrders??null, voidItems:loc.voidItems??null, voidPct:loc.voidPct??null
+          voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct,
+          voidIncomplete:_vf.voidIncomplete
         });
         for(const day of (loc.daily||[])){
           const dd=new Date(day.date+'T12:00:00');
@@ -10851,6 +10865,18 @@ function parseSalesFile(file, state, loc, year, month){
           if(voidPct===null && voidAmount!=null && voidAmount>0 && netSales>0){
             voidPct = +((voidAmount/netSales)*100).toFixed(2);
           }
+        }
+
+        // ── Cross-field void integrity: null-out impossible zeroes ───────────────
+        // If voidOrders > 0 but voidAmount or voidItems parsed as exactly 0 (not null),
+        // those zeros are bad data — no restaurant can void 1+ orders with $0 amount
+        // and 0 items. This happens when a Toast export has blank/0 cells for those fields
+        // even though the order-count cell was populated (e.g. some older export formats
+        // or JSON sources that default numeric fields to 0 instead of omitting them).
+        // Treat them as null (= "not found"), never as genuine zeroes.
+        if(voidOrders != null && voidOrders > 0){
+          if(voidAmount === 0) voidAmount = null;
+          if(voidItems  === 0) voidItems  = null;
         }
 
         // ── Cross-field void completeness validation ──────────────────────────
@@ -11732,9 +11758,16 @@ function renderSalesDashboard(rec, locRecs, allRecs){
 
   if(SX.activeTab==='voids'){
     const ns   = rec.netSales || 1;
-    const vAmt = rec.voidAmount;
-    const vOrd = rec.voidOrders;
-    const vItm = rec.voidItems;
+    // ── Retroactive cross-field correction for legacy stored records ────────
+    // Records imported before the parser-level fix may have voidAmount=0 or
+    // voidItems=0 stored as literal zero rather than null.  Apply the same
+    // consistency rule here so the display is always correct regardless of when
+    // the record was imported:  if voidOrders > 0, a stored 0 for amount or
+    // items is impossible and must be treated as "not available" (null).
+    const _vOrdRaw = rec.voidOrders;
+    const vAmt = (_vOrdRaw != null && _vOrdRaw > 0 && rec.voidAmount === 0) ? null : rec.voidAmount;
+    const vOrd = _vOrdRaw;
+    const vItm = (_vOrdRaw != null && _vOrdRaw > 0 && rec.voidItems  === 0) ? null : rec.voidItems;
     const vPct = rec.voidPct;
 
     // ── Null-aware validity checks ──────────────────────────────────────────
