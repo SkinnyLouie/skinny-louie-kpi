@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v48.00 -->
+<!-- BUILD: 2026-04-16-v48.02 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -8843,7 +8843,7 @@ function renderSalesCompareBanner(allRecs){
         <div class="mx-cmp-pills">${monthPills||'<span style="font-size:12px;color:var(--muted);font-style:italic;">No data for this store</span>'}</div>
         <div class="mx-cmp-sep"></div>
         <span class="mx-cmp-label" style="white-space:nowrap;">Comparing:</span>
-        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${SX.year} <span style="color:var(--muted);font-weight:400;">vs</span> ${otherYear}</div>`;
+        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${SX.cmpYearMonth!=null?MSHORT[SX.cmpYearMonth]+' ':''}<span style="color:var(--accent2,#9b292c);">${SX.year}</span> <span style="color:var(--muted);font-weight:400;">vs</span> ${SX.cmpYearMonth!=null?MSHORT[SX.cmpYearMonth]+' ':''}${otherYear}</div>`;
     } else {
       yearBannerExtra=`
         <div class="mx-cmp-sep"></div>
@@ -8951,25 +8951,46 @@ function renderSalesCompare(rec, allRecs){
   // ── Helper: comparison row (invert=true → lower is better, e.g. discounts/voids)
   // Null-safe: if either value is null/undefined, shows "—" for that column instead
   // of silently displaying $0 or 0.0% which would be misleading.
+  // 5-column layout: Metric | A | B | Δ | Δ %
+  // Δ % is shown for money rows only; % rows get "—" to avoid "% of %" confusion.
   const cmpRow=(label,vA,vB,money=false,invert=false)=>{
     const aNull=vA==null, bNull=vB==null;
     const _fmtCell=(v,isNull)=>isNull
       ?'<span style="color:var(--muted);">—</span>'
       :(money?fmt$(v):v.toFixed(1)+'%');
-    let dDisp;
+    let dDisp, pDisp;
     if(aNull||bNull){
       dDisp='<span class="mx-delta eq" style="font-size:10px;">n/a</span>';
+      pDisp='<span style="color:var(--muted);font-size:10px;">—</span>';
     } else {
       const d=aIsNewer?(vA-vB):(vB-vA);
       const sign=invert?(d<0?'up':d>0?'dn':'eq'):(d>0?'up':d<0?'dn':'eq');
-      const dStr=money?((d>=0?'+':'')+fmt$(d)):((d>=0?'+':'')+d.toFixed(1)+'%');
-      dDisp=Math.abs(d)<(money?0.5:0.05)?'<span class="mx-delta eq">—</span>':`<span class="mx-delta ${sign}">${dStr}</span>`;
+      const threshold=money?0.5:0.05;
+      if(Math.abs(d)<threshold){
+        dDisp='<span class="mx-delta eq">—</span>';
+        pDisp='<span style="color:var(--muted);">—</span>';
+      } else {
+        const dStr=money?((d>=0?'+':'')+fmt$(d)):((d>=0?'+':'')+d.toFixed(1)+'%');
+        dDisp=`<span class="mx-delta ${sign}">${dStr}</span>`;
+        if(money){
+          const base=aIsNewer?vB:vA;
+          const rawPct=base!==0?(d/Math.abs(base)*100):null;
+          if(rawPct!=null&&Math.abs(rawPct)>=0.05){
+            pDisp=`<span class="mx-delta ${sign}">${rawPct>=0?'+':''}${rawPct.toFixed(1)}%</span>`;
+          } else {
+            pDisp='<span style="color:var(--muted);">—</span>';
+          }
+        } else {
+          pDisp='<span style="color:var(--muted);font-size:10px;">—</span>';
+        }
+      }
     }
     return `<tr>
       <td style="padding:9px 16px;font-size:12px;color:var(--text);font-weight:600;">${label}</td>
       <td style="padding:9px 16px;text-align:right;font-size:13px;font-weight:700;">${_fmtCell(vA,aNull)}</td>
       <td style="padding:9px 16px;text-align:right;font-size:13px;color:var(--muted);">${_fmtCell(vB,bNull)}</td>
       <td style="padding:9px 16px;text-align:right;">${dDisp}</td>
+      <td style="padding:9px 16px;text-align:right;">${pDisp}</td>
     </tr>`;
   };
 
@@ -8983,34 +9004,60 @@ function renderSalesCompare(rec, allRecs){
             <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:700;">${labelA}</th>
             <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);">${labelB}</th>
             <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:700;">Δ</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:700;opacity:.75;">Δ %</th>
           </tr></thead><tbody>`;
 
   const tblFoot=`</tbody></table></div></div>`;
 
   // ── Summary
-  const avgA=rec.totalOrders>0?rec.netSales/rec.totalOrders:0;
-  const avgB=recB.totalOrders>0?recB.netSales/recB.totalOrders:0;
-  const summaryCards=`
+  const avgA = rec.totalOrders > 0 ? rec.netSales / rec.totalOrders : null;
+  const avgB = recB.totalOrders > 0 ? recB.netSales / recB.totalOrders : null;
+  const discA = rec.discounts != null ? Math.abs(rec.discounts) : null;
+  const discB = recB.discounts != null ? Math.abs(recB.discounts) : null;
+
+  // _cmpCard: builds one KPI card with absolute delta + % delta
+  // numA/numB = raw numbers for delta math; fmtA/fmtB = display strings
+  // isAvg = true → format delta as toFixed(2) with $0.001 threshold instead of $0.5
+  const _cmpCard = (lbl, fmtA, fmtB, numA, numB, money, invert, isAvg) => {
+    const missing = numA == null || numB == null;
+    const d = missing ? null : (aIsNewer ? (numA - numB) : (numB - numA));
+    const threshold = isAvg ? 0.001 : (money ? 0.5 : 0.5);
+    const trivial = missing || Math.abs(d) < threshold;
+    const sign = trivial ? 'eq'
+      : invert ? (d < 0 ? 'up' : 'dn')
+               : (d > 0 ? 'up' : 'dn');
+    const col = sign === 'up' ? '#16a34a' : sign === 'dn' ? '#dc2626' : 'var(--muted)';
+    let deltaLine = '<span style="color:var(--muted);">—</span>';
+    if (!trivial) {
+      const base = aIsNewer ? numB : numA;                       // older period = base
+      const dAbs = Math.abs(d);
+      const dFmt = isAvg ? ('$' + dAbs.toFixed(2)) : (money ? fmt$(dAbs) : dAbs.toFixed(0));
+      const rawPct = base !== 0 ? (d / Math.abs(base)) * 100 : null;
+      // pct always shows true direction: + means newer > older, – means newer < older
+      const pctFmt = rawPct != null && Math.abs(rawPct) >= 0.05
+        ? `(${rawPct >= 0 ? '+' : ''}${rawPct.toFixed(1)}%)`
+        : null;
+      const arrow = sign === 'up' ? '▲' : '▼';
+      const absStr = `${arrow} ${d >= 0 ? '+' : '−'}${dFmt}`;
+      deltaLine = `<span style="color:${col};font-weight:700;">${absStr}</span>`
+        + (pctFmt ? ` <span style="color:${col};font-size:11px;font-weight:600;opacity:.9;">${pctFmt}</span>` : '');
+    }
+    return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${lbl}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;">${fmtA}</span>
+        <span style="font-size:11px;color:var(--muted);">vs ${fmtB}</span>
+      </div>
+      <div style="font-size:12px;margin-top:5px;line-height:1.4;">${deltaLine}</div>
+    </div>`;
+  };
+
+  const summaryCards = `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:28px;">
-      ${[
-        ['Net Sales',fmt$(rec.netSales),fmt$(recB.netSales),aIsNewer?rec.netSales-recB.netSales:recB.netSales-rec.netSales,true],
-        ['Avg Check','$'+avgA.toFixed(2),'$'+avgB.toFixed(2),aIsNewer?avgA-avgB:avgB-avgA,true],
-        ['Total Orders',Math.round(rec.totalOrders).toLocaleString(),Math.round(recB.totalOrders).toLocaleString(),aIsNewer?rec.totalOrders-recB.totalOrders:recB.totalOrders-rec.totalOrders,false],
-        ['Discounts',fmt$(Math.abs(rec.discounts||0)),fmt$(Math.abs(recB.discounts||0)),aIsNewer?(rec.discounts||0)-(recB.discounts||0):(recB.discounts||0)-(rec.discounts||0),true,true]
-      ].map(([lbl,vA,vB,delta,money,invert])=>{
-        const sign=invert?(delta<0?'up':delta>0?'dn':'eq'):(delta>0?'up':delta<0?'dn':'eq');
-        const dAbs=Math.abs(delta);
-        const dStr=money?(dAbs<0.5?'—':(delta>=0?'+':'')+fmt$(delta)):(dAbs<0.5?'—':(delta>=0?'+':'')+delta.toFixed(0));
-        const col=sign==='up'?'#16a34a':sign==='dn'?'#dc2626':'var(--muted)';
-        return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${lbl}</div>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;">${vA}</span>
-            <span style="font-size:11px;color:var(--muted);">vs ${vB}</span>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:${col};margin-top:4px;">${dStr==='—'?'—':(sign==='up'?'▲ ':'▼ ')+dStr.replace(/^[+-]/,'')}</div>
-        </div>`;
-      }).join('')}
+      ${_cmpCard('Net Sales',    fmt$(rec.netSales),                  fmt$(recB.netSales),                  rec.netSales,    recB.netSales,    true,  false, false)}
+      ${_cmpCard('Avg Check',    avgA!=null?'$'+avgA.toFixed(2):'—',  avgB!=null?'$'+avgB.toFixed(2):'—',  avgA,            avgB,             true,  false, true )}
+      ${_cmpCard('Total Orders', Math.round(rec.totalOrders).toLocaleString(), Math.round(recB.totalOrders).toLocaleString(), rec.totalOrders, recB.totalOrders, false, false, false)}
+      ${_cmpCard('Discounts',    discA!=null?fmt$(discA):'—',         discB!=null?fmt$(discB):'—',         discA,           discB,            true,  true,  false)}
     </div>`;
 
   // ── Net Sales section
@@ -9078,18 +9125,28 @@ function renderSalesCompare(rec, allRecs){
 
   // ── Voids — null-safe: never coerce null → 0; missing field shows "—"
   // cmpRow assumes numeric inputs; use _voidRow for nullable void fields instead.
-  const _voidRow=(label,vA,vB,fmt)=>{
+  // 5-column layout matches cmpRow: Metric | A | B | Δ | Δ %
+  const _voidRow=(label,vA,vB,fmtFn)=>{
     const aOk=vA!=null, bOk=vB!=null;
-    const cellA=aOk?`<span style="font-weight:700;">${fmt(vA)}</span>`:`<span style="color:var(--muted);">—</span>`;
-    const cellB=bOk?fmt(vB):`<span style="color:var(--muted);">—</span>`;
+    const cellA=aOk?`<span style="font-weight:700;">${fmtFn(vA)}</span>`:`<span style="color:var(--muted);">—</span>`;
+    const cellB=bOk?fmtFn(vB):`<span style="color:var(--muted);">—</span>`;
     let delta='<span style="color:var(--muted);font-size:11px;">n/a</span>';
+    let pct='<span style="color:var(--muted);">—</span>';
     if(aOk&&bOk){
       const d=aIsNewer?(vA-vB):(vB-vA);
       // For voids lower is better: negative delta = improvement → 'up' (green)
       const sign=d<0?'up':d>0?'dn':'eq';
-      const threshold=typeof vA==='number'&&vA>100?0.5:0.05;
-      delta=Math.abs(d)<threshold?`<span class="mx-delta eq">—</span>`:
-        `<span class="mx-delta ${sign}">${d>=0?'+':''}${fmt(d)}</span>`;
+      const threshold=typeof vA==='number'&&Math.abs(vA)>100?0.5:0.05;
+      if(Math.abs(d)<threshold){
+        delta='<span class="mx-delta eq">—</span>';
+      } else {
+        delta=`<span class="mx-delta ${sign}">${d>=0?'+':''}${fmtFn(d)}</span>`;
+        const base=aIsNewer?vB:vA;
+        const rawPct=base!==0?(d/Math.abs(base)*100):null;
+        if(rawPct!=null&&Math.abs(rawPct)>=0.05){
+          pct=`<span class="mx-delta ${sign}">${rawPct>=0?'+':''}${rawPct.toFixed(1)}%</span>`;
+        }
+      }
     } else if(!aOk&&!bOk){
       delta='<span style="color:var(--muted);font-size:11px;">no data</span>';
     }
@@ -9098,6 +9155,7 @@ function renderSalesCompare(rec, allRecs){
       <td style="padding:9px 16px;text-align:right;font-size:13px;">${cellA}</td>
       <td style="padding:9px 16px;text-align:right;font-size:13px;color:var(--muted);">${cellB}</td>
       <td style="padding:9px 16px;text-align:right;">${delta}</td>
+      <td style="padding:9px 16px;text-align:right;">${pct}</td>
     </tr>`;
   };
 
@@ -9109,7 +9167,7 @@ function renderSalesCompare(rec, allRecs){
   // Incomplete data warning inside the comparison block
   const _voidIncWarn=(r,lbl)=>{
     if(!r.voidIncomplete) return '';
-    return `<tr><td colspan="4" style="padding:8px 16px;font-size:11px;color:#92400e;background:#fffbeb;">
+    return `<tr><td colspan="5" style="padding:8px 16px;font-size:11px;color:#92400e;background:#fffbeb;">
       ⚠️ <strong>${lbl}</strong>: void data was partially imported — some fields may be missing. Re-import to recover full data.
     </td></tr>`;
   };
@@ -9708,7 +9766,14 @@ function renderMixDashboard(rec, locRecs, allRecs){
 
   // Summary cards
   // Build pie data: main cats + Others
-  const PIE_CATS = ['SMASHED BURGERS','SIDES','MILKSHAKES','DRINKS'];
+  // Flexible matching: Toast exports use various casing/names for the same category
+  const PIE_CAT_DEFS = [
+    { label:'Burgers',    color:'#7A1E1E', keys:['SMASHED BURGERS','BURGERS','SMASH BURGERS','BURGER'] },
+    { label:'Sides',      color:'#C65A5A', keys:['SIDES','SIDE'] },
+    { label:'Milkshakes', color:'#D8C9A6', keys:['MILKSHAKES','MILKSHAKE','SHAKES','SHAKE'] },
+    { label:'Drinks',     color:'#4C8FB5', keys:['DRINKS','DRINK','NA BEVERAGES','NA BEVERAGE','BEVERAGES','BEVERAGE'] },
+  ];
+  const PIE_ALL_KEYS = PIE_CAT_DEFS.flatMap(p=>p.keys);
   // Color map keyed by display name — deterministic, never index-shifted
   const PIE_COLOR_MAP = {
     'Burgers':    '#7A1E1E',
@@ -9718,11 +9783,11 @@ function renderMixDashboard(rec, locRecs, allRecs){
     'Others':     '#B0A99F',
   };
   const PIE_FALLBACK = '#CCCCCC';
-  const pieData = PIE_CATS.map(name=>{
-    const c = categories.find(x=>x.name.toUpperCase()===name);
-    return { name: name==='SMASHED BURGERS'?'Burgers': name==='NA BEVERAGES'?'Drinks': name.charAt(0)+name.slice(1).toLowerCase(), net: c?c.net:0 };
+  const pieData = PIE_CAT_DEFS.map(p=>{
+    const c = categories.find(x=>p.keys.includes(x.name.toUpperCase()));
+    return { name: p.label, net: c?c.net:0 };
   });
-  const othersNet = categories.filter(c=>!PIE_CATS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
+  const othersNet = categories.filter(c=>!PIE_ALL_KEYS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
   if(othersNet>0) pieData.push({name:'Others', net:othersNet});
   const pieColors = pieData.map(d => PIE_COLOR_MAP[d.name] || PIE_FALLBACK);
   const legendRows = pieData.map((d,i)=>{
@@ -9845,11 +9910,24 @@ function renderMixDashboard(rec, locRecs, allRecs){
     </div>`;
 
   // Build category sections
+  // Keys include all known Toast category name variants (case-insensitive via catKey)
   const MENU_TO_ITEM_CAT = {
     'SMASHED BURGERS': ['Burgers'],
+    'BURGERS':         ['Burgers'],
+    'SMASH BURGERS':   ['Burgers'],
+    'BURGER':          ['Burgers'],
     'SIDES':           ['Sides'],
+    'SIDE':            ['Sides'],
     'MILKSHAKES':      ['Milkshakes'],
+    'MILKSHAKE':       ['Milkshakes'],
+    'SHAKES':          ['Milkshakes'],
+    'SHAKE':           ['Milkshakes'],
     'DRINKS':          ['NA Beverages','Beverages','Drinks'],
+    'DRINK':           ['NA Beverages','Beverages','Drinks'],
+    'NA BEVERAGES':    ['NA Beverages','Beverages','Drinks'],
+    'NA BEVERAGE':     ['NA Beverages','Beverages','Drinks'],
+    'BEVERAGES':       ['NA Beverages','Beverages','Drinks'],
+    'BEVERAGE':        ['NA Beverages','Beverages','Drinks'],
     'MERCHANDISE':     ['Merchandise'],
     'CREW SIZE ORDERS':['','Other'],
   };
@@ -10002,10 +10080,12 @@ function renderMixDashboard(rec, locRecs, allRecs){
 
     const catPct = totalNet>0 ? (cat.net/totalNet*100) : 0;
 
-    // ── Modifier Breakdown (Single / Double / Triple) — shown only for SMASHED BURGERS
+    // ── Modifier Breakdown (Single / Double / Triple) — shown for any burger category
+    // Matches 'SMASHED BURGERS', 'BURGERS', 'SMASH BURGERS', etc.
     // Source: Modifiers sheet parsed at import time → rec.modifiers
+    const _BURGER_KEYS = ['SMASHED BURGERS','BURGERS','SMASH BURGERS','BURGER'];
     let modPanelHTML = '';
-    if(catKey === 'SMASHED BURGERS'){
+    if(_BURGER_KEYS.includes(catKey)){
       const mods = rec.modifiers || {};
       const sQty = mods.single || 0;
       const dQty = mods.double || 0;
@@ -12273,15 +12353,21 @@ function mxSetCmpMonth(m){ MX.cmpMonth = m; renderMixPage(); }
 function mxSetCmpLoc(loc){ MX.cmpLoc = loc; renderMixPage(); }
 
 function mxPieData(categories, totalNet){
-  const CATS = ['SMASHED BURGERS','SIDES','MILKSHAKES','DRINKS'];
-  const LABELS = ['Burgers','Sides','Milkshakes','Drinks','Others'];
-  const COLORS = ['#9b292c','#c45b5e','#e2d5b8','#4a9ac4','#b8b0a0'];
-  const data = CATS.map(name=>{
-    const c = categories.find(x=>x.name.toUpperCase()===name);
+  const DEFS = [
+    { label:'Burgers',    color:'#9b292c', keys:['SMASHED BURGERS','BURGERS','SMASH BURGERS','BURGER'] },
+    { label:'Sides',      color:'#c45b5e', keys:['SIDES','SIDE'] },
+    { label:'Milkshakes', color:'#e2d5b8', keys:['MILKSHAKES','MILKSHAKE','SHAKES','SHAKE'] },
+    { label:'Drinks',     color:'#4a9ac4', keys:['DRINKS','DRINK','NA BEVERAGES','NA BEVERAGE','BEVERAGES','BEVERAGE'] },
+  ];
+  const ALL_KEYS = DEFS.flatMap(d=>d.keys);
+  const data = DEFS.map(d=>{
+    const c = categories.find(x=>d.keys.includes(x.name.toUpperCase()));
     return c ? c.net : 0;
   });
-  const othersNet = categories.filter(c=>!CATS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
+  const othersNet = categories.filter(c=>!ALL_KEYS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
   data.push(othersNet);
+  const LABELS = DEFS.map(d=>d.label).concat('Others');
+  const COLORS = DEFS.map(d=>d.color).concat('#b8b0a0');
   return { labels:LABELS, values:data, colors:COLORS,
     pcts: data.map(v=>totalNet>0?(v/totalNet*100):0) };
 }
