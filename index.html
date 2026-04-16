@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v48.04 -->
+<!-- BUILD: 2026-04-16-v49.00 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2100,6 +2100,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
 /* ── P&L Feature additions ─────────────────────── */
 /* ── Anomaly Detector */
+/* ── P&L view toggle (Summary / Full Detail) */
+.pnl-view-bar { display:flex; align-items:center; gap:12px; padding:10px 20px; background:#f5f0e8; border-bottom:1px solid #e8e2d8; }
+.pnl-view-bar-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; flex-shrink:0; }
+.pnl-view-toggle { display:flex; background:#e8e2d8; border-radius:99px; padding:3px; gap:2px; }
+.pnl-vtog { padding:5px 16px; border-radius:99px; border:none; background:transparent; font-size:11px; font-weight:700; color:#64748b; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.pnl-vtog.on { background:#fff; color:#1e3a5f; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+.pnl-view-bar-hint { font-size:10px; color:#94a3b8; margin-left:auto; }
+/* Full Detail section label */
+.pnl-detail-section-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; margin:28px 0 10px; }
 .pnl-anomaly-panel { background:#fff5f5; border:2px solid #fecaca; border-radius:16px; padding:18px 20px; margin-bottom:24px; }
 .pnl-anomaly-clear { background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:12px 18px; margin-bottom:24px; display:flex; align-items:center; gap:10px; }
 .pnl-anomaly-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
@@ -9942,6 +9951,30 @@ function renderMixDashboard(rec, locRecs, allRecs){
     </div>`;
   })();
 
+  // ── Category → item-level name mapping (hoisted here so all IIFEs below can safely reference it)
+  // Keys: uppercase category names from Toast export (all known variants)
+  // Values: array of item-level .cat values that belong to that display category
+  const MENU_TO_ITEM_CAT = {
+    'SMASHED BURGERS': ['Burgers'],
+    'BURGERS':         ['Burgers'],
+    'SMASH BURGERS':   ['Burgers'],
+    'BURGER':          ['Burgers'],
+    'SIDES':           ['Sides'],
+    'SIDE':            ['Sides'],
+    'MILKSHAKES':      ['Milkshakes'],
+    'MILKSHAKE':       ['Milkshakes'],
+    'SHAKES':          ['Milkshakes'],
+    'SHAKE':           ['Milkshakes'],
+    'DRINKS':          ['NA Beverages','Beverages','Drinks'],
+    'DRINK':           ['NA Beverages','Beverages','Drinks'],
+    'NA BEVERAGES':    ['NA Beverages','Beverages','Drinks'],
+    'NA BEVERAGE':     ['NA Beverages','Beverages','Drinks'],
+    'BEVERAGES':       ['NA Beverages','Beverages','Drinks'],
+    'BEVERAGE':        ['NA Beverages','Beverages','Drinks'],
+    'MERCHANDISE':     ['Merchandise'],
+    'CREW SIZE ORDERS':['','Other'],
+  };
+
   // ── ALL-tab: Subcategory breakdown grid (one card per category)
   const subcatBreakdownHTML = (()=>{
     if(categories.length === 0) return '';
@@ -10054,28 +10087,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       <button class="mx-tab ${MX.activeTab==='__xstore__'?'on':''}" onclick="mxSetTab('__xstore__')">🗺 Store Compare</button>
     </div>`;
 
-  // Build category sections
-  // Keys include all known Toast category name variants (case-insensitive via catKey)
-  const MENU_TO_ITEM_CAT = {
-    'SMASHED BURGERS': ['Burgers'],
-    'BURGERS':         ['Burgers'],
-    'SMASH BURGERS':   ['Burgers'],
-    'BURGER':          ['Burgers'],
-    'SIDES':           ['Sides'],
-    'SIDE':            ['Sides'],
-    'MILKSHAKES':      ['Milkshakes'],
-    'MILKSHAKE':       ['Milkshakes'],
-    'SHAKES':          ['Milkshakes'],
-    'SHAKE':           ['Milkshakes'],
-    'DRINKS':          ['NA Beverages','Beverages','Drinks'],
-    'DRINK':           ['NA Beverages','Beverages','Drinks'],
-    'NA BEVERAGES':    ['NA Beverages','Beverages','Drinks'],
-    'NA BEVERAGE':     ['NA Beverages','Beverages','Drinks'],
-    'BEVERAGES':       ['NA Beverages','Beverages','Drinks'],
-    'BEVERAGE':        ['NA Beverages','Beverages','Drinks'],
-    'MERCHANDISE':     ['Merchandise'],
-    'CREW SIZE ORDERS':['','Other'],
-  };
+  // Build category sections (MENU_TO_ITEM_CAT is defined earlier in this function)
 
   // ── Product Performance tab
   let sectionsHTML = '';
@@ -13117,7 +13129,10 @@ function openPnLTargetsModal(){
 // ── State
 let PX = { state:'FL', loc:null, year:'2026', month:null,
            cmpMode:false, cmpType:'month', cmpMonth:null, cmpYear:null, cmpLoc:null,
-           viewMode:'month', quarter:0 };
+           viewMode:'month', quarter:0, pnlView:'summary' };
+
+// ── P&L detail-view toggle (Summary ↔ Full Detail)
+function pxSetPnLView(v){ PX.pnlView=v; renderPnLPage(); }
 
 // ── P&L period view helpers
 function pxSetViewMode(vm){
@@ -13210,55 +13225,112 @@ function _pnlExtractCode(label){
   return null;
 }
 
+// ── Classify a P&L row into a display type for hierarchical rendering
+//    Types:  section   → top-level section header (Income, Expenses, …)
+//            group     → account-group header without its own value (3000 Payroll…)
+//            item      → account line with a value (1001 Uber Eats, 3601 Rent, …)
+//            subitem   → dotted sub-account (1101.1 Discounts, 3602.1 Cleaning, …)
+//            subtotal  → "Total for XXXX" within a section
+//            total     → "Total for Income / Cost of Goods Sold / Expenses" — section-level
+//            highlight → Gross Profit · Net Operating Income · Net Income
+function _pnlRowType(label, value){
+  const HIGHLIGHTS=['Gross Profit','Net Operating Income','Net Income','Net Other Income'];
+  const SECTION_TOTAL=/^Total for (Income|Cost of Goods Sold|Expenses|Other Income|Other Expenses|Other)$/;
+  const SECTION_HDR =/^(Income|Cost of Goods Sold|Expenses|Other Income|Other Expenses|Other)$/;
+  if(HIGHLIGHTS.includes(label))    return 'highlight';
+  if(SECTION_TOTAL.test(label))     return 'total';
+  if(label.startsWith('Total for '))return 'subtotal';
+  if(SECTION_HDR.test(label))       return 'section';
+  if(/^\d{4}\.\d/.test(label))      return 'subitem';  // dotted code → deepest level
+  if(/^\d{4}\b/.test(label))        return value!==null ? 'item' : 'group';
+  return 'group'; // fallback for named groups with no code (e.g. "Penalties and settlements")
+}
+
+// ── Indentation level for a P&L row (0 = flush left)
+//    Drives padding-left in the rendered table.
+function _pnlIndentLevel(type, code){
+  if(type==='section'||type==='highlight'||type==='total') return 0;
+  if(type==='subitem') return 3;
+  if(!code) return 1; // unnamed group / item
+  // For subtotals and groups/items: code ending in "00" = top-level group (depth 1)
+  //   e.g. "1000 Sales", "Total for 1000 Sales", "3000 Payroll"
+  // Code not ending in "00" = sub-group or sub-item (depth 2)
+  //   e.g. "1101 Uber Eats Discounts", "3201 Advertising", "3601 Rent"
+  // Exception: item-codes at the top level (1001, 1004, 2010, 2100, etc.) → depth 2
+  const ends00 = code.endsWith('00');
+  if(type==='group')    return ends00 ? 1 : 2;
+  if(type==='subtotal') return ends00 ? 1 : 2;
+  if(type==='item')     return ends00 ? 1 : 2;
+  return 1;
+}
+
 // ── Apply label→field mapping for a single column, and capture ALL rows as structured data
 function _mapPnLFields(rows, col, rec){
   if(!rec.lineItems) rec.lineItems=[];
   if(!rec.codeMap)   rec.codeMap={};
 
+  // Skip metadata rows before the actual P&L content starts.
+  // We look for the first row that is a section header or has a 4-digit account code.
+  let pastStart=false;
+
   for(const row of rows){
     if(!row||row[0]==null) continue;
     const label=String(row[0]).trim();
-    const val=_pnlVal(row, col);
-    if(val===null) continue;
+    if(!label) continue;
 
-    // ── Named field mapping (existing behaviour) ──────────────────────────
-    switch(label){
-      case '1001 Uber Eats':                           rec.uberEatsSales=val; break;
-      case '1004 In-store':                            rec.instoreSales=val; break;
-      case 'Total for 1000 Sales':                     rec.grossSales=val; break;
-      case 'Total for 1100 Discounts given':           rec.discounts=val; break;
-      case 'Total for 1200 Refunds given':             rec.refunds=val; break;
-      case 'Total for Income':                         rec.netSales=val; break;
-      case 'Total for Cost of Goods Sold':             rec.cogs=val; break;
-      case 'Gross Profit':                             rec.grossProfit=val; break;
-      case 'Total for 3000 Payroll expenses':          rec.payroll=val; break;
-      case 'Total for 3100 Supplies & materials':      rec.supplies=val; break;
-      case 'Total for 3200 Advertising & marketing':   rec.advertising=val; break;
-      case 'Total for 3300 Commissions & fees':        rec.commissions=val; break;
-      case 'Total for 3400 Utilities':                 rec.utilities=val; break;
-      case 'Total for 3500 Insurance':                 rec.insurance=val; break;
-      case 'Total for 3600 General business expenses': rec.generalBusiness=val; break;
-      case 'Total for 3700 Taxes & Business Licenses': rec.taxes=val; break;
-      case 'Total for 3800 Professional fees':         rec.professionalFees=val; break;
-      case '4100 Travel':                              rec.travel=val; break;
-      case 'Penalties and settlements':                rec.penalties=val; break;
-      // Rent — several common QuickBooks label patterns
-      case 'Total for 3900 Rent':                      rec.rent=val; break;
-      case 'Total for 4000 Rent':                      rec.rent=val; break;
-      case 'Rent':                                     rec.rent=val; break;
-      case 'Rent Expense':                             rec.rent=val; break;
-      case 'Total Rent':                               rec.rent=val; break;
-      case 'Total for Expenses':                       rec.totalExpenses=val; break;
-      case 'Net Operating Income':                     rec.netOperatingIncome=val; break;
-      case 'Total for Other Income':                   rec.otherIncome=val; break;
-      case 'Total for Other Expenses':                 rec.otherExpenses=val; break;
-      case 'Net Income':                               rec.netIncome=val; break;
+    // Gate: skip title / company name / period / column-header rows
+    if(!pastStart){
+      if(label==='Income'||/^\d{4}\b/.test(label)) pastStart=true;
+      else continue;
     }
 
-    // ── Structured capture: every numeric row → lineItems + codeMap ───────
+    const val=_pnlVal(row, col);
+
+    // ── Named field mapping (only for rows that have a numeric value) ─────
+    if(val!==null){
+      switch(label){
+        case '1001 Uber Eats':                           rec.uberEatsSales=val; break;
+        case '1004 In-store':                            rec.instoreSales=val; break;
+        case 'Total for 1000 Sales':                     rec.grossSales=val; break;
+        case 'Total for 1100 Discounts given':           rec.discounts=val; break;
+        case 'Total for 1200 Refunds given':             rec.refunds=val; break;
+        case 'Total for Income':                         rec.netSales=val; break;
+        case 'Total for Cost of Goods Sold':             rec.cogs=val; break;
+        case 'Gross Profit':                             rec.grossProfit=val; break;
+        case 'Total for 3000 Payroll expenses':          rec.payroll=val; break;
+        case 'Total for 3100 Supplies & materials':      rec.supplies=val; break;
+        case 'Total for 3200 Advertising & marketing':   rec.advertising=val; break;
+        case 'Total for 3300 Commissions & fees':        rec.commissions=val; break;
+        case 'Total for 3400 Utilities':                 rec.utilities=val; break;
+        case 'Total for 3500 Insurance':                 rec.insurance=val; break;
+        case 'Total for 3600 General business expenses': rec.generalBusiness=val; break;
+        case 'Total for 3700 Taxes & Business Licenses': rec.taxes=val; break;
+        case 'Total for 3800 Professional fees':         rec.professionalFees=val; break;
+        case '4100 Travel':                              rec.travel=val; break;
+        case 'Penalties and settlements':                rec.penalties=val; break;
+        case 'Total for 3900 Rent':                      rec.rent=val; break;
+        case 'Total for 4000 Rent':                      rec.rent=val; break;
+        case 'Rent':                                     rec.rent=val; break;
+        case 'Rent Expense':                             rec.rent=val; break;
+        case 'Total Rent':                               rec.rent=val; break;
+        case 'Total for Expenses':                       rec.totalExpenses=val; break;
+        case 'Net Operating Income':                     rec.netOperatingIncome=val; break;
+        case 'Total for Other Income':                   rec.otherIncome=val; break;
+        case 'Total for Other Expenses':                 rec.otherExpenses=val; break;
+        case 'Net Income':                               rec.netIncome=val; break;
+      }
+      // codeMap: every row with a numeric value and an extractable code
+      const code=_pnlExtractCode(label);
+      if(code) rec.codeMap[code]=val;
+    }
+
+    // ── Structured capture: EVERY row → lineItems with full type/indent metadata
+    //    This is used by the renderer to produce the full hierarchical P&L table.
+    //    value=null for group-header / section-header rows (intentional).
     const code=_pnlExtractCode(label);
-    rec.lineItems.push({code, label, value:val});
-    if(code) rec.codeMap[code]=val;
+    const type=_pnlRowType(label, val);
+    const indent=_pnlIndentLevel(type, code);
+    rec.lineItems.push({code, label, value:val, type, indent});
   }
 
   // ── Reconcile known codes from named fields (covers labels without embedded codes)
@@ -13994,44 +14066,127 @@ function renderPnLDashboard(rec, locRecs){
       }).join('')}
     </div>`;
 
-  // ── Full P&L table (QuickBooks order, all lines, % of net sales)
-  //    t types: h2=section header, g=group header, T=total row, B=bold total, s=standard line, ss=sub-line (deeper indent)
-  const cm = rec.codeMap || {};
-  const tRows=[
-    {t:'h2',label:'Income'},
-    {t:'g', label:'Gross Sales',       val:rec.grossSales,      code:'1000'},
-    {t:'s', label:'Uber Eats',         val:rec.uberEatsSales,   code:'1001'},
-    {t:'s', label:'In-Store',          val:rec.instoreSales,    code:'1004'},
-    {t:'s', label:'Discounts',         val:rec.discounts},
-    {t:'s', label:'Refunds',           val:rec.refunds},
-    {t:'T', label:'Net Sales',         val:rec.netSales},
-    {t:'h2',label:'Cost of Goods Sold'},
-    {t:'s', label:'Cost of Goods Sold',val:rec.cogs,            code:'2000', kpi:true},
-    {t:'B', label:'Gross Profit',      val:rec.grossProfit},
-    {t:'h2',label:'Operating Expenses'},
-    {t:'s', label:'Payroll',           val:rec.payroll,         code:'3000'},
-    {t:'s', label:'Supplies & Materials', val:rec.supplies,     code:'3100'},
-    // Sub-line items for D&C — only shown when codeMap has them (new parser)
-    ...(cm['3101']!=null?[{t:'ss',label:'Disposables & Cleaning',val:cm['3101'],code:'3101',kpi:true}]:[]),
-    ...(cm['3102']!=null?[{t:'ss',label:'Inventory Disposable Shrinkage',val:cm['3102'],code:'3102',kpi:true}]:[]),
-    {t:'s', label:'Advertising & Marketing', val:rec.advertising, code:'3200'},
-    {t:'s', label:'Commissions & Fees',val:rec.commissions,     code:'3300'},
-    {t:'s', label:'Utilities',         val:rec.utilities,       code:'3400'},
-    {t:'s', label:'Insurance',         val:rec.insurance,       code:'3500'},
-    {t:'s', label:'General Business',  val:rec.generalBusiness, code:'3600'},
-    ...(rec.taxes?[{t:'s',label:'Taxes & Business Licenses',val:rec.taxes,code:'3700'}]:[]),
-    {t:'s', label:'Professional Fees', val:rec.professionalFees,code:'3800'},
-    ...(rec.travel?[{t:'s',label:'Travel',val:rec.travel}]:[]),
-    ...(rec.penalties?[{t:'s',label:'Penalties & Settlements',val:rec.penalties}]:[]),
-    {t:'T', label:'Total Expenses',    val:rec.totalExpenses},
-    {t:'B', label:'Net Operating Income', val:rec.netOperatingIncome},
-    ...(rec.otherIncome?[{t:'s',label:'Other Income',val:rec.otherIncome}]:[]),
-    ...(rec.otherExpenses?[{t:'s',label:'Other Expenses',val:rec.otherExpenses}]:[]),
-    {t:'B', label:'Net Income',        val:rec.netIncome},
-  ];
+  // ── Full P&L table — dynamic renderer (uses lineItems from full parser) or fallback to tRows
+  const tableHTML=(()=>{
+    const hasLineItems = rec.lineItems && rec.lineItems.length > 0 && !rec._aggregated;
+    const hasTyped = hasLineItems && rec.lineItems.some(li=>li.type);
 
-  const tableHTML=`
-    <div class="pnl-tbl-wrap">
+    // ── DYNAMIC renderer: uses rec.lineItems with type/indent metadata (new full-structure parser)
+    if(hasTyped){
+      const BGSTY={
+        section:  'background:#1e3a5f;color:#fff;',
+        group:    'background:#ede9e0;color:#3b2e1a;',
+        item:     'background:#faf9f6;color:#1e293b;',
+        subitem:  'background:#faf9f6;color:#475569;',
+        subtotal: 'background:#f0ece4;color:#1e293b;',
+        total:    'background:#e4ddd0;color:#1e293b;',
+        highlight:'background:#1d4ed8;color:#fff;',
+      };
+      const FONTSTY={
+        section:  'font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;',
+        group:    'font-size:13px;font-weight:700;',
+        item:     'font-size:13px;font-weight:400;',
+        subitem:  'font-size:12px;font-weight:400;font-style:italic;',
+        subtotal: 'font-size:13px;font-weight:700;',
+        total:    'font-size:14px;font-weight:800;',
+        highlight:'font-size:15px;font-weight:900;',
+      };
+      const BORDERSTY={
+        section:  'border-bottom:1px solid #152b47;',
+        group:    'border-bottom:1px solid #ddd6c8;',
+        item:     'border-bottom:1px solid #f1f0ec;',
+        subitem:  'border-bottom:1px solid #f5f4f0;',
+        subtotal: 'border-top:1.5px solid #c4b89a;border-bottom:1px solid #ddd6c8;',
+        total:    'border-top:2.5px double #a89880;border-bottom:2px solid #a89880;',
+        highlight:'border-top:2px solid #1e40af;border-bottom:2px solid #1e40af;',
+      };
+      const INDENT_PX=[16,32,44,56];
+      const KPI_CODES=['1000','2000','3000','3101','3102'];
+
+      const rows = rec.lineItems.map(li=>{
+        const tp = li.type || 'item';
+        const bg   = BGSTY[tp]   || BGSTY.item;
+        const font = FONTSTY[tp] || FONTSTY.item;
+        const bord = BORDERSTY[tp] || BORDERSTY.item;
+        const indentPx = INDENT_PX[Math.min(li.indent||0, 3)];
+        const isHeader = tp==='section';
+        const isHighlight = tp==='highlight';
+        const code = li.code || '';
+        const codeTag = code && !isHeader && !isHighlight
+          ? `<span style="font-size:9px;font-weight:400;opacity:.55;margin-left:6px;">${code}</span>` : '';
+        const isKpi = KPI_CODES.includes(code);
+        const kpiTag = isKpi && !isHeader
+          ? `<span style="font-size:8px;font-weight:700;background:${isHighlight?'rgba(255,255,255,.25)':'#fef3c7'};color:${isHighlight?'#fff':'#92400e'};border-radius:99px;padding:1px 5px;margin-left:5px;vertical-align:middle;">KPI</span>` : '';
+        const valFmt = li.value!=null ? fmtPnL(li.value) : isHeader ? '' : '—';
+        const negStyle = li.value!=null && li.value<0 && !isHeader && !isHighlight ? 'color:#e03030;' : '';
+        const pctFmt = (li.value!=null && rec.netSales>0 && !isHeader && li.value!==0)
+          ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
+
+        if(isHeader){
+          return `<tr><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
+        }
+        const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
+        return `<tr>
+          <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
+          <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
+          <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
+        </tr>`;
+      }).join('');
+
+      const totalLines = rec.lineItems.length;
+      const valueLines = rec.lineItems.filter(li=>li.value!=null).length;
+      return `<div class="pnl-tbl-wrap">
+        <div class="pnl-tbl-hdr" style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span class="pnl-tbl-hdr-title">Profit & Loss · ${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</span>
+          <span style="font-size:10px;color:#94a3b8;font-weight:400;">${totalLines} rows · ${valueLines} with values · full QuickBooks structure</span>
+        </div>
+        <table class="pnl-tbl" style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#0f2033;color:#fff;">
+              <th style="padding:8px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Line Item</th>
+              <th style="padding:8px 20px;text-align:right;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">Amount</th>
+              <th style="padding:8px 20px;text-align:right;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">% Net Sales</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
+
+    // ── FALLBACK renderer: static tRows (for records imported before full lineItems parser)
+    const cm = rec.codeMap || {};
+    const tRows=[
+      {t:'h2',label:'Income'},
+      {t:'g', label:'Gross Sales',          val:rec.grossSales,       code:'1000'},
+      {t:'s', label:'Uber Eats',            val:rec.uberEatsSales,    code:'1001'},
+      {t:'s', label:'In-Store',             val:rec.instoreSales,     code:'1004'},
+      {t:'s', label:'Discounts',            val:rec.discounts},
+      {t:'s', label:'Refunds',              val:rec.refunds},
+      {t:'T', label:'Net Sales',            val:rec.netSales},
+      {t:'h2',label:'Cost of Goods Sold'},
+      {t:'s', label:'Cost of Goods Sold',   val:rec.cogs,             code:'2000', kpi:true},
+      {t:'B', label:'Gross Profit',         val:rec.grossProfit},
+      {t:'h2',label:'Operating Expenses'},
+      {t:'s', label:'Payroll',              val:rec.payroll,          code:'3000'},
+      {t:'s', label:'Supplies & Materials', val:rec.supplies,         code:'3100'},
+      ...(cm['3101']!=null?[{t:'ss',label:'Disposables & Cleaning',val:cm['3101'],code:'3101',kpi:true}]:[]),
+      ...(cm['3102']!=null?[{t:'ss',label:'Inventory Disposable Shrinkage',val:cm['3102'],code:'3102',kpi:true}]:[]),
+      {t:'s', label:'Advertising & Marketing', val:rec.advertising,  code:'3200'},
+      {t:'s', label:'Commissions & Fees',   val:rec.commissions,      code:'3300'},
+      {t:'s', label:'Utilities',            val:rec.utilities,        code:'3400'},
+      {t:'s', label:'Insurance',            val:rec.insurance,        code:'3500'},
+      {t:'s', label:'General Business',     val:rec.generalBusiness,  code:'3600'},
+      ...(rec.taxes?[{t:'s',label:'Taxes & Business Licenses',val:rec.taxes,code:'3700'}]:[]),
+      {t:'s', label:'Professional Fees',    val:rec.professionalFees, code:'3800'},
+      ...(rec.travel?[{t:'s',label:'Travel',val:rec.travel}]:[]),
+      ...(rec.penalties?[{t:'s',label:'Penalties & Settlements',val:rec.penalties}]:[]),
+      {t:'T', label:'Total Expenses',       val:rec.totalExpenses},
+      {t:'B', label:'Net Operating Income', val:rec.netOperatingIncome},
+      ...(rec.otherIncome?[{t:'s',label:'Other Income',val:rec.otherIncome}]:[]),
+      ...(rec.otherExpenses?[{t:'s',label:'Other Expenses',val:rec.otherExpenses}]:[]),
+      {t:'B', label:'Net Income',           val:rec.netIncome},
+    ];
+    return `<div class="pnl-tbl-wrap">
       <div class="pnl-tbl-hdr">
         <span class="pnl-tbl-hdr-title">Profit & Loss · ${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</span>
       </div>
@@ -14061,43 +14216,8 @@ function renderPnLDashboard(rec, locRecs){
           }).join('')}
         </tbody>
       </table>
-    </div>
-
-    ${(()=>{
-      // Full line items captured from P&L (shown only for single-month records with lineItems)
-      if(!rec.lineItems || rec.lineItems.length===0 || rec._aggregated) return '';
-      const codeItems = rec.lineItems.filter(li=>li.code!=null).sort((a,b)=>Number(a.code)-Number(b.code));
-      if(!codeItems.length) return '';
-      const rows = codeItems.map(li=>{
-        const pct = rec.netSales>0 ? (Math.abs(li.value)/rec.netSales*100).toFixed(1)+'%' : '';
-        const isKpi = ['1000','2000','3000','3101','3102'].includes(li.code);
-        return `<tr style="border-bottom:1px solid #f1f0ec;">
-          <td style="padding:5px 14px;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap;width:60px;">${li.code}</td>
-          <td style="padding:5px 14px;font-size:11px;color:${isKpi?'#1e293b':'#64748b'};font-weight:${isKpi?'600':'400'};">${li.label}${isKpi?'<span style="font-size:8px;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 5px;margin-left:6px;font-weight:700;">KPI</span>':''}</td>
-          <td style="padding:5px 14px;font-size:11px;text-align:right;color:#1e293b;font-weight:600;">${fmtPnL(li.value)}</td>
-          <td style="padding:5px 14px;font-size:11px;text-align:right;color:#94a3b8;">${pct}</td>
-        </tr>`;
-      }).join('');
-      return `<details style="margin-top:8px;" class="pnl-li-details">
-        <summary style="cursor:pointer;padding:10px 16px;font-size:11px;font-weight:700;color:#475569;background:#f8f7f4;border:1.5px solid #e8e2d8;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
-          <span>📋 All Parsed Line Items (${codeItems.length} with account codes)</span>
-          <span style="font-size:10px;color:#94a3b8;">click to expand</span>
-        </summary>
-        <div style="border:1.5px solid #e8e2d8;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead style="background:#f1f0ec;">
-              <tr>
-                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:left;color:#64748b;">Code</th>
-                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:left;color:#64748b;">Account Name</th>
-                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:right;color:#64748b;">Amount</th>
-                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:right;color:#64748b;">% Net Sales</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </details>`;
-    })()}`;
+    </div>`;
+  })();
 
   // ── Feature 1+5: Prime Cost & Payroll benchmark cards
   const pcBorder=primeCostOk?'#15803d':'#b91c1c';
@@ -14456,32 +14576,85 @@ function renderPnLDashboard(rec, locRecs){
     </div>`;
   })();
 
-  el.innerHTML=`
-    <div style="background:#fcfaf4;border-bottom:1px solid var(--border);">${pills}</div>
-    <div class="main">
-      ${anomalyPanelHTML}
-      ${cards}
-      ${benchRow}
-      ${waterfallPanel}
-      <div style="display:grid;${panelCols};gap:20px;margin-bottom:24px;">
-        ${channelPanel}${expensePanel}
+  // ── View toggle bar
+  const isDetail = PX.pnlView === 'detail';
+  const hasFullDetail = rec.lineItems && rec.lineItems.length > 0 && !rec._aggregated && rec.lineItems.some(li=>li.type);
+  const viewToggleBar = `
+    <div class="pnl-view-bar">
+      <span class="pnl-view-bar-label">View</span>
+      <div class="pnl-view-toggle">
+        <button class="pnl-vtog ${!isDetail?'on':''}" onclick="pxSetPnLView('summary')">Summary</button>
+        <button class="pnl-vtog ${isDetail?'on':''}" onclick="pxSetPnLView('detail')">Full Detail</button>
       </div>
-      ${trendPanel}
-      ${yoyPanel}
-      ${locAllRecs.length>=2?`<div class="pnl-yoy-panel">
-        <div class="ui-panel-title">📉 Expense Lines — % of Net Sales by Month <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">Last 12 months — reveals creeping cost trends</span></div>
-        <div style="position:relative;height:240px;"><canvas id="pnl-expense-trend-chart"></canvas></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:8px;">Each line = a cost category as % of net sales for that month. Rising lines = cost creep. Includes all locations loaded for this store.</div>
-      </div>`:''}
-      ${bePanel}
-      ${unitEconPanel}
-      ${pnlKpiPanelHTML}
-      ${tableHTML}
-      ${whatifPanel}
+      ${isDetail && hasFullDetail
+        ? `<span class="pnl-view-bar-hint">${rec.lineItems.length} rows · complete QuickBooks structure</span>`
+        : isDetail && !hasFullDetail
+          ? `<span class="pnl-view-bar-hint" style="color:#d97706;">⚠ Re-import this period to see full line-item detail</span>`
+          : `<span class="pnl-view-bar-hint">Switch to Full Detail for the complete P&L line-item structure</span>`
+      }
     </div>`;
 
-  // Init all charts after DOM
-  if(typeof Chart!=='undefined'){
+  // ── Summary view: KPIs, benchmarks, waterfall, channels, trends, break-even
+  const summaryView = `
+    ${anomalyPanelHTML}
+    ${cards}
+    ${benchRow}
+    ${waterfallPanel}
+    <div style="display:grid;${panelCols};gap:20px;margin-bottom:24px;">
+      ${channelPanel}${expensePanel}
+    </div>
+    ${trendPanel}
+    ${yoyPanel}
+    ${locAllRecs.length>=2?`<div class="pnl-yoy-panel">
+      <div class="ui-panel-title">📉 Expense Lines — % of Net Sales by Month <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">Last 12 months — reveals creeping cost trends</span></div>
+      <div style="position:relative;height:240px;"><canvas id="pnl-expense-trend-chart"></canvas></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;">Each line = a cost category as % of net sales for that month. Rising lines = cost creep. Includes all locations loaded for this store.</div>
+    </div>`:''}
+    ${bePanel}
+    ${unitEconPanel}
+    ${pnlKpiPanelHTML}
+    ${whatifPanel}`;
+
+  // ── Full Detail view: compact KPI strip, anomalies, then the full structured P&L table
+  const compactKpiStrip = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:12px 16px;border-top:3px solid var(--accent);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:4px;">Net Sales</div>
+        <div style="font-size:20px;font-weight:800;color:#1e293b;font-family:'Oswald',sans-serif;">${fmtPnL(rec.netSales)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">${rec._label||MFULL[rec.month]+' '+rec.year}</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:12px 16px;border-top:3px solid #15803d;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:4px;">Gross Profit</div>
+        <div style="font-size:20px;font-weight:800;color:#1e293b;font-family:'Oswald',sans-serif;">${fmtPnL(rec.grossProfit)}</div>
+        <div style="font-size:10px;color:#15803d;font-weight:600;margin-top:3px;">${grossMarginPct}% margin</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:12px 16px;border-top:3px solid #b91c1c;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:4px;">Total Expenses</div>
+        <div style="font-size:20px;font-weight:800;color:#1e293b;font-family:'Oswald',sans-serif;">${fmtPnL(rec.totalExpenses)}</div>
+        <div style="font-size:10px;color:#b91c1c;font-weight:600;margin-top:3px;">${expPct}% of net sales</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:12px 16px;border-top:3px solid ${netCol};">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:4px;">Net Income</div>
+        <div style="font-size:20px;font-weight:800;color:${netCol};font-family:'Oswald',sans-serif;">${fmtPnL(rec.netIncome)}</div>
+        <div style="font-size:10px;color:${netCol};font-weight:600;margin-top:3px;">${netMarginPct}% margin</div>
+      </div>
+    </div>`;
+
+  const detailView = `
+    ${compactKpiStrip}
+    ${anomalyPanelHTML}
+    <div class="pnl-detail-section-lbl">📋 Full P&L Structure</div>
+    ${tableHTML}`;
+
+  el.innerHTML=`
+    <div style="background:#fcfaf4;border-bottom:1px solid var(--border);">${pills}</div>
+    ${viewToggleBar}
+    <div class="main">
+      ${isDetail ? detailView : summaryView}
+    </div>`;
+
+  // Init all charts after DOM — only needed in Summary view (charts don't exist in Detail DOM)
+  if(typeof Chart!=='undefined' && !isDetail){
     setTimeout(()=>{
       // ── Chart A: Revenue Trend (Net Sales + Gross Profit + Net Income bars)
       if(trendRecs.length>=2){
