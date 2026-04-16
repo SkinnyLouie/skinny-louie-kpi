@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v46.0 -->
+<!-- BUILD: 2026-04-15-v47.0 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2806,6 +2806,29 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pf-hs-red{background:#fee2e2;color:#991b1b;}
 .pf-sort-arr{font-size:9px;margin-left:2px;opacity:.6;}
 .pf-empty{padding:48px;text-align:center;color:#94a3b8;font-size:13px;}
+/* ── Store Intelligence sections ────────────────── */
+.pf-alert-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#fff;border:1.5px solid #fecaca;margin-bottom:8px;}
+.pf-alert-item.warn{border-color:#fed7aa;}
+.pf-alert-icon{font-size:20px;flex-shrink:0;}
+.pf-alert-loc{font-weight:700;color:#1e293b;font-size:13px;line-height:1.3;}
+.pf-alert-kpi{font-size:12px;color:#64748b;margin-top:1px;}
+.pf-alert-actual{font-size:15px;font-weight:800;color:#dc2626;line-height:1.2;}
+.pf-alert-tgt{font-size:11px;color:#94a3b8;}
+.pf-top-store{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;}
+.pf-top-store-loc{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:6px;}
+.pf-rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.pf-rank-num{width:22px;font-size:12px;font-weight:800;color:#94a3b8;text-align:center;flex-shrink:0;}
+.pf-rank-loc{flex:1;font-weight:600;color:#1e293b;font-size:13px;}
+.pf-rank-bar-wrap{width:100px;background:#f1f5f9;border-radius:4px;height:7px;overflow:hidden;flex-shrink:0;}
+.pf-rank-bar{height:7px;border-radius:4px;transition:width .3s;}
+.pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:32px;}
+.pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:14px 16px;}
+.pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;}
+.pf-kpi-tgt-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;}
+.pf-kpi-tgt-label{color:#64748b;}
+.pf-kpi-tgt-val{font-weight:700;font-size:13px;}
+.pf-kpi-hit{color:#166534;}
+.pf-kpi-miss{color:#dc2626;}
 .adm-act-save{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 22px;border-radius:8px;border:1.5px solid #7e2023;cursor:pointer;transition:opacity .15s;}
 .adm-act-save:hover{opacity:.88;}
 .adm-act-full{background:transparent;color:#1e3a5f;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:9px 16px;border-radius:8px;border:1.5px solid #1e3a5f;cursor:pointer;transition:all .15s;}
@@ -3031,13 +3054,13 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <div id="hcard-portfolio" class="hcard c1" onclick="goPortfolio()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">🏪</span>
       <div style="flex:1;">
-        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">My Stores</div>
-        <div class="hcard-desc">Portfolio-wide summary across all your stores. Food cost, labor, D&amp;C, health scores, and a sortable side-by-side comparison — all in one view.</div>
+        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">Store Intelligence</div>
+        <div class="hcard-desc">Compare your stores side-by-side. Instant visibility into which store leads, which needs attention, and exactly which KPIs are missing target — per store, not combined.</div>
         <div class="dm-rpt-meta">
-          <span class="dm-rpt-chip">📊 KPI Summary</span>
-          <span class="dm-rpt-chip">🏆 Top Performer</span>
           <span class="dm-rpt-chip">⚠️ Needs Attention</span>
-          <span class="dm-rpt-chip">📋 Store Comparison</span>
+          <span class="dm-rpt-chip">🏆 Top Performers</span>
+          <span class="dm-rpt-chip">📊 Store Comparison</span>
+          <span class="dm-rpt-chip">🎯 Targets vs Actual</span>
         </div>
       </div>
       <div style="flex-shrink:0;text-align:center;">
@@ -15483,167 +15506,192 @@ function renderPortfolioPage(){
     return;
   }
 
-  // ── Phase 1: Portfolio Summary ────────────────────────────────────────────
-  let totalSales=0,tfFood=0,fBase=0,tfLabor=0,lBase=0,tfDC=0,dBase=0;
-  let uberSum=0,uberN=0,grTotal=0;
+  let html='';
+
+  // ── SECTION 1: Needs Attention ────────────────────────────────────────────
+  const alerts=[];
   for(const s of stores){
-    const y=s.ytd;
-    totalSales+=y.ts;
-    tfFood+=y.tf;  fBase+=y.fBase;
-    tfLabor+=y.tla; lBase+=y.lBase;
-    tfDC+=y.tdc;   dBase+=y.dBase;
-    if(s.uber!=null){uberSum+=s.uber;uberN++;}
-    if(s.grNew)grTotal+=s.grNew;
+    const y=s.ytd; const loc=s.loc;
+    if(y.fpct!=null && y.fpct>DEFAULT_TGTS.fp){
+      const over=y.fpct-DEFAULT_TGTS.fp;
+      alerts.push({loc,severity:over*200,kpi:'Food Cost',icon:'🍔',sev:over>0.05?'high':'med',
+        actual:fmtP(y.fpct),target:fmtP(DEFAULT_TGTS.fp),delta:`+${(over*100).toFixed(1)}% over target`});
+    }
+    if(y.lpct!=null && y.lpct>DEFAULT_TGTS.lp){
+      const over=y.lpct-DEFAULT_TGTS.lp;
+      alerts.push({loc,severity:over*200,kpi:'Labor',icon:'👥',sev:over>0.05?'high':'med',
+        actual:fmtP(y.lpct),target:fmtP(DEFAULT_TGTS.lp),delta:`+${(over*100).toFixed(1)}% over target`});
+    }
+    if(s.uber!=null && s.uber<DEFAULT_TGTS.uber){
+      const gap=DEFAULT_TGTS.uber-s.uber;
+      alerts.push({loc,severity:gap*30,kpi:'Uber Rating',icon:'⭐',sev:gap>0.2?'high':'med',
+        actual:s.uber.toFixed(2),target:DEFAULT_TGTS.uber.toFixed(1),delta:`-${gap.toFixed(2)} below target`});
+    }
+    if(y.dpct!=null && y.dpct>DEFAULT_TGTS.dp){
+      const over=y.dpct-DEFAULT_TGTS.dp;
+      alerts.push({loc,severity:over*150,kpi:'D&C',icon:'🧹',sev:over>0.01?'high':'med',
+        actual:fmtP(y.dpct),target:fmtP(DEFAULT_TGTS.dp),delta:`+${(over*100).toFixed(1)}% over target`});
+    }
   }
-  const avgFP=fBase>0?tfFood/fBase:null;
-  const avgLP=lBase>0?tfLabor/lBase:null;
-  const avgDP=dBase>0?tfDC/dBase:null;
-  const avgUber=uberN>0?uberSum/uberN:null;
-  const n=stores.length;
+  alerts.sort((a,b)=>b.severity-a.severity);
+  const topAlerts=alerts.slice(0,5);
 
-  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
-  const best=ranked[0]||null;
-  const worst=ranked[ranked.length-1]||null;
-  const showWorst=worst&&worst.loc!==best?.loc;
-
-  let html=`<div class="pf-section-hdr">Portfolio Summary · ${_pfYear}</div>`;
-
-  // Summary cards
-  html+=`<div class="pf-cards">
-    <div class="pf-card accent">
-      <div class="pf-card-label">My Stores</div>
-      <div class="pf-card-value">${n}</div>
-      <div class="pf-card-sub">${n===1?'store':'stores'} under access</div>
-    </div>
-    <div class="pf-card">
-      <div class="pf-card-label">Net Sales YTD</div>
-      <div class="pf-card-value">${fmtK(totalSales)}</div>
-      <div class="pf-card-sub">across ${n} ${n===1?'store':'stores'}</div>
-    </div>
-    <div class="pf-card ${avgFP!=null?(avgFP<=DEFAULT_TGTS.fp?'good':'warn'):''}">
-      <div class="pf-card-label">Avg Food Cost</div>
-      <div class="pf-card-value">${fmtP(avgFP)||'—'}</div>
-      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.fp*100).toFixed(0)}%</div>
-    </div>
-    <div class="pf-card ${avgLP!=null?(avgLP<=DEFAULT_TGTS.lp?'good':'warn'):''}">
-      <div class="pf-card-label">Avg Labor</div>
-      <div class="pf-card-value">${fmtP(avgLP)||'—'}</div>
-      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.lp*100).toFixed(0)}%</div>
-    </div>
-    <div class="pf-card">
-      <div class="pf-card-label">Avg D&amp;C</div>
-      <div class="pf-card-value">${fmtP(avgDP)||'—'}</div>
-      <div class="pf-card-sub">Target ≤ ${(DEFAULT_TGTS.dp*100).toFixed(0)}%</div>
-    </div>
-    <div class="pf-card ${avgUber!=null?(avgUber>=DEFAULT_TGTS.uber?'good':'warn'):''}">
-      <div class="pf-card-label">Avg Uber Rating</div>
-      <div class="pf-card-value">${avgUber!=null?avgUber.toFixed(2):'—'}</div>
-      <div class="pf-card-sub">Target ≥ ${DEFAULT_TGTS.uber}</div>
-    </div>
-    ${grTotal>0?`<div class="pf-card good">
-      <div class="pf-card-label">Google Reviews</div>
-      <div class="pf-card-value">+${grTotal}</div>
-      <div class="pf-card-sub">new reviews in ${_pfYear}</div>
-    </div>`:''}
-  </div>`;
-
-  // Best / needs-attention performers
-  if(best||showWorst){
-    html+=`<div class="pf-performers">`;
-    if(best)      html+=`<div class="pf-performer best">
-      <div class="pf-performer-lbl">🏆 Best Performer</div>
-      <div class="pf-performer-name">${best.loc}</div>
-      <div class="pf-performer-score">Health Score: ${best.hs}</div>
-      <div class="pf-card-sub" style="margin-top:4px;">${[
-        best.ytd.fpct!=null?'Food '+fmtP(best.ytd.fpct):null,
-        best.ytd.lpct!=null?'Labor '+fmtP(best.ytd.lpct):null,
-      ].filter(Boolean).join(' · ')}</div>
-    </div>`;
-    if(showWorst) html+=`<div class="pf-performer worst">
-      <div class="pf-performer-lbl">⚠️ Needs Attention</div>
-      <div class="pf-performer-name">${worst.loc}</div>
-      <div class="pf-performer-score">Health Score: ${worst.hs}</div>
-      <div class="pf-card-sub" style="margin-top:4px;">${[
-        worst.ytd.fpct!=null?'Food '+fmtP(worst.ytd.fpct):null,
-        worst.ytd.lpct!=null?'Labor '+fmtP(worst.ytd.lpct):null,
-      ].filter(Boolean).join(' · ')}</div>
-    </div>`;
+  html+=`<div class="pf-section-hdr">⚠️ Needs Attention</div>`;
+  if(!topAlerts.length){
+    html+=`<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 18px;color:#166534;font-size:13px;font-weight:600;margin-bottom:28px;">✅ All stores are on target for ${_pfYear}.</div>`;
+  } else {
+    html+=`<div style="margin-bottom:28px;">`;
+    for(const a of topAlerts){
+      html+=`<div class="pf-alert-item${a.sev==='high'?'':' warn'}">
+        <div class="pf-alert-icon">${a.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="pf-alert-loc">${a.loc}</div>
+          <div class="pf-alert-kpi">${a.kpi} · ${a.delta}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="pf-alert-actual">${a.actual}</div>
+          <div class="pf-alert-tgt">tgt ${a.target}</div>
+        </div>
+      </div>`;
+    }
     html+=`</div>`;
   }
 
-  // ── Phase 2: Store Comparison ──────────────────────────────────────────────
+  // ── SECTION 2: Top Performing Stores ─────────────────────────────────────
+  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
+  const topN=Math.min(3,ranked.length);
+  if(topN>0){
+    html+=`<div class="pf-section-hdr">🏆 Top Performing Stores</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;">`;
+    for(let i=0;i<topN;i++){
+      const s=ranked[i];
+      const medal=i===0?'🥇':i===1?'🥈':'🥉';
+      const stats=[
+        s.ytd.fpct!=null?`Food ${fmtP(s.ytd.fpct)}`:null,
+        s.ytd.lpct!=null?`Labor ${fmtP(s.ytd.lpct)}`:null,
+        s.uber!=null?`Uber ${s.uber.toFixed(2)}`:null,
+        s.ytd.ts>0?`Sales ${fmtK(s.ytd.ts)}`:null,
+      ].filter(Boolean);
+      html+=`<div class="pf-top-store">
+        <div style="font-size:24px;margin-bottom:4px;">${medal}</div>
+        <div class="pf-top-store-loc">${s.loc}</div>
+        <div style="margin-bottom:10px;">${_pfHSPill(s.hs)}</div>
+        <div style="font-size:12px;color:#64748b;line-height:1.8;">${stats.join('<br>')}</div>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // ── SECTION 3: Store Comparison Table ────────────────────────────────────
   const COLS=[
-    {k:'sales',lbl:'Net Sales YTD', asc:false},
-    {k:'fp',   lbl:'Food Cost',     asc:true },
-    {k:'lp',   lbl:'Labor',         asc:true },
-    {k:'dp',   lbl:'D&amp;C',       asc:true },
-    {k:'check',lbl:'Avg Check',     asc:false},
-    {k:'uber', lbl:'Uber',          asc:false},
-    {k:'hs',   lbl:'Health',        asc:false},
+    {k:'sales',   lbl:'Net Sales',  asc:false},
+    {k:'fp',      lbl:'Food Cost',  asc:true },
+    {k:'lp',      lbl:'Labor',      asc:true },
+    {k:'dp',      lbl:'D&amp;C',    asc:true },
+    {k:'uber',    lbl:'Uber',       asc:false},
+    {k:'reviews', lbl:'Reviews',    asc:false},
+    {k:'check',   lbl:'Avg Check',  asc:false},
+    {k:'hs',      lbl:'Health',     asc:false},
   ];
   const getVal=(s,k)=>{
-    if(k==='sales') return s.ytd?.ts??null;
-    if(k==='fp')    return s.ytd?.fpct??null;
-    if(k==='lp')    return s.ytd?.lpct??null;
-    if(k==='dp')    return s.ytd?.dpct??null;
-    if(k==='check') return s.avgCheck;
-    if(k==='uber')  return s.uber;
-    if(k==='hs')    return s.hs;
+    if(k==='sales')   return s.ytd?.ts??null;
+    if(k==='fp')      return s.ytd?.fpct??null;
+    if(k==='lp')      return s.ytd?.lpct??null;
+    if(k==='dp')      return s.ytd?.dpct??null;
+    if(k==='check')   return s.avgCheck;
+    if(k==='uber')    return s.uber;
+    if(k==='reviews') return s.grNew;
+    if(k==='hs')      return s.hs;
     return null;
   };
-
-  // Per-column best/worst (best=lowest for cost cols, highest for rest).
   const bw={};
   for(const {k,asc} of COLS){
     const vals=stores.map(s=>getVal(s,k)).filter(v=>v!=null);
     if(!vals.length){bw[k]={b:null,w:null};continue;}
     bw[k]={b:asc?Math.min(...vals):Math.max(...vals),w:asc?Math.max(...vals):Math.min(...vals)};
   }
-
-  // Sort
   const sorted=[...stores].sort((a,b)=>{
     const av=getVal(a,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
     const bv=getVal(b,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
     return _pfSortDir==='asc'?(av>bv?1:-1):(av<bv?1:-1);
   });
-
   const arr=k=>{
-    if(_pfSortCol!==k) return'<span class="pf-sort-arr">↕</span>';
+    if(_pfSortCol!==k)return'<span class="pf-sort-arr">↕</span>';
     return`<span class="pf-sort-arr">${_pfSortDir==='desc'?'↓':'↑'}</span>`;
   };
-
   const fmtCell=(k,s)=>{
     const v=getVal(s,k);
-    if(v==null) return`<td style="color:#94a3b8;">—</td>`;
-    if(k==='hs') return`<td>${_pfHSPill(v)}</td>`;
+    if(v==null)return`<td style="text-align:center;color:#94a3b8;">—</td>`;
+    if(k==='hs')return`<td style="text-align:center;">${_pfHSPill(v)}</td>`;
     let txt;
     if(k==='sales')  txt=fmtK(v);
-    else if(['fp','lp','dp'].includes(k)) txt=fmtP(v)||'—';
+    else if(k==='fp'||k==='lp'||k==='dp') txt=fmtP(v)||'—';
     else if(k==='check') txt=fmt$(v);
     else if(k==='uber')  txt=v.toFixed(2);
+    else if(k==='reviews') txt=v>0?`+${v}`:'—';
     else txt=String(v);
     const {b,w}=bw[k]||{};
-    let st='';
+    let st='text-align:center;';
     if(b!=null&&b!==w){
-      if(Math.abs(v-b)<0.00001)      st='color:#166534;font-weight:700;';
-      else if(Math.abs(v-w)<0.00001) st='color:#991b1b;font-weight:700;';
+      if(Math.abs(v-b)<0.00001) st+='color:#166534;font-weight:700;';
+      else if(Math.abs(v-w)<0.00001) st+='color:#991b1b;font-weight:700;';
     }
-    return`<td${st?` style="${st}"`:''}>${txt}</td>`;
+    return`<td style="${st}">${txt}</td>`;
   };
 
-  html+=`<div class="pf-section-hdr" style="margin-top:32px;">Store Comparison</div>
-  <div class="pf-tbl-wrap"><table class="pf-tbl">
+  html+=`<div class="pf-section-hdr">📊 Store Comparison · ${_pfYear}</div>
+  <div class="pf-tbl-wrap" style="margin-bottom:32px;"><table class="pf-tbl">
     <thead><tr>
       <th style="text-align:left;" onclick="pfSort('loc')">Store ${arr('loc')}</th>
       ${COLS.map(({k,lbl})=>`<th class="${_pfSortCol===k?'sort-on':''}" onclick="pfSort('${k}')">${lbl} ${arr(k)}</th>`).join('')}
     </tr></thead>
     <tbody>
     ${sorted.map(s=>`<tr>
-      <td style="font-weight:600;color:#1e293b;">${s.loc}</td>
+      <td style="font-weight:600;color:#1e293b;white-space:nowrap;">${s.loc}</td>
       ${COLS.map(({k})=>fmtCell(k,s)).join('')}
     </tr>`).join('')}
     </tbody>
   </table></div>`;
+
+  // ── SECTION 4: Health Score Ranking ──────────────────────────────────────
+  if(ranked.length>1){
+    const maxHs=ranked[0].hs||100;
+    html+=`<div class="pf-section-hdr">🏅 Health Score Ranking</div>
+    <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:8px 20px;margin-bottom:32px;">`;
+    ranked.forEach((s,idx)=>{
+      const barPct=maxHs>0?(s.hs/maxHs*100).toFixed(1):0;
+      const barColor=s.hs>=85?'#16a34a':s.hs>=70?'#ca8a04':s.hs>=55?'#ea580c':'#dc2626';
+      html+=`<div class="pf-rank-row" style="${idx===ranked.length-1?'border-bottom:none;':''}">
+        <div class="pf-rank-num">${idx+1}</div>
+        <div class="pf-rank-loc">${s.loc}</div>
+        <div class="pf-rank-bar-wrap"><div class="pf-rank-bar" style="width:${barPct}%;background:${barColor};"></div></div>
+        <div style="width:52px;text-align:right;">${_pfHSPill(s.hs)}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // ── SECTION 5: KPI Targets vs Actual ─────────────────────────────────────
+  html+=`<div class="pf-section-hdr">🎯 KPI Targets vs Actual · ${_pfYear}</div>
+  <div class="pf-kpi-tgt-grid">`;
+  for(const s of stores){
+    const y=s.ytd;
+    const mkRow=(lbl,actual,tgtStr,hit)=>{
+      if(actual==null)return`<div class="pf-kpi-tgt-row"><span class="pf-kpi-tgt-label">${lbl}</span><span style="color:#94a3b8;font-size:12px;">—</span></div>`;
+      return`<div class="pf-kpi-tgt-row">
+        <span class="pf-kpi-tgt-label">${lbl} <span style="font-size:10px;color:#b0b8c4;">tgt ${tgtStr}</span></span>
+        <span class="pf-kpi-tgt-val ${hit?'pf-kpi-hit':'pf-kpi-miss'}">${hit?'✓':'✗'} ${actual}</span>
+      </div>`;
+    };
+    html+=`<div class="pf-kpi-tgt-item">
+      <div class="pf-kpi-tgt-store">${s.loc}</div>
+      ${mkRow('Food Cost', y.fpct!=null?fmtP(y.fpct):null, fmtP(DEFAULT_TGTS.fp), y.fpct!=null&&y.fpct<=DEFAULT_TGTS.fp)}
+      ${mkRow('Labor',     y.lpct!=null?fmtP(y.lpct):null, fmtP(DEFAULT_TGTS.lp), y.lpct!=null&&y.lpct<=DEFAULT_TGTS.lp)}
+      ${mkRow('D&C',       y.dpct!=null?fmtP(y.dpct):null, fmtP(DEFAULT_TGTS.dp), y.dpct!=null&&y.dpct<=DEFAULT_TGTS.dp)}
+      ${mkRow('Uber',      s.uber!=null?s.uber.toFixed(2):null, DEFAULT_TGTS.uber.toFixed(1), s.uber!=null&&s.uber>=DEFAULT_TGTS.uber)}
+    </div>`;
+  }
+  html+=`</div>`;
 
   wrap.innerHTML=html;
 }
@@ -15687,7 +15735,7 @@ migrate();
 <div id="pg-portfolio" style="display:none;">
   <div class="pf-topbar">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span class="pf-topbar-title">🏪 MY STORES</span>
+    <span class="pf-topbar-title">🏪 STORE INTELLIGENCE</span>
   </div>
   <div class="pf-body" id="pf-body"></div>
 </div>
