@@ -3004,6 +3004,30 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .adm-toggle input:checked + .adm-toggle-slider::before{transform:translateX(16px);}
 /* Action bar */
 .adm-action-bar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:#fff;border-top:1px solid #e8e2d8;position:sticky;bottom:0;}
+/* ── Admin Tabs ── */
+.adm-tabs{display:flex;gap:0;border-bottom:1px solid #e8e2d8;background:#fff;flex-shrink:0;padding:0 24px;}
+.adm-tab-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:14px 20px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s;letter-spacing:.06em;text-transform:uppercase;}
+.adm-tab-btn:hover{color:#64748b;}
+.adm-tab-btn.active{color:#7e2023;border-bottom-color:#7e2023;}
+/* ── Activity Logs ── */
+.act-log-wrap{flex:1;overflow-y:auto;padding:24px 28px;}
+.act-log-filters{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.act-log-filters select,.act-log-filters input{font-size:12px;padding:8px 12px;border:1.5px solid #e8e2d8;border-radius:8px;background:#fff;color:#1e293b;font-weight:600;}
+.act-log-filters select:focus,.act-log-filters input:focus{border-color:#7e2023;outline:none;}
+.act-stats{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.act-stat-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;min-width:140px;flex:1;}
+.act-stat-val{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;color:#1e293b;letter-spacing:.02em;}
+.act-stat-label{font-size:11px;font-weight:700;color:#94a3b8;margin-top:2px;letter-spacing:.04em;text-transform:uppercase;}
+.act-log-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e8e2d8;}
+.act-log-table th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;padding:12px 14px;text-align:left;background:#fafaf9;border-bottom:1px solid #e8e2d8;white-space:nowrap;}
+.act-log-table td{padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b;vertical-align:middle;}
+.act-log-table tr:last-child td{border-bottom:none;}
+.act-log-table tr:hover td{background:#fafaf9;}
+.act-dur-badge{display:inline-block;background:#f0fdf4;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
+.act-dur-badge.short{background:#fef3c7;color:#92400e;}
+.act-dur-badge.long{background:#dbeafe;color:#1e40af;}
+.act-online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:6px;vertical-align:middle;animation:act-pulse 2s infinite;}
+@keyframes act-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
 /* ── My Stores · Portfolio Intelligence ─────────── */
 #pg-portfolio{display:none;background:#faf9f7;min-height:calc(100vh - 62px);}
@@ -3916,7 +3940,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_deals_v1','sl_hr_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_deals_v1','sl_hr_v1','sl_activity_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4124,6 +4148,7 @@ async function doLogin(){
 }
 
 async function doLogout(){
+  try{ _actEndSession(); }catch(e){}
   await _supa.auth.signOut();
   _slUser = null; _slDisplayName = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slLocations = null; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
@@ -4196,6 +4221,8 @@ async function _initApp(user){
   // v4: rename stale loc values (Dania→Dania Beach, Nomad→NoMad) — runs after cloud load
   try{ _slRunLocRenameMigration(); } catch(e){ console.error('[SL] v4 migration error:', e); }
   _applyRoleUI();
+  // Start activity tracking session
+  try{ _actStartSession(); }catch(e){ console.error('[SL] Activity tracking error:', e); }
   render();
 }
 
@@ -6049,6 +6076,8 @@ function _admSetScope(scope){
 //     );
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
+  // Restore active tab state
+  admSwitchTab(_admActiveTab || 'users');
   const scroll = document.getElementById('adm-user-scroll');
   if(!scroll) return;
 
@@ -6338,6 +6367,210 @@ function _adminInviteUser(){
   // no-op: invite path is not available via anon key.
   // Left in place for future backend integration via Edge Function.
 }
+
+// ══════════════════════════════════════════════════
+//  ACTIVITY LOGS — Session Tracking & Admin Analytics
+// ══════════════════════════════════════════════════
+let _actSessionId = null;
+let _actHeartbeatTimer = null;
+const _ACT_KEY = 'sl_activity_v1';
+const _ACT_HEARTBEAT_SEC = 60;
+const _ACT_MAX_ENTRIES = 2000; // cap to prevent unbounded growth
+
+function _actGetLog(){ try{ return JSON.parse(localStorage.getItem(_ACT_KEY)) || []; }catch(e){ return []; } }
+function _actSaveLog(log){ localStorage.setItem(_ACT_KEY, JSON.stringify(log)); }
+
+function _actStartSession(){
+  if(!_slUser) return;
+  _actSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const entry = {
+    id: _actSessionId,
+    userId: _slUser.id,
+    userName: _slDisplayName || _slUser.email?.split('@')[0] || 'Unknown',
+    userRole: _slRole || 'unknown',
+    loginAt: new Date().toISOString(),
+    lastSeenAt: new Date().toISOString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
+  };
+  const log = _actGetLog();
+  log.push(entry);
+  // Trim old entries if over cap
+  if(log.length > _ACT_MAX_ENTRIES) log.splice(0, log.length - _ACT_MAX_ENTRIES);
+  _actSaveLog(log);
+
+  // Heartbeat: update lastSeenAt every 60s
+  if(_actHeartbeatTimer) clearInterval(_actHeartbeatTimer);
+  _actHeartbeatTimer = setInterval(_actHeartbeat, _ACT_HEARTBEAT_SEC * 1000);
+  // Also update on visibility change (tab re-focus)
+  document.addEventListener('visibilitychange', _actVisibility);
+}
+
+function _actHeartbeat(){
+  if(!_actSessionId || !_slUser) return;
+  const log = _actGetLog();
+  const idx = log.findIndex(r => r.id === _actSessionId);
+  if(idx === -1) return;
+  log[idx].lastSeenAt = new Date().toISOString();
+  _actSaveLog(log);
+}
+
+function _actVisibility(){
+  if(document.visibilityState === 'visible') _actHeartbeat();
+}
+
+function _actEndSession(){
+  _actHeartbeat(); // final update
+  if(_actHeartbeatTimer){ clearInterval(_actHeartbeatTimer); _actHeartbeatTimer = null; }
+  document.removeEventListener('visibilitychange', _actVisibility);
+  _actSessionId = null;
+}
+window.addEventListener('beforeunload', () => { try{ _actHeartbeat(); }catch(e){} });
+
+function _actDuration(loginAt, lastSeenAt){
+  const ms = new Date(lastSeenAt) - new Date(loginAt);
+  if(isNaN(ms) || ms < 0) return '—';
+  const totalMin = Math.round(ms / 60000);
+  if(totalMin < 1) return '< 1 min';
+  if(totalMin < 60) return totalMin + ' min';
+  const hrs = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  return hrs + 'h ' + (mins > 0 ? mins + 'm' : '');
+}
+
+function _actDurationClass(loginAt, lastSeenAt){
+  const ms = new Date(lastSeenAt) - new Date(loginAt);
+  const mins = ms / 60000;
+  if(mins < 5) return 'short';
+  if(mins > 60) return 'long';
+  return '';
+}
+
+function _actIsOnline(lastSeenAt){
+  const diff = Date.now() - new Date(lastSeenAt).getTime();
+  return diff < (_ACT_HEARTBEAT_SEC * 2.5 * 1000); // within 2.5 heartbeats = online
+}
+
+// ── Admin Tab Switcher ──
+let _admActiveTab = 'users';
+function admSwitchTab(tab){
+  _admActiveTab = tab;
+  // Toggle tab buttons
+  document.querySelectorAll('.adm-tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('adm-tab-' + tab);
+  if(btn) btn.classList.add('active');
+  // Toggle panels
+  const usersPanel = document.getElementById('adm-panel-users');
+  const actPanel   = document.getElementById('adm-panel-activity');
+  if(usersPanel) usersPanel.style.display = tab === 'users' ? 'flex' : 'none';
+  if(actPanel)   actPanel.style.display   = tab === 'activity' ? 'flex' : 'none';
+  if(tab === 'activity') renderActivityLogs();
+}
+
+// ── Activity Logs Renderer ──
+let _actFilterUser = 'ALL';
+let _actFilterDate = '';
+let _actFilterRange = '30'; // days
+
+function renderActivityLogs(){
+  const wrap = document.getElementById('act-log-wrap');
+  if(!wrap) return;
+
+  const allLog = _actGetLog();
+
+  // Build unique users for dropdown
+  const userMap = {};
+  allLog.forEach(r => { userMap[r.userId] = r.userName; });
+  const userOpts = Object.entries(userMap).sort((a,b) => a[1].localeCompare(b[1]));
+
+  // Apply filters
+  let filtered = [...allLog];
+  if(_actFilterUser !== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
+  if(_actFilterDate){
+    filtered = filtered.filter(r => r.loginAt.startsWith(_actFilterDate));
+  } else if(_actFilterRange !== 'all'){
+    const days = parseInt(_actFilterRange) || 30;
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    filtered = filtered.filter(r => r.loginAt >= cutoff);
+  }
+
+  // Sort newest first
+  filtered.sort((a,b) => b.loginAt.localeCompare(a.loginAt));
+
+  // Compute stats
+  const totalSessions = filtered.length;
+  const uniqueUsers = new Set(filtered.map(r => r.userId)).size;
+  const onlineNow = allLog.filter(r => _actIsOnline(r.lastSeenAt));
+  const uniqueOnline = [...new Set(onlineNow.map(r => r.userId))];
+  let avgDurMin = 0;
+  if(filtered.length){
+    const totalMs = filtered.reduce((sum, r) => sum + (new Date(r.lastSeenAt) - new Date(r.loginAt)), 0);
+    avgDurMin = Math.round(totalMs / filtered.length / 60000);
+  }
+
+  // Build HTML
+  let html = '';
+
+  // Filters
+  html += '<div class="act-log-filters">';
+  html += '<select onchange="_actFilterUser=this.value;renderActivityLogs()">';
+  html += '<option value="ALL"' + (_actFilterUser==='ALL'?' selected':'') + '>All Users</option>';
+  userOpts.forEach(([uid, name]) => {
+    const esc = name.replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    html += '<option value="'+uid+'"' + (_actFilterUser===uid?' selected':'') + '>' + esc + '</option>';
+  });
+  html += '</select>';
+  html += '<select onchange="_actFilterRange=this.value;_actFilterDate=\'\';renderActivityLogs()">';
+  ['7','14','30','60','90','all'].forEach(v => {
+    const label = v === 'all' ? 'All Time' : 'Last ' + v + ' days';
+    html += '<option value="'+v+'"' + (_actFilterRange===v?' selected':'') + '>' + label + '</option>';
+  });
+  html += '</select>';
+  html += '<input type="date" value="'+(_actFilterDate||'')+'" onchange="_actFilterDate=this.value;renderActivityLogs()" title="Filter by specific date" style="max-width:160px;">';
+  if(_actFilterDate) html += '<button onclick="_actFilterDate=\'\';renderActivityLogs()" style="background:none;border:1px solid #e8e2d8;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;color:#94a3b8;">✕ Clear date</button>';
+  html += '</div>';
+
+  // Stats
+  html += '<div class="act-stats">';
+  html += '<div class="act-stat-card"><div class="act-stat-val">' + uniqueOnline.length + '</div><div class="act-stat-label"><span class="act-online-dot"></span>Online Now</div></div>';
+  html += '<div class="act-stat-card"><div class="act-stat-val">' + totalSessions + '</div><div class="act-stat-label">Sessions</div></div>';
+  html += '<div class="act-stat-card"><div class="act-stat-val">' + uniqueUsers + '</div><div class="act-stat-label">Unique Users</div></div>';
+  html += '<div class="act-stat-card"><div class="act-stat-val">' + (avgDurMin < 60 ? avgDurMin + 'm' : Math.floor(avgDurMin/60) + 'h ' + (avgDurMin%60) + 'm') + '</div><div class="act-stat-label">Avg Duration</div></div>';
+  html += '</div>';
+
+  // Table
+  if(filtered.length === 0){
+    html += '<div style="text-align:center;padding:60px 0;color:#94a3b8;font-size:13px;">No activity records found for the selected filters.</div>';
+  } else {
+    html += '<table class="act-log-table">';
+    html += '<thead><tr><th>User</th><th>Role</th><th>Login Time</th><th>Duration</th><th>Device</th><th>Status</th></tr></thead><tbody>';
+    filtered.forEach(r => {
+      const nameEsc = (r.userName||'Unknown').replace(/</g,'&lt;');
+      const roleEsc = (r.userRole||'—').replace(/</g,'&lt;');
+      const loginDate = new Date(r.loginAt);
+      const dateStr = loginDate.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
+      const timeStr = loginDate.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
+      const dur = _actDuration(r.loginAt, r.lastSeenAt);
+      const durClass = _actDurationClass(r.loginAt, r.lastSeenAt);
+      const online = _actIsOnline(r.lastSeenAt);
+      const statusHtml = online
+        ? '<span class="act-online-dot"></span><span style="font-size:12px;font-weight:700;color:#16a34a;">Online</span>'
+        : '<span style="font-size:12px;color:#94a3b8;">Offline</span>';
+      html += '<tr>';
+      html += '<td style="font-weight:600;">' + nameEsc + '</td>';
+      html += '<td><span style="font-size:11px;font-weight:600;color:#64748b;text-transform:capitalize;">' + roleEsc + '</span></td>';
+      html += '<td><div style="font-weight:600;">' + dateStr + '</div><div style="font-size:11px;color:#94a3b8;">' + timeStr + '</div></td>';
+      html += '<td><span class="act-dur-badge ' + durClass + '">' + dur + '</span></td>';
+      html += '<td style="font-size:12px;color:#64748b;">' + (r.device||'—') + '</td>';
+      html += '<td>' + statusHtml + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    if(filtered.length > 50) html += '<div style="text-align:center;padding:16px;font-size:11px;color:#94a3b8;">Showing ' + filtered.length + ' sessions</div>';
+  }
+
+  wrap.innerHTML = html;
+}
+
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=_allowedLocs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
@@ -18509,9 +18742,15 @@ migrate();
 <div id="pg-admin" style="display:none;">
   <div class="adm-hdr">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
+    <span class="adm-hdr-title">👥 ADMIN PANEL</span>
   </div>
-  <div class="adm-layout">
+  <!-- Admin Tabs -->
+  <div class="adm-tabs">
+    <button class="adm-tab-btn active" id="adm-tab-users" onclick="admSwitchTab('users')">User Management</button>
+    <button class="adm-tab-btn" id="adm-tab-activity" onclick="admSwitchTab('activity')">Activity Logs</button>
+  </div>
+  <!-- TAB 1: User Management -->
+  <div id="adm-panel-users" class="adm-layout">
     <!-- Left: user list -->
     <div class="adm-user-list">
       <div class="adm-user-list-hdr">Users</div>
@@ -18562,6 +18801,12 @@ migrate();
           <span class="adm-act-msg" id="adm-act-msg"></span>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- TAB 2: Activity Logs -->
+  <div id="adm-panel-activity" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+    <div class="act-log-wrap" id="act-log-wrap">
+      <div class="adm-loading">Loading activity data…</div>
     </div>
   </div>
 </div>
