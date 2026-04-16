@@ -2331,6 +2331,10 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .hcard.c9::before{ background:linear-gradient(90deg,#1a6b6b,#2a9d8f); }
 .hcard.c9:hover  { border-color:#1a6b6b; transform:translateY(-5px); box-shadow:0 16px 40px rgba(26,107,107,.2); }
 .hcard.c9 .hcard-tag { color:#1a6b6b; }
+.hcard.c10       { cursor:default; opacity:.82; }
+.hcard.c10::before{ background:linear-gradient(90deg,#1e3a5f,#3b82f6); }
+.hcard.c10:hover { transform:none; box-shadow:none; border-color:var(--brd); }
+.hcard.c10 .hcard-tag { color:#1e3a5f; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dm-rpt-chip { background:rgba(126,32,35,.1); border:1px solid rgba(126,32,35,.2); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:#7e2023; }
 .ask-input-wrap { display:flex; gap:8px; margin-top:12px; }
@@ -3307,6 +3311,15 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
     </div>
 <!-- Admin footer button: small, secondary, admin-only. Shown via _applyPermissionsUI(). -->
     <div id="admin-home-card" style="display:none;grid-column:1/-1;"></div>
+    <div id="hcard-marketing" class="hcard c10" onclick="goMarketing()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">📣</span>
+      <div class="hcard-title">Marketing</div>
+      <div class="hcard-desc">Campaign planning, social media scheduling, brand assets, and performance analytics across all locations.</div>
+      <div class="hcard-tag">Coming Soon</div>
+      <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);cursor:pointer;" onclick="goMarketing()">
+        <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#1e3a5f;background:rgba(30,58,95,.10);border:1.5px solid rgba(30,58,95,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
+      </div>
+    </div>
     <div id="hcard-events" class="hcard c8" style="position:relative;">
       <span class="hcard-icon">🎉</span>
       <div class="hcard-title">Event Calculator</div>
@@ -4267,6 +4280,7 @@ function _applyPermissionsUI(){
     portfolio:   'hcard-portfolio',
     deals:       'hcard-deals',
     hr:          'hcard-hr',
+    marketing:   'hcard-marketing',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -5027,6 +5041,12 @@ function goHR(){
   if(!_hasPermission('hr')){ _showAccessDenied('HR Dashboard'); return; }
   S.page='hr';
   HR_SUB = 'landing'; // always land on the HR landing page
+  render();
+}
+
+function goMarketing(){
+  if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
+  S.page='marketing';
   render();
 }
 
@@ -5942,6 +5962,7 @@ const _ADM_MODULES = [
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
   { id:'deals',       label:'New Deal Status',    icon:'📍', desc:'Real estate expansion pipeline tracker' },
   { id:'hr',          label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
+  { id:'marketing',   label:'Marketing',          icon:'📣', desc:'Campaigns, social, brand & analytics' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6340,7 +6361,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','deals','hr'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','deals','hr','marketing'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); setTimeout(updateDealsBadge, 50); setTimeout(updateHRBadge, 50); }
@@ -6378,7 +6399,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',deals:'New Deal Status',hr:'HR Dashboard'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',deals:'New Deal Status',hr:'HR Dashboard',marketing:'Marketing'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -18459,6 +18480,20 @@ migrate();
   </div>
   <div id="hr-content"></div>
   <div id="hr-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
+</div>
+
+<!-- ═══ MARKETING PAGE (Coming Soon) ═══ -->
+<div id="pg-marketing" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid #e8e2d8;">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e293b;letter-spacing:.08em;text-transform:uppercase;">📣 MARKETING</span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 24px;text-align:center;">
+    <div style="font-size:64px;margin-bottom:24px;">📣</div>
+    <div style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:#1e293b;letter-spacing:.04em;margin-bottom:8px;">Marketing Hub</div>
+    <div style="font-size:14px;color:#94a3b8;max-width:420px;line-height:1.7;margin-bottom:28px;">Campaign planning, social media scheduling, brand asset management, and performance analytics — all in one place.</div>
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#1e3a5f;background:rgba(30,58,95,.10);border:1.5px solid rgba(30,58,95,.3);border-radius:99px;padding:8px 24px;text-transform:uppercase;">🔒 Coming Soon</span>
+  </div>
 </div>
 
 <!-- ═══ PORTFOLIO PAGE ═══ -->
