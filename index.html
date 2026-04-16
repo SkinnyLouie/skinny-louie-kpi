@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v45.1 -->
+<!-- BUILD: 2026-04-15-v45.2 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2714,11 +2714,14 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-title{font-size:12px;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-msg{font-size:11px;}
 /* ── Admin Panel ─────────────────────────────────────────── */
-#pg-admin{display:none;background:#faf9f7;height:calc(100vh - 62px);overflow:hidden;display:flex;flex-direction:column;}
+/* position:fixed pins the panel directly to the viewport, eliminating any
+   dependency on ancestor height, body overflow, or navbar calc accuracy.
+   top:65px = 3px accent bar + 62px navbar. */
+#pg-admin{display:none;position:fixed;top:65px;left:0;right:0;bottom:0;background:#faf9f7;overflow:hidden;flex-direction:column;z-index:100;}
 .adm-hdr{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-shrink:0;}
 .adm-hdr-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;}
 /* Two-panel layout */
-.adm-layout{display:flex;flex:1;overflow:hidden;}
+.adm-layout{display:flex;flex:1;overflow:hidden;min-height:0;}
 /* Left: user list */
 .adm-user-list{width:272px;min-width:200px;border-right:1px solid #e8e2d8;background:#fff;display:flex;flex-direction:column;flex-shrink:0;}
 .adm-user-list-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:14px 16px 10px;border-bottom:1px solid #f1ede6;flex-shrink:0;}
@@ -2732,7 +2735,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-user-name{font-size:13px;font-weight:600;color:#1e293b;line-height:1.2;word-break:break-all;}
 .adm-user-sub{font-size:10px;color:#94a3b8;margin-top:1px;}
 /* Right: permission panel */
-.adm-perm-panel{flex:1;overflow:hidden;padding:0;display:flex;flex-direction:column;}
+.adm-perm-panel{flex:1;overflow:hidden;padding:0;display:flex;flex-direction:column;min-height:0;}
 .adm-perm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:13px;gap:10px;}
 .adm-perm-body{padding:28px 32px 40px;flex:1;overflow-y:auto;min-height:0;}
 .adm-perm-user-hdr{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #e8e2d8;}
@@ -15321,7 +15324,7 @@ migrate();
 </div>
 
 <!-- ═══ ADMIN PAGE ═══ -->
-<div id="pg-admin" style="display:none;background:#faf9f7;height:calc(100vh - 62px);overflow:hidden;display:flex;flex-direction:column;">
+<div id="pg-admin" style="display:none;">
   <div class="adm-hdr">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
     <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
