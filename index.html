@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v47.8 -->
+<!-- BUILD: 2026-04-15-v47.11 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -88,7 +88,9 @@ const SL_SCHEMA = {
   pnl: {
     identity:  ['state','loc','year','month'],
     required:  ['netSales','netIncome'],
-    optional:  ['cogs','labor','prime','rent','royalty','ebitda','rows'],
+    optional:  ['cogs','labor','prime','rent','royalty','ebitda','rows',
+                 'lineItems','codeMap',
+                 'computedCogsPct','computedDcAmt','computedDcPct','computedLaborPct'],
     types:     { state:'string', loc:'string', year:'string', month:'number', netSales:'number', netIncome:'number' }
   }
 };
@@ -1633,6 +1635,11 @@ button{font-family:inherit;cursor:pointer;}
 .bg-y{background:var(--y-bg);color:var(--y-tx);}
 .bg-r{background:var(--r-bg);color:var(--r-tx);}
 .bg-trend{background:#fff3e0;color:#c2410c;border:1px solid #f97316;}
+/* P&L automation badges */
+.pnl-auto-badge{display:inline-block;font-size:8px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:99px;padding:1px 6px;vertical-align:middle;white-space:nowrap;letter-spacing:.02em;}
+.pnl-auto-grp{font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:1px 6px;margin-left:8px;vertical-align:middle;}
+.no-pnl-val{font-size:11px;color:#94a3b8;font-style:italic;white-space:nowrap;}
+.em-pnl{color:#d4ac30;font-size:10px;font-weight:600;font-style:italic;}
 
 /* CHARTS */
 .charts-row{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:20px;}
@@ -2151,6 +2158,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pnl-tbl th.num { text-align:right; }
 .pnl-tbl-row-h2 td { padding:7px 20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); background:#f5f0e8; }
 .pnl-tbl-row-s  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; }
+.pnl-tbl-row-ss td { border-top:1px dashed #e8e2d8; padding:7px 20px 7px 0; font-size:12px; color:#475569; background:#fdfcfa; }
 .pnl-tbl-row-b  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; background:#f0ede7; }
 .pnl-tbl-row-t  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; }
 .pnl-tbl-ind    { padding-left:38px !important; }
@@ -2777,7 +2785,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pf-topbar{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;position:sticky;top:62px;z-index:50;}
 .pf-topbar-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;flex:1;}
 .pf-body{padding:28px 32px 60px;max-width:1400px;margin:0 auto;}
-.pf-section-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;}
+.pf-section-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.pf-shdr-sub{font-family:inherit;font-size:9px;font-weight:500;letter-spacing:.04em;color:#c4bab0;text-transform:none;}
 .pf-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px;}
 .pf-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;}
 .pf-card-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;}
@@ -2816,20 +2825,32 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pf-sort-arr{font-size:9px;margin-left:2px;opacity:.6;}
 .pf-empty{padding:48px;text-align:center;color:#94a3b8;font-size:13px;}
 /* ── Store Intelligence sections ────────────────── */
-.pf-alert-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:#fff;border:1.5px solid #fecaca;margin-bottom:8px;}
+.pf-all-ok{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 18px;color:#166534;font-size:13px;font-weight:600;margin-bottom:28px;}
+.pf-alert-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:#fff;border:1.5px solid #fecaca;margin-bottom:7px;transition:box-shadow .15s;}
 .pf-alert-item.warn{border-color:#fed7aa;}
-.pf-alert-icon{font-size:20px;flex-shrink:0;}
+.pf-alert-item.pf-alert-top{border-color:#dc2626;box-shadow:0 2px 12px rgba(220,38,38,.13);background:#fffafa;}
+.pf-alert-rank{width:26px;font-size:11px;font-weight:900;color:#dc2626;text-align:center;flex-shrink:0;font-family:'Oswald',sans-serif;letter-spacing:.05em;}
+.pf-alert-rank-blank{width:26px;flex-shrink:0;}
+.pf-alert-icon{font-size:18px;flex-shrink:0;}
 .pf-alert-loc{font-weight:700;color:#1e293b;font-size:13px;line-height:1.3;}
-.pf-alert-kpi{font-size:12px;color:#64748b;margin-top:1px;}
+.pf-alert-kpi{font-size:11px;color:#64748b;margin-top:1px;}
 .pf-alert-actual{font-size:15px;font-weight:800;color:#dc2626;line-height:1.2;}
-.pf-alert-tgt{font-size:11px;color:#94a3b8;}
+.pf-alert-tgt{font-size:10px;color:#94a3b8;}
 .pf-top-store{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;}
 .pf-top-store-loc{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:6px;}
 .pf-rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
 .pf-rank-num{width:22px;font-size:12px;font-weight:800;color:#94a3b8;text-align:center;flex-shrink:0;}
-.pf-rank-loc{flex:1;font-weight:600;color:#1e293b;font-size:13px;}
+.pf-rank-loc{font-weight:600;color:#1e293b;font-size:13px;}
 .pf-rank-bar-wrap{width:100px;background:#f1f5f9;border-radius:4px;height:7px;overflow:hidden;flex-shrink:0;}
 .pf-rank-bar{height:7px;border-radius:4px;transition:width .3s;}
+.pf-comp-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+.pf-comp-chip{font-size:9px;font-weight:700;background:#f8f7f5;border:1px solid #e8e2d8;border-radius:4px;padding:1px 5px;}
+/* Table enhancements */
+.pf-td-na{text-align:center;color:#94a3b8;padding:8px 6px;}
+.pf-td-insight{font-size:10px;color:#94a3b8;margin-top:1px;font-weight:400;white-space:normal;max-width:160px;}
+.pf-cell-crown{font-size:8px;font-weight:900;color:#166534;margin-left:2px;vertical-align:super;}
+.pf-cell-nadir {font-size:8px;font-weight:900;color:#991b1b;margin-left:2px;vertical-align:super;}
+.pf-tr-hover:hover td{background:#faf5ef !important;}
 .pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:32px;}
 .pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:14px 16px;}
 .pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;}
@@ -3322,10 +3343,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     </div>
     <div class="calc-note">Total Net Sales: <strong id="m-total">$0</strong></div>
 
-    <div class="fsec">🍽 Food Cost</div>
-    <div class="frow">
-      <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="m-fa" type="number" placeholder="0"></div>
-      <div class="fg"><label class="fl">% (auto-calc)</label><input class="fi" id="m-fp" type="number" step="0.01" placeholder="auto" readonly style="background:#f8fafc;color:#94a3b8;"></div>
+    <!-- Food Cost — read-only, sourced from P&L import -->
+    <div class="fsec">🍽 Food Cost &nbsp;<span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:99px;padding:2px 8px;vertical-align:middle;">📋 From P&L</span></div>
+    <div id="m-fa-display" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+      <div id="m-fa-val" style="font-size:15px;font-weight:700;color:#1e293b;font-family:'Oswald',sans-serif;">—</div>
+      <div id="m-fa-src" style="font-size:11px;color:#94a3b8;margin-top:3px;">No P&L data imported for this month — import a P&L file to populate automatically.</div>
+    </div>
+    <div class="frow" style="margin-bottom:14px;">
+      <div class="fg"><label class="fl">Food Cost %</label><input class="fi" id="m-fp" type="number" step="0.01" placeholder="—" readonly style="background:#f8fafc;color:#64748b;cursor:default;"></div>
+      <div class="fg"></div>
     </div>
 
     <div class="fsec">👷 Labor</div>
@@ -3334,10 +3360,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="fg"><label class="fl">% — if no $ amount</label><input class="fi" id="m-lp" type="number" step="0.01" placeholder="e.g. 14.5"><div class="fi-note">Enter only if $ not available</div></div>
     </div>
 
-    <div class="fsec">🧹 Disposable & Cleaning</div>
-    <div class="frow">
-      <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="m-da" type="number" placeholder="0"></div>
-      <div class="fg"><label class="fl">% (auto-calc)</label><input class="fi" id="m-dp" type="number" step="0.01" placeholder="auto" readonly style="background:#f8fafc;color:#94a3b8;"></div>
+    <!-- D&C — read-only, sourced from P&L import -->
+    <div class="fsec">🧹 Disposable &amp; Cleaning &nbsp;<span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:99px;padding:2px 8px;vertical-align:middle;">📋 From P&L</span></div>
+    <div id="m-da-display" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+      <div id="m-da-val" style="font-size:15px;font-weight:700;color:#1e293b;font-family:'Oswald',sans-serif;">—</div>
+      <div id="m-da-src" style="font-size:11px;color:#94a3b8;margin-top:3px;">No P&L data imported for this month — import a P&L file to populate automatically.</div>
+    </div>
+    <div class="frow" style="margin-bottom:14px;">
+      <div class="fg"><label class="fl">D&amp;C %</label><input class="fi" id="m-dp" type="number" step="0.01" placeholder="—" readonly style="background:#f8fafc;color:#64748b;cursor:default;"></div>
+      <div class="fg"></div>
     </div>
 
     <div class="fsec">⭐ Google Reviews</div>
@@ -6360,11 +6391,33 @@ function renderCards(){
   const fpTgt=(ytdTgt('fp')*100).toFixed(1);
   const lpTgt=(ytdTgt('lp')*100).toFixed(1);
   const dpTgt=(ytdTgt('dp')*100).toFixed(1);
+  // P&L auto badge — shown on Food Cost and D&C cards (these two are P&L-driven, not Labor)
+  const _pnlAutoTag=`<span class="pnl-auto-badge" title="Automatically calculated from P&L import. Not manually editable.">📋 Auto · P&L</span>`;
+  // "No P&L data" fallback — shown when the KPI value is null (P&L not yet imported)
+  const _noPnL=`<span class="no-pnl-val" title="Import a P&L file to populate this metric automatically.">No P&L data</span>`;
   el.innerHTML=`
     <div class="kcard cb"><div class="klbl">Net Sales ${S.year==='2026'?'YTD':'Full Year'}</div><div class="kval">${fmtK(y.ts)}</div><div class="ksub">${S.loc==='ALL'?'All Locations':S.loc}</div></div>
-    <div class="kcard cg"><div class="klbl">Avg Food Cost</div><div class="kval">${y.fpct?fmtP(y.fpct):'—'}</div><div class="ksub">Target ≤ ${fpTgt}%</div>${y.fpct?`<div class="kbadge ${fc}">${badgeTxt(fc)}</div>`:''} ${tbadge(ftA)}</div>
-    <div class="kcard ca"><div class="klbl">Avg Labor</div><div class="kval">${y.lpct?fmtP(y.lpct):'—'}</div><div class="ksub">Target ≤ ${lpTgt}%</div>${y.lpct?`<div class="kbadge ${lc}">${badgeTxt(lc)}</div>`:''} ${tbadge(ltA)}</div>
-    <div class="kcard cp"><div class="klbl">Avg D&C</div><div class="kval">${y.dpct?fmtP(y.dpct):'—'}</div><div class="ksub">Target ≤ ${dpTgt}%</div>${y.dpct?`<div class="kbadge ${dc}">${badgeTxt(dc)}</div>`:''} ${tbadge(dtA)}</div>
+    <div class="kcard cg" title="Food Cost % is automatically calculated from P&L data (COGS ÷ Net Sales). Import a P&L file to update.">
+      <div class="klbl">Avg Food Cost &nbsp;${_pnlAutoTag}</div>
+      <div class="kval">${y.fpct?fmtP(y.fpct):_noPnL}</div>
+      <div class="ksub">Target ≤ ${fpTgt}%</div>
+      ${y.fpct?`<div class="kbadge ${fc}">${badgeTxt(fc)}</div>`:''}
+      ${tbadge(ftA)}
+    </div>
+    <div class="kcard ca">
+      <div class="klbl">Avg Labor</div>
+      <div class="kval">${y.lpct?fmtP(y.lpct):'—'}</div>
+      <div class="ksub">Target ≤ ${lpTgt}%</div>
+      ${y.lpct?`<div class="kbadge ${lc}">${badgeTxt(lc)}</div>`:''}
+      ${tbadge(ltA)}
+    </div>
+    <div class="kcard cp" title="Disposable & Cleaning % is automatically calculated from P&L data (accounts 3101 + 3102 ÷ Net Sales). Import a P&L file to update.">
+      <div class="klbl">Avg D&amp;C &nbsp;${_pnlAutoTag}</div>
+      <div class="kval">${y.dpct?fmtP(y.dpct):_noPnL}</div>
+      <div class="ksub">Target ≤ ${dpTgt}%</div>
+      ${y.dpct?`<div class="kbadge ${dc}">${badgeTxt(dc)}</div>`:''}
+      ${tbadge(dtA)}
+    </div>
   `+hsHtml;
 }
 
@@ -7041,9 +7094,9 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
   ['Metric','Actual','Target','MoM Chg','Trend','Status'].forEach((h,i)=>{ txt(h,cols[i]+2,y+4.5, 6.5,[255,255,255],'bold'); });
   y+=6;
   const kpiRows=[
-    {label:'Food Cost %',     val:lastFP!=null?fmtP(lastFP):'n/a', tgt:`<= ${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true},
-    {label:'Labor %',         val:lastLP!=null?fmtP(lastLP):'n/a', tgt:`<= ${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
-    {label:'D&C %',           val:lastDP!=null?fmtP(lastDP):'n/a', tgt:`<= ${tgts.dp}%`,  mom:dpMoM, ok:lastDP!=null&&lastDP<=tgts.dp,    na:lastDP==null,  lowerBetter:true},
+    {label:'Food Cost % (P&L)', val:lastFP!=null?fmtP(lastFP):'No P&L', tgt:`<= ${tgts.fp}%`,  mom:fpMoM, ok:lastFP!=null&&lastFP<=tgts.fp,    na:lastFP==null,  lowerBetter:true, noDataLbl:'No P&L data'},
+    {label:'Labor %',           val:lastLP!=null?fmtP(lastLP):'n/a',    tgt:`<= ${tgts.lp}%`,  mom:lpMoM, ok:lastLP!=null&&lastLP<=tgts.lp,    na:lastLP==null,  lowerBetter:true},
+    {label:'D&C % (P&L)',       val:lastDP!=null?fmtP(lastDP):'No P&L', tgt:`<= ${tgts.dp}%`,  mom:dpMoM, ok:lastDP!=null&&lastDP<=tgts.dp,    na:lastDP==null,  lowerBetter:true, noDataLbl:'No P&L data'},
     {label:'Prime Cost %',    val:primeCostPct!=null?fmtP(primeCostPct):'n/a', tgt:`<= ${tgts.pc}%`, mom:null, ok:primeCostPct!=null&&primeCostPct<=tgts.pc, na:primeCostPct==null, lowerBetter:true},
     {label:'Gross Profit %',  val:grossProfitPct!=null?fmtP(grossProfitPct):'n/a', tgt:'>= 65%', mom:null, ok:grossProfitPct!=null&&grossProfitPct>=65, na:grossProfitPct==null, lowerBetter:false},
     {label:'Net Margin %',    val:netMarginPct!=null?fmtP(netMarginPct):'n/a',    tgt:'>= 10%', mom:null, ok:netMarginPct!=null&&netMarginPct>=10, na:netMarginPct==null, lowerBetter:false},
@@ -7066,7 +7119,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
     txt(r.val,    cols[1]+2, rowY+4.5, 7, vc, 'bold');
     txt(r.tgt,    cols[2]+2, rowY+4.5, 6.5, SL_MUTED);
     txt(momVal,   cols[3]+2, rowY+4.5, 6.5, momCol, r.mom!=null?'bold':'normal');
-    txt(r.na?'No data':r.ok?'ON TARGET':'OVER TARGET', cols[5]+2, rowY+4.5, 6.5, vc, 'bold');
+    txt(r.na?(r.noDataLbl||'No data'):r.ok?'ON TARGET':'OVER TARGET', cols[5]+2, rowY+4.5, 6.5, vc, 'bold');
   });
   y+=kpiRows.length*6+4;
   hr(y,...SL_BORD); y+=4;
@@ -7597,9 +7650,9 @@ function renderHeatmap(){
   if(allLocs.length<2){el.innerHTML='';return;} // only useful with multiple locations
 
   const kpiDefs={
-    fp:{label:'Food Cost %',  thr:THR.fp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'—', get:(d,i)=>{const s=totalNS(d,i);return s&&d.fa[i]!=null?d.fa[i]/s:null;}},
-    lp:{label:'Labor %',      thr:THR.lp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'—', get:(d,i)=>{const s=totalNS(d,i);return s&&d.la[i]!=null?d.la[i]/s:null;}},
-    dp:{label:'D&C %',        thr:THR.dp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'—', get:(d,i)=>{const s=totalNS(d,i);return s&&d.da[i]!=null?d.da[i]/s:null;}}
+    fp:{label:'Food Cost % (P&L)',  thr:THR.fp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'No P&L', get:(d,i)=>{const s=totalNS(d,i);return s&&d.fa[i]!=null?d.fa[i]/s:null;}},
+    lp:{label:'Labor %',            thr:THR.lp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'—',       get:(d,i)=>{const s=totalNS(d,i);return s&&d.la[i]!=null?d.la[i]/s:null;}},
+    dp:{label:'D&C % (P&L)',        thr:THR.dp, fmt:v=>v!=null?(v*100).toFixed(1)+'%':'No P&L', get:(d,i)=>{const s=totalNS(d,i);return s&&d.da[i]!=null?d.da[i]/s:null;}}
   };
   const def=kpiDefs[_hmKpi];
 
@@ -7787,15 +7840,17 @@ function renderLocTable(wrap){
   const ytdNSvar=ytdNStgtN>0&&ts>0?nsVarCls(ts,ytdNStgt):'';
   h+=`<td class="${ytdNSvar}">${ytdNStgtN>0&&ts>0?nsVarFmt(ts,ytdNStgt):'—'}</td></tr>`;
 
-  // ── FOOD COST ──
-  h+=`<tr class="grp"><td colspan="14">🍽 Food Cost</td></tr>`;
+  // ── FOOD COST (Auto · P&L) ──
+  h+=`<tr class="grp"><td colspan="14">🍽 Food Cost <span class="pnl-auto-grp" title="Automatically calculated from P&L import (COGS ÷ Net Sales). Not manually editable.">📋 Auto · P&L</span></td></tr>`;
   h+=`<tr class="sub"><td>Amount</td>`;
-  for(let i=0;i<12;i++){const v=d.fa[i];const s=totalNS(d,i);h+=v!=null&&s>0?`<td class="amt">${fmt$(v)}</td>`:`<td class="em">—</td>`;}
-  h+=`<td class="fw">${fmt$(tf)}</td></tr>`;
+  for(let i=0;i<12;i++){const v=d.fa[i];const s=totalNS(d,i);h+=v!=null&&s>0?`<td class="amt">${fmt$(v)}</td>`:s>0?`<td class="em-pnl" title="No P&L data — import P&L to populate">P&L?</td>`:`<td class="em">—</td>`;}
+  h+=`<td class="fw">${tf>0?fmt$(tf):'—'}</td></tr>`;
   h+=`<tr><td style="padding-left:20px;font-weight:600;font-size:11px;color:#64748b;background:#faf7f2;">% of Sales</td>`;
   for(let i=0;i<12;i++){
     const v=d.fp[i];const s=totalNS(d,i);
-    if(v!=null&&s>0){h+=`<td><span class="pill ${cls(v,'fp')}">${fmtP(v)}</span></td>`;}else h+=`<td class="em">—</td>`;
+    if(v!=null&&s>0){h+=`<td><span class="pill ${cls(v,'fp')}">${fmtP(v)}</span></td>`;}
+    else if(s>0){h+=`<td class="em-pnl" title="No P&L data — import P&L to populate">P&L?</td>`;}
+    else h+=`<td class="em">—</td>`;
   }
   h+=`<td>${ytdFP?`<span class="pill ${cls(ytdFP,'fp')}">${fmtP(ytdFP)}</span>`:'—'}</td></tr>`;
   // Target & Variance rows
@@ -7831,14 +7886,14 @@ function renderLocTable(wrap){
   h+=`<td></td></tr>`;
 
   // ── D&C ──
-  h+=`<tr class="grp"><td colspan="14">🧹 Disposable & Cleaning</td></tr>`;
+  h+=`<tr class="grp"><td colspan="14">🧹 Disposable & Cleaning <span class="pnl-auto-grp" title="Automatically calculated from P&L import (accounts 3101 + 3102 ÷ Net Sales). Not manually editable.">📋 Auto · P&L</span></td></tr>`;
   h+=`<tr class="sub"><td>Amount</td>`;
-  for(let i=0;i<12;i++){const v=d.da[i];const s=totalNS(d,i);h+=v!=null&&s>0?`<td class="amt">${fmt$(v)}</td>`:`<td class="em">—</td>`;}
-  h+=`<td class="fw">${fmt$(tdc)}</td></tr>`;
+  for(let i=0;i<12;i++){const v=d.da[i];const s=totalNS(d,i);if(v!=null&&s>0){h+=`<td class="amt">${fmt$(v)}</td>`;}else if(s>0){h+=`<td class="em-pnl" title="No P&L data — import P&L to populate">P&L?</td>`;}else{h+=`<td class="em">—</td>`;}}
+  h+=`<td class="fw">${tdc>0?fmt$(tdc):'—'}</td></tr>`;
   h+=`<tr><td style="padding-left:20px;font-weight:600;font-size:11px;color:#64748b;background:#faf7f2;">% of Sales</td>`;
   for(let i=0;i<12;i++){
     const v=d.dp[i];const s=totalNS(d,i);
-    if(v!=null&&s>0){h+=`<td><span class="pill ${cls(v,'dp')}">${fmtP(v)}</span></td>`;}else h+=`<td class="em">—</td>`;
+    if(v!=null&&s>0){h+=`<td><span class="pill ${cls(v,'dp')}">${fmtP(v)}</span></td>`;}else if(s>0){h+=`<td class="em-pnl" title="No P&L data — import P&L to populate">P&L?</td>`;}else{h+=`<td class="em">—</td>`;}
   }
   h+=`<td>${ytdDP?`<span class="pill ${cls(ytdDP,'dp')}">${fmtP(ytdDP)}</span>`:'—'}</td></tr>`;
   h+=`<tr class="sub"><td>↳ Target</td>`;
@@ -7945,9 +8000,9 @@ function renderAllTable(wrap){
   h+=`<table><thead><tr>
     <th style="text-align:left;">Location</th>
     <th>Net Sales YTD</th>
-    <th style="text-align:center;">Food Cost %</th>
+    <th style="text-align:center;">Food Cost % <span class="pnl-auto-badge" title="Automatically calculated from P&L import">📋</span></th>
     <th style="text-align:center;">Labor %</th>
-    <th style="text-align:center;">D&C %</th>
+    <th style="text-align:center;">D&C % <span class="pnl-auto-badge" title="Automatically calculated from P&L import">📋</span></th>
     <th style="text-align:center;">⭐ Google Reviews</th>
     <th style="text-align:center;">🚗 UberEats Avg</th>
     <th style="text-align:center;">Months</th>
@@ -7977,9 +8032,9 @@ function renderAllTable(wrap){
     h+=`<tr style="cursor:pointer" onclick="setLoc('${l}')">
       <td style="text-align:left;font-weight:700;font-size:13px;color:#212320;background:#fcfaf4;">${l} <span style="font-size:10px;color:#a89e96;font-weight:400;">→ detail</span></td>
       <td class="fw">${fmt$(y.ts)}</td>
-      <td style="text-align:center;">${y.fpct?`<span class="pill ${cls(y.fpct,'fp')}">${fmtP(y.fpct)}</span>`:'—'}</td>
+      <td style="text-align:center;">${y.fpct?`<span class="pill ${cls(y.fpct,'fp')}">${fmtP(y.fpct)}</span>`:`<span class="no-pnl-val" title="Import a P&L file to populate Food Cost automatically">No P&L</span>`}</td>
       <td style="text-align:center;">${y.lpct?`<span class="pill ${cls(y.lpct,'lp')}">${fmtP(y.lpct)}</span>`:'—'}</td>
-      <td style="text-align:center;">${y.dpct?`<span class="pill ${cls(y.dpct,'dp')}">${fmtP(y.dpct)}</span>`:'—'}</td>
+      <td style="text-align:center;">${y.dpct?`<span class="pill ${cls(y.dpct,'dp')}">${fmtP(y.dpct)}</span>`:`<span class="no-pnl-val" title="Import a P&L file to populate D&amp;C automatically">No P&L</span>`}</td>
       ${grCell}${ubCell}
       <td style="text-align:center;color:#64748b;">${y.months}</td>
     </tr>`;
@@ -8260,38 +8315,107 @@ function checkHasData(yr,lc,mi){
   const d=DB[yr]?.[st]?.[lc];if(!d)return false;
   return totalNS(d,mi)>0||d.fa[mi]!=null||d.grStart[mi]!=null||d.uberRating[mi]!=null;
 }
+// ── Helper: update the P&L read-only panels in the KPI data modal
+function _updModalPnLDisplays(yr, lc, mi){
+  const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
+  const fmt$   = v => '$' + Math.round(v).toLocaleString('en-US');
+  const fmtPct = v => v != null ? v.toFixed(1) + '%' : '—';
+
+  // Food Cost (account 2000)
+  const faValEl = document.getElementById('m-fa-val');
+  const faSrcEl = document.getElementById('m-fa-src');
+  const fpEl    = document.getElementById('m-fp');
+  const faVal   = pnlRec?.codeMap?.['2000'] ?? null;
+  if(faValEl) faValEl.textContent = faVal != null ? fmt$(faVal) : '—';
+  if(faSrcEl) faSrcEl.textContent = faVal != null
+    ? `COGS from account 2000 · P&L ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]} ${yr}`
+    : 'No P&L data for this month — import a P&L file to populate automatically.';
+  if(fpEl) fpEl.value = pnlRec?.computedCogsPct != null ? pnlRec.computedCogsPct.toFixed(2) : '';
+
+  // D&C (accounts 3101 + 3102)
+  const daValEl = document.getElementById('m-da-val');
+  const daSrcEl = document.getElementById('m-da-src');
+  const dpEl    = document.getElementById('m-dp');
+  const daVal   = pnlRec?.computedDcAmt ?? null;
+  const dc3101  = pnlRec?.codeMap?.['3101'] ?? null;
+  const dc3102  = pnlRec?.codeMap?.['3102'] ?? null;
+  if(daValEl) daValEl.textContent = daVal != null ? fmt$(daVal) : '—';
+  if(daSrcEl){
+    if(daVal != null){
+      const parts = [];
+      if(dc3101 != null) parts.push(`3101: ${fmt$(dc3101)}`);
+      if(dc3102 != null) parts.push(`3102: ${fmt$(dc3102)}`);
+      daSrcEl.textContent = `Disposables + Cleaning from P&L${parts.length ? ' (' + parts.join(' + ') + ')' : ''}`;
+    } else {
+      daSrcEl.textContent = 'No P&L data for this month — import a P&L file to populate automatically.';
+    }
+  }
+  if(dpEl) dpEl.value = pnlRec?.computedDcPct != null ? pnlRec.computedDcPct.toFixed(2) : '';
+
+  // Style display blocks: green border if data found, default if not
+  const _stylePnLBlock = (blockId, hasData) => {
+    const el = document.getElementById(blockId);
+    if(!el) return;
+    el.style.borderColor  = hasData ? '#86efac' : '#e2e8f0';
+    el.style.background   = hasData ? '#f0fdf4' : '#f8fafc';
+  };
+  _stylePnLBlock('m-fa-display', faVal != null);
+  _stylePnLBlock('m-da-display', daVal != null);
+}
+
 function prefillModal(yr,lc,mi){
   const st=S.state==='ALL'?locState(lc):S.state;
   const d=DB[yr]?.[st]?.[lc];
-  if(!d){clearModal();return;}
-  document.getElementById('m-dinein').value   = d.dineIn?.[mi]??d.ns?.[mi]??'';
-  document.getElementById('m-delivery').value = d.delivery?.[mi]??'';
-  document.getElementById('m-fa').value        = d.fa?.[mi]??'';
-  document.getElementById('m-la').value        = d.la?.[mi]??'';
-  document.getElementById('m-lp').value        = d.lp?.[mi]!=null&&d.la?.[mi]==null ? +(d.lp[mi]*100).toFixed(2) : '';
-  document.getElementById('m-da').value        = d.da?.[mi]??'';
-  document.getElementById('m-grs').value       = d.grStart?.[mi]??'';
-  document.getElementById('m-gre').value       = d.grEnd?.[mi]??'';
-  document.getElementById('m-uber').value      = d.uberRating?.[mi]??'';
-  updTotal();
+  if(!d){
+    // No KPI entry yet — clear manual fields but still show P&L data if it exists
+    ['m-dinein','m-delivery','m-la','m-lp','m-grs','m-gre','m-uber'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('m-total').textContent='$0';
+  } else {
+    document.getElementById('m-dinein').value   = d.dineIn?.[mi]??d.ns?.[mi]??'';
+    document.getElementById('m-delivery').value = d.delivery?.[mi]??'';
+    document.getElementById('m-la').value        = d.la?.[mi]??'';
+    document.getElementById('m-lp').value        = d.lp?.[mi]!=null&&d.la?.[mi]==null ? +(d.lp[mi]*100).toFixed(2) : '';
+    document.getElementById('m-grs').value       = d.grStart?.[mi]??'';
+    document.getElementById('m-gre').value       = d.grEnd?.[mi]??'';
+    document.getElementById('m-uber').value      = d.uberRating?.[mi]??'';
+    updTotal();
+  }
+  // Always update P&L-driven displays (Food Cost, D&C) — P&L may exist even if no KPI entry
+  _updModalPnLDisplays(yr, lc, mi);
 }
 function clearModal(){
-  ['m-dinein','m-delivery','m-fa','m-la','m-lp','m-da','m-grs','m-gre','m-uber'].forEach(id=>{document.getElementById(id).value='';});
+  ['m-dinein','m-delivery','m-la','m-lp','m-grs','m-gre','m-uber'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('m-fp').value='';
   document.getElementById('m-dp').value='';
   document.getElementById('m-total').textContent='$0';
+  // Reset P&L read-only displays to "no data" state
+  const noData = 'No P&L data for this month — import a P&L file to populate automatically.';
+  const _r = (id, text) => { const el=document.getElementById(id); if(el) el.textContent=text; };
+  _r('m-fa-val','—'); _r('m-fa-src', noData);
+  _r('m-da-val','—'); _r('m-da-src', noData);
+  ['m-fa-display','m-da-display'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.style.borderColor='#e2e8f0'; el.style.background='#f8fafc'; }
+  });
 }
 function updTotal(){
   const di=parseFloat(document.getElementById('m-dinein').value)||0;
   const dv=parseFloat(document.getElementById('m-delivery').value)||0;
   const tot=di+dv;
   document.getElementById('m-total').textContent='$'+tot.toLocaleString('en-US');
-  // Auto-calc %
+  // Recalculate Food Cost % and D&C % using P&L dollar amounts + entered net sales
+  // (P&L $ amounts are read-only; % shown here reflects: P&L $ / entered total sales)
   if(tot>0){
-    const fa=parseFloat(document.getElementById('m-fa').value)||0;
-    const da=parseFloat(document.getElementById('m-da').value)||0;
-    document.getElementById('m-fp').value=fa>0?(fa/tot*100).toFixed(2):'';
-    document.getElementById('m-dp').value=da>0?(da/tot*100).toFixed(2):'';
+    const yr  = document.getElementById('m-year')?.value;
+    const mi  = +document.getElementById('m-month')?.value;
+    const lc  = getModalLoc();
+    if(yr && lc){
+      const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
+      const faAmt  = pnlRec?.codeMap?.['2000'] ?? null;
+      const daAmt  = pnlRec?.computedDcAmt ?? null;
+      document.getElementById('m-fp').value = faAmt!=null ? (faAmt/tot*100).toFixed(2) : '';
+      document.getElementById('m-dp').value = daAmt!=null ? (daAmt/tot*100).toFixed(2) : '';
+    }
   }
 }
 function closeDataModal(){ document.getElementById('ov-data').classList.remove('open'); }
@@ -8323,10 +8447,8 @@ function saveDataModal(){
   if(!lc){slAlert('Please enter a location name.','warning');return;}
   const di  = parseFloat(document.getElementById('m-dinein').value)||null;
   const dv  = parseFloat(document.getElementById('m-delivery').value)||null;
-  const fa  = parseFloat(document.getElementById('m-fa').value)||null;
   const laV = parseFloat(document.getElementById('m-la').value)||null;
   const lpV = parseFloat(document.getElementById('m-lp').value)||null;
-  const da  = parseFloat(document.getElementById('m-da').value)||null;
   const grs = parseFloat(document.getElementById('m-grs').value);
   const gre = parseFloat(document.getElementById('m-gre').value);
   const ub  = parseFloat(document.getElementById('m-uber').value);
@@ -8346,18 +8468,37 @@ function saveDataModal(){
   migrate();
   const d=DB[yr][saveSt][lc];
   const tot=(di||0)+(dv||0);
-  d.dineIn[mi]   = di;
-  d.delivery[mi] = dv;
-  d.ns[mi]       = tot||null;
-  d.fa[mi]       = fa;
-  d.fp[mi]       = tot>0&&fa ? fa/tot : null;
-  d.la[mi]       = laV;
-  d.lp[mi]       = laV&&tot>0 ? laV/tot : lpV!=null&&!isNaN(lpV) ? lpV/100 : null;
-  d.da[mi]       = da;
-  d.dp[mi]       = tot>0&&da ? da/tot : null;
-  d.grStart[mi]  = !isNaN(grs)?grs:null;
-  d.grEnd[mi]    = !isNaN(gre)?gre:null;
+
+  // ── Net Sales + manually-entered fields
+  d.dineIn[mi]    = di;
+  d.delivery[mi]  = dv;
+  d.ns[mi]        = tot||null;
+  d.la[mi]        = laV;
+  d.lp[mi]        = laV&&tot>0 ? laV/tot : lpV!=null&&!isNaN(lpV) ? lpV/100 : null;
+  d.grStart[mi]   = !isNaN(grs)?grs:null;
+  d.grEnd[mi]     = !isNaN(gre)?gre:null;
   d.uberRating[mi]= !isNaN(ub)?ub:null;
+
+  // ── Food Cost and D&C come exclusively from P&L import (not editable here)
+  // fa and da are written by _pnlAutoSyncKPI on P&L import.
+  // We only recalculate their % ratios if net sales changed, preserving the P&L dollar amounts.
+  const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
+  const faFromPnL = pnlRec?.codeMap?.['2000'] ?? null;
+  const daFromPnL = pnlRec?.computedDcAmt ?? null;
+  // Prefer P&L value; if no P&L yet, leave whatever is currently stored in DB untouched for fa/da
+  if(faFromPnL !== null){
+    d.fa[mi] = faFromPnL;
+    d.fp[mi] = tot>0 ? faFromPnL/tot : null;
+  } else if(tot>0 && d.fa[mi]!=null){
+    // Net sales changed — recompute % using stored fa amount
+    d.fp[mi] = d.fa[mi]/tot;
+  }
+  if(daFromPnL !== null){
+    d.da[mi] = daFromPnL;
+    d.dp[mi] = tot>0 ? daFromPnL/tot : null;
+  } else if(tot>0 && d.da[mi]!=null){
+    d.dp[mi] = d.da[mi]/tot;
+  }
 
   save(); closeDataModal();
   S.year=yr; S.loc=lc; S.cmpMode=false;
@@ -8550,11 +8691,21 @@ function generateMonthlyReport(){
   const dpSpark=makeSparkline(d.dp?d.dp.map(v=>v!=null?v*100:null):Array(12).fill(null),dpTgt);
   const sparkLabel='<div class="spark-label">Monthly · — = target</div>';
   // KPI rows — 6 columns: Metric | Actual | Target | Variance | Status | 12-Month Trend
-  const kpiRows=[[fpAct,fpTgt,'Food Cost %',fpSpark],[lpAct,lpTgt,'Labor %',lpSpark],[dpAct,dpTgt,'D&C %',dpSpark]].map(([act,t,lbl,spark])=>{
-    if(act==null)return '<tr><td class="fw">'+lbl+'</td><td colspan="5" style="color:#aaa;font-size:12px;">No data</td></tr>';
+  const _kpiAutoTag='<span class="pnl-auto-badge" title="Automatically calculated from P&L import. Not manually editable." style="margin-left:5px;">📋</span>';
+  const kpiRowDefs=[
+    [fpAct,fpTgt,'Food Cost %',fpSpark,true],
+    [lpAct,lpTgt,'Labor %',lpSpark,false],
+    [dpAct,dpTgt,'D&C %',dpSpark,true]
+  ];
+  const kpiRows=kpiRowDefs.map(([act,t,lbl,spark,isPnL])=>{
+    const lblCell='<td class="fw">'+lbl+(isPnL?_kpiAutoTag:'')+'</td>';
+    if(act==null){
+      const noDataTxt=isPnL?'<span class="no-pnl-val" title="Import a P&L file to populate this metric automatically.">No P&L data</span>':'<span style="color:#aaa;font-size:12px;">No data</span>';
+      return '<tr>'+lblCell+'<td colspan="5">'+noDataTxt+'</td></tr>';
+    }
     const s=rSt(act,t); const vv=(act-t)*100; const vc=s==='g'?'#15803d':s==='y'?'#854d0e':'#b91c1c';
     const sparkTd=spark?'<td>'+spark+sparkLabel+'</td>':'<td style="color:#aaa;font-size:11px;">—</td>';
-    return '<tr><td class="fw">'+lbl+'</td><td class="fw">'+rFmtP(act)+'</td><td style="color:#888;">&le;'+(t*100).toFixed(1)+'%</td><td style="color:'+vc+';font-weight:700;">'+(vv>=0?'+':'')+vv.toFixed(1)+'pp</td><td><span class="pill '+rPC(s)+'">'+rPT(s)+'</span></td>'+sparkTd+'</tr>';
+    return '<tr>'+lblCell+'<td class="fw">'+rFmtP(act)+'</td><td style="color:#888;">&le;'+(t*100).toFixed(1)+'%</td><td style="color:'+vc+';font-weight:700;">'+(vv>=0?'+':'')+vv.toFixed(1)+'pp</td><td><span class="pill '+rPC(s)+'">'+rPT(s)+'</span></td>'+sparkTd+'</tr>';
   }).join('');
   let uberRow='';
   if(uberAct!=null){const s=uberAct>=uberTgt-0.05?'g':uberAct>=uberTgt-0.15?'y':'r';const vv=uberAct-uberTgt;const vc=s==='g'?'#15803d':s==='y'?'#854d0e':'#b91c1c';uberRow='<tr><td class="fw">UberEats Rating</td><td class="fw">'+parseFloat(uberAct).toFixed(1)+' &#9733;</td><td style="color:#888;">&ge;'+parseFloat(uberTgt).toFixed(1)+'</td><td style="color:'+vc+';font-weight:700;">'+(vv>=0?'+':'')+vv.toFixed(2)+'</td><td><span class="pill '+rPC(s)+'">'+rPT(s)+'</span></td><td style="color:#aaa;font-size:11px;">—</td></tr>';}
@@ -12664,13 +12815,30 @@ function _pnlVal(row, col){
   return typeof v==='number'?v:null;
 }
 
-// ── Apply label→field mapping for a single column
+// ── Extract 4-digit account code from a P&L label
+//    "3101 Disposables"        → "3101"
+//    "Total for 1000 Sales"    → "1000"
+//    "Gross Profit"            → null
+function _pnlExtractCode(label){
+  let m=label.match(/^(\d{4})\b/);
+  if(m) return m[1];
+  m=label.match(/Total for (\d{4})\b/);
+  if(m) return m[1];
+  return null;
+}
+
+// ── Apply label→field mapping for a single column, and capture ALL rows as structured data
 function _mapPnLFields(rows, col, rec){
+  if(!rec.lineItems) rec.lineItems=[];
+  if(!rec.codeMap)   rec.codeMap={};
+
   for(const row of rows){
     if(!row||row[0]==null) continue;
     const label=String(row[0]).trim();
     const val=_pnlVal(row, col);
     if(val===null) continue;
+
+    // ── Named field mapping (existing behaviour) ──────────────────────────
     switch(label){
       case '1001 Uber Eats':                           rec.uberEatsSales=val; break;
       case '1004 In-store':                            rec.instoreSales=val; break;
@@ -12703,7 +12871,46 @@ function _mapPnLFields(rows, col, rec){
       case 'Total for Other Expenses':                 rec.otherExpenses=val; break;
       case 'Net Income':                               rec.netIncome=val; break;
     }
+
+    // ── Structured capture: every numeric row → lineItems + codeMap ───────
+    const code=_pnlExtractCode(label);
+    rec.lineItems.push({code, label, value:val});
+    if(code) rec.codeMap[code]=val;
   }
+
+  // ── Reconcile known codes from named fields (covers labels without embedded codes)
+  //    e.g. "Total for Cost of Goods Sold" → no code in label, but we know it's 2000
+  const _setCode=(c,v)=>{ if(rec.codeMap[c]==null && v!=null) rec.codeMap[c]=v; };
+  _setCode('1000', rec.grossSales);
+  _setCode('2000', rec.cogs);
+  _setCode('3000', rec.payroll);
+  _setCode('3100', rec.supplies);
+  _setCode('3200', rec.advertising);
+  _setCode('3300', rec.commissions);
+  _setCode('3400', rec.utilities);
+  _setCode('3500', rec.insurance);
+  _setCode('3600', rec.generalBusiness);
+  _setCode('3700', rec.taxes);
+  _setCode('3800', rec.professionalFees);
+
+  // ── Computed KPIs from codeMap ────────────────────────────────────────────
+  const cm=rec.codeMap;
+  const sales=cm['1000']??null;
+  if(sales!=null && sales>0){
+    // COGS % = 2000 / 1000
+    if(cm['2000']!=null) rec.computedCogsPct=+(cm['2000']/sales*100).toFixed(2);
+    // D&C % = (3101 + 3102) / 1000
+    const dc3101=cm['3101']??null;
+    const dc3102=cm['3102']??null;
+    if(dc3101!=null || dc3102!=null){
+      const dcAmt=(dc3101??0)+(dc3102??0);
+      rec.computedDcAmt=+dcAmt.toFixed(2);
+      rec.computedDcPct=+(dcAmt/sales*100).toFixed(2);
+    }
+    // Labor % = 3000 / 1000
+    if(cm['3000']!=null) rec.computedLaborPct=+(cm['3000']/sales*100).toFixed(2);
+  }
+
   PNL_ALL_KEYS.forEach(k=>{ if(rec[k]==null) rec[k]=0; });
   return rec;
 }
@@ -12741,6 +12948,71 @@ function buildBulkPnLRecords(rows, state, loc){
   });
 }
 
+// ── Lookup P&L derived KPIs for a specific loc / year / month
+//    Returns the full P&L record (with codeMap, lineItems, computed* fields) or null
+function getPnLDerivedKPIs(loc, year, month){
+  return getPnLRecords().find(r=>
+    r.loc===loc &&
+    String(r.year)===String(year) &&
+    parseInt(r.month)===parseInt(month)
+  ) || null;
+}
+
+// ── Auto-sync P&L-derived cost data into the KPI DB
+//    Writes fa/la/da (food cost $, labor $, D&C $) and the matching % ratios.
+//    Only writes if the P&L record has the relevant codeMap entry AND the value is non-zero.
+//    Never overwrites manually-entered net sales or other metrics.
+function _pnlAutoSyncKPI(records){
+  if(!records||!records.length) return false;
+  let dirty=false;
+  for(const rec of records){
+    const yr=String(rec.year);
+    const st=rec.state;
+    const lc=rec.loc;
+    const mi=parseInt(rec.month);
+    if(!DB[yr])      DB[yr]={};
+    if(!DB[yr][st])  DB[yr][st]={};
+    if(!DB[yr][st][lc]) DB[yr][st][lc]={
+      ns:Array(12).fill(null), dineIn:Array(12).fill(null), delivery:Array(12).fill(null),
+      fa:Array(12).fill(null), fp:Array(12).fill(null),
+      la:Array(12).fill(null), lp:Array(12).fill(null),
+      da:Array(12).fill(null), dp:Array(12).fill(null),
+      grStart:Array(12).fill(null), grEnd:Array(12).fill(null),
+      uberRating:Array(12).fill(null),
+      targets:{fp:Array(12).fill(null),lp:Array(12).fill(null),dp:Array(12).fill(null),uber:Array(12).fill(null)}
+    };
+    const d=DB[yr][st][lc];
+    const cm=rec.codeMap||{};
+    // Use P&L netSales as the denominator; fall back to existing KPI net sales
+    const ns=rec.netSales>0?rec.netSales:(()=>{ const s=totalNS(d,mi); return s>0?s:null; })();
+
+    // Food cost (COGS = account 2000)
+    const cogVal=cm['2000']??rec.cogs??null;
+    if(cogVal!=null && cogVal!==0){
+      d.fa[mi]=+cogVal.toFixed(2);
+      if(ns>0) d.fp[mi]=+(cogVal/ns).toFixed(4);
+      dirty=true;
+    }
+
+    // Labor (Payroll = account 3000)
+    const labVal=cm['3000']??rec.payroll??null;
+    if(labVal!=null && labVal!==0){
+      d.la[mi]=+labVal.toFixed(2);
+      if(ns>0) d.lp[mi]=+(labVal/ns).toFixed(4);
+      dirty=true;
+    }
+
+    // D&C (3101 Disposables + 3102 Cleaning)
+    if(rec.computedDcAmt!=null && rec.computedDcAmt!==0){
+      d.da[mi]=rec.computedDcAmt;
+      if(ns>0) d.dp[mi]=+(rec.computedDcAmt/ns).toFixed(4);
+      dirty=true;
+    }
+  }
+  if(dirty) save();
+  return dirty;
+}
+
 // ── Import handler (handles both single-month and bulk)
 function doImportPnl(){
   const pg='pnl'; const u=US[pg];
@@ -12771,6 +13043,9 @@ function doImportPnl(){
           if(idx>-1) stored[idx]=record; else stored.push(record);
         }
         savePnLRecords(stored);
+
+        // Auto-sync P&L cost data into KPI DB (food cost, labor, D&C)
+        _pnlAutoSyncKPI(validRecs);
 
         // Create upload log entry
         const uploads=getUploads();
@@ -13337,27 +13612,32 @@ function renderPnLDashboard(rec, locRecs){
     </div>`;
 
   // ── Full P&L table (QuickBooks order, all lines, % of net sales)
+  //    t types: h2=section header, g=group header, T=total row, B=bold total, s=standard line, ss=sub-line (deeper indent)
+  const cm = rec.codeMap || {};
   const tRows=[
     {t:'h2',label:'Income'},
-    {t:'g', label:'Gross Sales',       val:rec.grossSales},
-    {t:'s', label:'Uber Eats',         val:rec.uberEatsSales},
-    {t:'s', label:'In-Store',          val:rec.instoreSales},
+    {t:'g', label:'Gross Sales',       val:rec.grossSales,      code:'1000'},
+    {t:'s', label:'Uber Eats',         val:rec.uberEatsSales,   code:'1001'},
+    {t:'s', label:'In-Store',          val:rec.instoreSales,    code:'1004'},
     {t:'s', label:'Discounts',         val:rec.discounts},
     {t:'s', label:'Refunds',           val:rec.refunds},
     {t:'T', label:'Net Sales',         val:rec.netSales},
     {t:'h2',label:'Cost of Goods Sold'},
-    {t:'s', label:'Cost of Goods Sold',val:rec.cogs},
+    {t:'s', label:'Cost of Goods Sold',val:rec.cogs,            code:'2000', kpi:true},
     {t:'B', label:'Gross Profit',      val:rec.grossProfit},
     {t:'h2',label:'Operating Expenses'},
-    {t:'s', label:'Payroll',           val:rec.payroll},
-    {t:'s', label:'Supplies & Materials', val:rec.supplies},
-    {t:'s', label:'Advertising & Marketing', val:rec.advertising},
-    {t:'s', label:'Commissions & Fees',val:rec.commissions},
-    {t:'s', label:'Utilities',         val:rec.utilities},
-    {t:'s', label:'Insurance',         val:rec.insurance},
-    {t:'s', label:'General Business',  val:rec.generalBusiness},
-    ...(rec.taxes?[{t:'s',label:'Taxes & Business Licenses',val:rec.taxes}]:[]),
-    {t:'s', label:'Professional Fees', val:rec.professionalFees},
+    {t:'s', label:'Payroll',           val:rec.payroll,         code:'3000'},
+    {t:'s', label:'Supplies & Materials', val:rec.supplies,     code:'3100'},
+    // Sub-line items for D&C — only shown when codeMap has them (new parser)
+    ...(cm['3101']!=null?[{t:'ss',label:'Disposables & Cleaning',val:cm['3101'],code:'3101',kpi:true}]:[]),
+    ...(cm['3102']!=null?[{t:'ss',label:'Inventory Disposable Shrinkage',val:cm['3102'],code:'3102',kpi:true}]:[]),
+    {t:'s', label:'Advertising & Marketing', val:rec.advertising, code:'3200'},
+    {t:'s', label:'Commissions & Fees',val:rec.commissions,     code:'3300'},
+    {t:'s', label:'Utilities',         val:rec.utilities,       code:'3400'},
+    {t:'s', label:'Insurance',         val:rec.insurance,       code:'3500'},
+    {t:'s', label:'General Business',  val:rec.generalBusiness, code:'3600'},
+    ...(rec.taxes?[{t:'s',label:'Taxes & Business Licenses',val:rec.taxes,code:'3700'}]:[]),
+    {t:'s', label:'Professional Fees', val:rec.professionalFees,code:'3800'},
     ...(rec.travel?[{t:'s',label:'Travel',val:rec.travel}]:[]),
     ...(rec.penalties?[{t:'s',label:'Penalties & Settlements',val:rec.penalties}]:[]),
     {t:'T', label:'Total Expenses',    val:rec.totalExpenses},
@@ -13383,19 +13663,58 @@ function renderPnLDashboard(rec, locRecs){
         <tbody>
           ${tRows.map(r=>{
             if(r.t==='h2') return `<tr class="pnl-tbl-row-h2"><td colspan="3">${r.label}</td></tr>`;
-            const rowCls=r.t==='B'?'pnl-tbl-row-b':r.t==='T'?'pnl-tbl-row-t':'pnl-tbl-row-s';
-            const indCls=r.t==='s'?'pnl-tbl-ind':'';
-            const negCls=(r.val<0&&r.t==='s')?'pnl-tbl-neg':'';
-            const pctDisplay=r.t!=='h2'&&r.val!=null?fmtPnLPct(Math.abs(r.val),rec.netSales):'';
+            const isSS = r.t==='ss';
+            const rowCls=r.t==='B'?'pnl-tbl-row-b':r.t==='T'?'pnl-tbl-row-t':isSS?'pnl-tbl-row-ss':'pnl-tbl-row-s';
+            const indCls=(r.t==='s'||isSS)?'pnl-tbl-ind':'';
+            const negCls=(r.val<0&&(r.t==='s'||isSS))?'pnl-tbl-neg':'';
+            const pctDisplay=r.val!=null?fmtPnLPct(Math.abs(r.val),rec.netSales):'';
+            const codeTag=r.code?`<span style="font-size:9px;color:#94a3b8;font-weight:400;margin-left:5px;">${r.code}</span>`:'';
+            const kpiTag=r.kpi?`<span style="font-size:8px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 5px;margin-left:5px;vertical-align:middle;">KPI</span>`:'';
             return `<tr class="${rowCls}">
-              <td class="${indCls} ${negCls}" style="padding-left:${r.t==='s'?'38':'20'}px;">${r.label}</td>
+              <td class="${indCls} ${negCls}" style="padding-left:${isSS?'56':r.t==='s'?'38':'20'}px;">${r.label}${codeTag}${kpiTag}</td>
               <td class="num ${negCls}" style="text-align:right;padding:9px 20px;">${r.val!=null?fmtPnL(r.val):'—'}</td>
               <td class="num" style="text-align:right;padding:9px 20px;font-size:12px;color:var(--muted);">${pctDisplay}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
-    </div>`;
+    </div>
+
+    ${(()=>{
+      // Full line items captured from P&L (shown only for single-month records with lineItems)
+      if(!rec.lineItems || rec.lineItems.length===0 || rec._aggregated) return '';
+      const codeItems = rec.lineItems.filter(li=>li.code!=null).sort((a,b)=>Number(a.code)-Number(b.code));
+      if(!codeItems.length) return '';
+      const rows = codeItems.map(li=>{
+        const pct = rec.netSales>0 ? (Math.abs(li.value)/rec.netSales*100).toFixed(1)+'%' : '';
+        const isKpi = ['1000','2000','3000','3101','3102'].includes(li.code);
+        return `<tr style="border-bottom:1px solid #f1f0ec;">
+          <td style="padding:5px 14px;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap;width:60px;">${li.code}</td>
+          <td style="padding:5px 14px;font-size:11px;color:${isKpi?'#1e293b':'#64748b'};font-weight:${isKpi?'600':'400'};">${li.label}${isKpi?'<span style="font-size:8px;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 5px;margin-left:6px;font-weight:700;">KPI</span>':''}</td>
+          <td style="padding:5px 14px;font-size:11px;text-align:right;color:#1e293b;font-weight:600;">${fmtPnL(li.value)}</td>
+          <td style="padding:5px 14px;font-size:11px;text-align:right;color:#94a3b8;">${pct}</td>
+        </tr>`;
+      }).join('');
+      return `<details style="margin-top:8px;" class="pnl-li-details">
+        <summary style="cursor:pointer;padding:10px 16px;font-size:11px;font-weight:700;color:#475569;background:#f8f7f4;border:1.5px solid #e8e2d8;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+          <span>📋 All Parsed Line Items (${codeItems.length} with account codes)</span>
+          <span style="font-size:10px;color:#94a3b8;">click to expand</span>
+        </summary>
+        <div style="border:1.5px solid #e8e2d8;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead style="background:#f1f0ec;">
+              <tr>
+                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:left;color:#64748b;">Code</th>
+                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:left;color:#64748b;">Account Name</th>
+                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:right;color:#64748b;">Amount</th>
+                <th style="padding:6px 14px;font-size:10px;font-weight:700;text-align:right;color:#64748b;">% Net Sales</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </details>`;
+    })()}`;
 
   // ── Feature 1+5: Prime Cost & Payroll benchmark cards
   const pcBorder=primeCostOk?'#15803d':'#b91c1c';
@@ -13643,6 +13962,93 @@ function renderPnLDashboard(rec, locRecs){
       +'</div>';
   })();
 
+  // ── P&L Structured Data — Computed KPI Validation Panel (only for single-month records)
+  const pnlKpiPanelHTML = (()=>{
+    if(!rec.codeMap || rec._aggregated) return '';
+    const cm = rec.codeMap;
+    const sales = cm['1000'] ?? null;
+    // Codes we check
+    const checks = [
+      {code:'1000', label:'Total Sales',       val:cm['1000']??null, req:true},
+      {code:'2000', label:'Cost of Goods Sold',val:cm['2000']??null, req:true},
+      {code:'3000', label:'Payroll',            val:cm['3000']??null, req:false},
+      {code:'3101', label:'Disposables',        val:cm['3101']??null, req:false},
+      {code:'3102', label:'Cleaning',           val:cm['3102']??null, req:false},
+    ];
+    const foundCount = checks.filter(c=>c.val!=null).length;
+    const missingRequired = checks.filter(c=>c.req && c.val==null);
+    const overallOk = missingRequired.length===0;
+    const fmt$ = v => '$'+Math.round(v).toLocaleString('en-US');
+    const fmtPct = v => v!=null ? v.toFixed(1)+'%' : '—';
+
+    // Code row chips
+    const chips = checks.map(c=>{
+      const found = c.val!=null;
+      const bg    = found ? '#f0fdf4' : c.req ? '#fef2f2' : '#f8f7f4';
+      const border= found ? '#86efac' : c.req ? '#fca5a5' : '#e8e2d8';
+      const col   = found ? '#15803d' : c.req ? '#b91c1c' : '#94a3b8';
+      const icon  = found ? '✓' : c.req ? '✗' : '–';
+      return `<div style="display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;border:1px solid ${border};background:${bg};">
+        <span style="font-size:11px;font-weight:800;color:${col};">${icon}</span>
+        <span style="font-size:10px;font-weight:700;color:#374151;">${c.code}</span>
+        <span style="font-size:10px;color:#64748b;">${c.label}</span>
+        ${found?`<span style="font-size:10px;font-weight:600;color:${col};margin-left:auto;">${fmt$(c.val)}</span>`:''}
+      </div>`;
+    }).join('');
+
+    // Computed KPI row
+    const cogsPct  = rec.computedCogsPct  != null ? fmtPct(rec.computedCogsPct)  : '—';
+    const dcPct    = rec.computedDcPct    != null ? fmtPct(rec.computedDcPct)    : '—';
+    const laborPct = rec.computedLaborPct != null ? fmtPct(rec.computedLaborPct) : '—';
+    const dcAmt    = rec.computedDcAmt    != null ? fmt$(rec.computedDcAmt)       : '—';
+    const kpiRow   = sales!=null ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e8e2d8;display:flex;flex-wrap:wrap;gap:12px;">
+        <div style="flex:1;min-width:100px;background:#fafaf7;border:1px solid #e8e2d8;border-radius:8px;padding:8px 12px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">COGS %</div>
+          <div style="font-size:18px;font-weight:800;color:${rec.computedCogsPct!=null?(rec.computedCogsPct>35?'#b91c1c':rec.computedCogsPct>30?'#ca8a04':'#15803d'):'#94a3b8'};font-family:'Oswald',sans-serif;">${cogsPct}</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px;">2000 ÷ 1000</div>
+        </div>
+        <div style="flex:1;min-width:100px;background:#fafaf7;border:1px solid #e8e2d8;border-radius:8px;padding:8px 12px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">D&C %</div>
+          <div style="font-size:18px;font-weight:800;color:${rec.computedDcPct!=null?(rec.computedDcPct>3?'#b91c1c':rec.computedDcPct>2?'#ca8a04':'#15803d'):'#94a3b8'};font-family:'Oswald',sans-serif;">${dcPct}</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px;">(3101+3102) ÷ 1000 · ${dcAmt}</div>
+        </div>
+        <div style="flex:1;min-width:100px;background:#fafaf7;border:1px solid #e8e2d8;border-radius:8px;padding:8px 12px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">Labor %</div>
+          <div style="font-size:18px;font-weight:800;color:${rec.computedLaborPct!=null?(rec.computedLaborPct>35?'#b91c1c':rec.computedLaborPct>30?'#ca8a04':'#15803d'):'#94a3b8'};font-family:'Oswald',sans-serif;">${laborPct}</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px;">3000 ÷ 1000</div>
+        </div>
+        <div style="flex:2;min-width:200px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:16px;">🔄</span>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#92400e;">Auto-synced to KPI Dashboard</div>
+            <div style="font-size:9px;color:#78350f;margin-top:2px;">Food cost, labor, and D&C values written automatically on import. KPI cards will reflect these figures.</div>
+          </div>
+        </div>
+      </div>` : '';
+
+    const headerColor = overallOk ? '#15803d' : '#b91c1c';
+    const headerBg    = overallOk ? '#f0fdf4'  : '#fef2f2';
+    const headerBorder= overallOk ? '#86efac'  : '#fca5a5';
+    const statusText  = overallOk
+      ? `${foundCount}/${checks.length} account codes found — computed KPIs available`
+      : `Missing required codes: ${missingRequired.map(c=>c.code+' '+c.label).join(', ')}`;
+
+    return `<div style="margin-bottom:20px;background:white;border:1.5px solid ${headerBorder};border-radius:12px;overflow:hidden;">
+      <div style="background:${headerBg};padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid ${headerBorder};">
+        <span style="font-size:14px;">${overallOk?'✅':'⚠️'}</span>
+        <div>
+          <span style="font-size:12px;font-weight:800;color:${headerColor};">P&L Account Codes</span>
+          <span style="font-size:11px;color:#64748b;margin-left:8px;">${statusText}</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
+        ${kpiRow}
+      </div>
+    </div>`;
+  })();
+
   el.innerHTML=`
     <div style="background:#fcfaf4;border-bottom:1px solid var(--border);">${pills}</div>
     <div class="main">
@@ -13662,6 +14068,7 @@ function renderPnLDashboard(rec, locRecs){
       </div>`:''}
       ${bePanel}
       ${unitEconPanel}
+      ${pnlKpiPanelHTML}
       ${tableHTML}
       ${whatifPanel}
     </div>`;
@@ -15662,14 +16069,17 @@ function _pfAvgCheck(loc){
 }
 
 // Health score — weighted model reflecting Skinny Louie QSR operations.
-// Weights (sum to 100 when all components have data):
-//   Food Cost  30 — primary margin driver
-//   Labor      25 — primary margin driver
-//   Uber       25 — brand signal + direct revenue impact for QSR
-//   Reviews    15 — growth signal (target: 24 new reviews/year ≈ 2/month)
-//   D&C         5 — real cost but smaller individual impact
-// Missing components are excluded and remaining weights are renormalized.
-function _pfHealthScore(loc){
+// Weights (sum to 100 when all components present):
+//   Food Cost    25 — primary margin driver
+//   Labor        20 — primary margin driver
+//   Uber         20 — brand signal + direct revenue impact
+//   Sales YoY    15 — growth / momentum signal
+//   Reviews      10 — brand growth signal (target 24/year)
+//   Avg Check     5 — fleet-relative (pass chkScore in ctx)
+//   D&C           5 — real cost, smaller individual impact
+// Missing components excluded; remaining weights renormalized.
+// ctx = { salesYoY: ratio|null, chkScore: 0-100|null } — optional fleet-level context
+function _pfHealthScore(loc, ctx){
   const y=_pfYTD(loc); if(!y)return null;
   const uber=_pfUber(loc);
   const grNew=_pfGRNew(loc);
@@ -15679,19 +16089,30 @@ function _pfHealthScore(loc){
   const rc=(a,t)=>{if(a==null)return null;return Math.min(100,(a/t)*100);};
   // Reviews scorer: target = 24 new reviews/year; capped at 100
   const revScore=grNew!=null?Math.min(100,(grNew/24)*100):null;
+  // Sales YoY scorer: +10% or more = 100; -10% or worse = 0; no data = null
+  const yoyScore=(ctx?.salesYoY!=null)
+    ?(()=>{const r=ctx.salesYoY;return r>=1.10?100:r>=1.00?60+40*(r-1.00)/0.10:r>=0.90?10+50*(r-0.90)/0.10:0;})()
+    :null;
   const comps=[
-    {score:cc(y.fpct,DEFAULT_TGTS.fp),w:30},
-    {score:cc(y.lpct,DEFAULT_TGTS.lp),w:25},
-    {score:rc(uber,DEFAULT_TGTS.uber),w:25},
-    {score:revScore,w:15},
-    {score:cc(y.dpct,DEFAULT_TGTS.dp),w:5},
+    {key:'fp',  label:'Food Cost',   score:cc(y.fpct,DEFAULT_TGTS.fp),  w:25},
+    {key:'lp',  label:'Labor',       score:cc(y.lpct,DEFAULT_TGTS.lp),  w:20},
+    {key:'ub',  label:'Uber',        score:rc(uber,DEFAULT_TGTS.uber),   w:20},
+    {key:'yoy', label:'Sales YoY',   score:yoyScore,                     w:15},
+    {key:'rev', label:'Reviews',     score:revScore,                     w:10},
+    {key:'chk', label:'Avg Check',   score:ctx?.chkScore??null,          w:5},
+    {key:'dc',  label:'D&C',         score:cc(y.dpct,DEFAULT_TGTS.dp),  w:5},
   ];
   let wSum=0,wTotal=0;
   for(const c of comps){if(c.score!=null){wSum+=c.score*c.w;wTotal+=c.w;}}
-  return wTotal===0?null:Math.round(wSum/wTotal*10)/10;
+  const total=wTotal===0?null:Math.round(wSum/wTotal*10)/10;
+  // Return object with score + per-component breakdown for transparency
+  return total==null?null:{score:total, comps};
 }
 
-// Health score pill HTML.
+// Convenience wrapper — returns just the numeric score (for backward compat).
+function _pfHS(loc,ctx){ const r=_pfHealthScore(loc,ctx); return r==null?null:r.score; }
+
+// Health score pill HTML. Accepts numeric score directly.
 function _pfHSPill(s){
   if(s==null)return'<span style="color:#94a3b8;">—</span>';
   const cls=s>=85?'pf-hs-green':s>=70?'pf-hs-yellow':s>=55?'pf-hs-orange':'pf-hs-red';
@@ -15708,16 +16129,85 @@ function pfSort(col){
 // Year selector.
 function pfSetYear(yr){ _pfYear=yr; renderPortfolioPage(); renderNavRight(); }
 
+// Sales YoY ratio for a loc: current year YTD / same-period prior year.
+function _pfSalesYoY(loc){
+  const prevYear=String(Number(_pfYear)-1);
+  let curTS=0, prevTS=0;
+  // Current year
+  const d=_pfLocD(loc); if(!d)return null;
+  for(let i=0;i<12;i++){ const s=totalNS(d,i); if(s>0) curTS+=s; }
+  if(curTS===0)return null;
+  // Prior year — search all states
+  let dp=null;
+  for(const st of ['FL','NY']){ const _d=DB[prevYear]?.[st]?.[loc]; if(_d){dp=_d;break;} }
+  if(!dp)return null;
+  for(let i=0;i<12;i++){ const s=totalNS(dp,i); if(s>0) prevTS+=s; }
+  return prevTS>0?curTS/prevTS:null;
+}
+
 // Build per-store data array (allowed stores only, with data in _pfYear).
+// Two-pass: first build raw data, then compute fleet context for relative scores.
 function _pfBuildData(){
-  return _allowedLocs().map(loc=>({
-    loc,
-    ytd:      _pfYTD(loc),
-    hs:       _pfHealthScore(loc),
-    uber:     _pfUber(loc),
-    grNew:    _pfGRNew(loc),
-    avgCheck: _pfAvgCheck(loc),
-  })).filter(s=>s.ytd&&s.ytd.ts>0);
+  // Pass 1 — raw per-store data (no fleet context yet)
+  const raw=_allowedLocs().map(loc=>{
+    const ytd=_pfYTD(loc); if(!ytd||!(ytd.ts>0)) return null;
+    return { loc, ytd, uber:_pfUber(loc), grNew:_pfGRNew(loc),
+             avgCheck:_pfAvgCheck(loc), salesYoY:_pfSalesYoY(loc) };
+  }).filter(Boolean);
+  if(!raw.length) return [];
+
+  // Pass 2 — fleet context: avg check relative scoring
+  const checks=raw.map(s=>s.avgCheck).filter(v=>v!=null);
+  const chkMin=checks.length?Math.min(...checks):null;
+  const chkMax=checks.length?Math.max(...checks):null;
+  const chkScore=v=>{
+    if(v==null||chkMin==null) return null;
+    if(chkMax===chkMin) return 75; // only one data point
+    return Math.round((v-chkMin)/(chkMax-chkMin)*100);
+  };
+
+  // Pass 3 — health score + insights
+  const stores=raw.map(s=>{
+    const ctx={salesYoY:s.salesYoY, chkScore:chkScore(s.avgCheck)};
+    const hsObj=_pfHealthScore(s.loc,ctx);
+    return {...s, hs:hsObj?.score??null, hsComps:hsObj?.comps??null};
+  });
+
+  // Rank order for "best store" insight
+  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
+  const bestLoc=ranked[0]?.loc;
+  const worstLoc=ranked[ranked.length-1]?.loc;
+
+  // Generate quick insight per store
+  stores.forEach(s=>{
+    const y=s.ytd; const issues=[]; const goods=[];
+    const fpOver=y.fpct!=null&&y.fpct>DEFAULT_TGTS.fp;
+    const lpOver=y.lpct!=null&&y.lpct>DEFAULT_TGTS.lp;
+    const dpOver=y.dpct!=null&&y.dpct>DEFAULT_TGTS.dp;
+    const uberLow=s.uber!=null&&s.uber<DEFAULT_TGTS.uber;
+    const uberHigh=s.uber!=null&&s.uber>=4.8;
+    const growYoY=s.salesYoY!=null&&s.salesYoY>=1.05;
+    const dropYoY=s.salesYoY!=null&&s.salesYoY<0.97;
+    if(fpOver&&lpOver) issues.push('Costs need control');
+    else if(fpOver)    issues.push('Food cost above target');
+    else if(lpOver)    issues.push('Labor above target');
+    if(uberLow)        issues.push('Uber rating low');
+    if(dpOver)         issues.push('D&C above target');
+    if(growYoY)        goods.push('Sales growing YoY');
+    if(uberHigh)       goods.push('Strong Uber rating');
+    if(!fpOver&&!lpOver&&!dpOver&&!uberLow) goods.push('All KPIs on target');
+    if(dropYoY)        issues.push('Sales declining YoY');
+    // Compose insight
+    let insight='';
+    if(s.loc===bestLoc&&ranked.length>1)        insight='🏆 Best performing store';
+    else if(s.loc===worstLoc&&ranked.length>1)  insight='⚠️ Needs most attention';
+    else if(issues.length&&goods.length)         insight=issues[0]+' · '+goods[0];
+    else if(issues.length)                       insight=issues.join(' · ');
+    else if(goods.length)                        insight=goods.join(' · ');
+    else                                         insight='Insufficient data';
+    s.insight=insight;
+  });
+  return stores;
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
@@ -15731,12 +16221,11 @@ function renderPortfolioPage(){
   }
 
   let html='';
+  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
 
-  // ── SECTION 1: Needs Attention ────────────────────────────────────────────
+  // ── SECTION 1: Needs Attention (priority-ranked) ──────────────────────────
   // Severity = dollar_impact × sales_weight × issue_type_weight
-  // dollar_impact  = deviation × store_ytd_sales (actual dollars at risk)
-  // sales_weight   = 0.4–1.0 (higher-sales stores get proportionally higher priority)
-  // type_weight    = food 3.0 / labor 2.5 / uber 2.0 / d&c 1.0
+  // This ensures the top item is always the biggest operational dollar risk.
   const maxSales=Math.max(...stores.map(s=>s.ytd.ts||0));
   const sf=s=>maxSales>0?0.4+0.6*((s.ytd.ts||0)/maxSales):1;
   const alerts=[];
@@ -15744,19 +16233,19 @@ function renderPortfolioPage(){
     const y=s.ytd; const loc=s.loc; const sales=s.ytd.ts||0;
     if(y.fpct!=null && y.fpct>DEFAULT_TGTS.fp){
       const over=y.fpct-DEFAULT_TGTS.fp;
-      const dollarImpact=over*sales;
-      alerts.push({loc,severity:dollarImpact*3.0*sf(s),kpi:'Food Cost',icon:'🍔',
+      const di=over*sales;
+      alerts.push({loc,severity:di*3.0*sf(s),kpi:'Food Cost',icon:'🍔',
         sev:over>0.04?'high':'med',actual:fmtP(y.fpct),target:fmtP(DEFAULT_TGTS.fp),
         delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:dollarImpact>500?`~${fmtK(dollarImpact)} excess`:null});
+        impact:di>500?`~${fmtK(di)} at risk`:null});
     }
     if(y.lpct!=null && y.lpct>DEFAULT_TGTS.lp){
       const over=y.lpct-DEFAULT_TGTS.lp;
-      const dollarImpact=over*sales;
-      alerts.push({loc,severity:dollarImpact*2.5*sf(s),kpi:'Labor',icon:'👥',
+      const di=over*sales;
+      alerts.push({loc,severity:di*2.5*sf(s),kpi:'Labor',icon:'👥',
         sev:over>0.04?'high':'med',actual:fmtP(y.lpct),target:fmtP(DEFAULT_TGTS.lp),
         delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:dollarImpact>500?`~${fmtK(dollarImpact)} excess`:null});
+        impact:di>500?`~${fmtK(di)} at risk`:null});
     }
     if(s.uber!=null && s.uber<DEFAULT_TGTS.uber){
       const gap=DEFAULT_TGTS.uber-s.uber;
@@ -15766,75 +16255,63 @@ function renderPortfolioPage(){
     }
     if(y.dpct!=null && y.dpct>DEFAULT_TGTS.dp){
       const over=y.dpct-DEFAULT_TGTS.dp;
-      const dollarImpact=over*sales;
-      alerts.push({loc,severity:dollarImpact*1.0*sf(s),kpi:'D&C',icon:'🧹',
+      const di=over*sales;
+      alerts.push({loc,severity:di*1.0*sf(s),kpi:'D&C',icon:'🧹',
         sev:over>0.01?'high':'med',actual:fmtP(y.dpct),target:fmtP(DEFAULT_TGTS.dp),
         delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:dollarImpact>200?`~${fmtK(dollarImpact)} excess`:null});
+        impact:di>200?`~${fmtK(di)} at risk`:null});
+    }
+    if(s.salesYoY!=null && s.salesYoY<0.97){
+      const drop=1-s.salesYoY;
+      const di=drop*sales;
+      alerts.push({loc,severity:di*1.8*sf(s),kpi:'Sales Trend',icon:'📉',
+        sev:drop>0.05?'high':'med',actual:fmtP(s.salesYoY-1),target:'≥ 0%',
+        delta:`${((s.salesYoY-1)*100).toFixed(1)}% vs prior year`,
+        impact:di>1000?`~${fmtK(di)} revenue gap`:null});
     }
   }
   alerts.sort((a,b)=>b.severity-a.severity);
   const topAlerts=alerts.slice(0,5);
 
-  html+=`<div class="pf-section-hdr">⚠️ Needs Attention</div>`;
+  html+=`<div class="pf-section-hdr">⚠️ Needs Attention
+    <span class="pf-shdr-sub">Ranked by dollar impact · Store size weighted</span></div>`;
   if(!topAlerts.length){
-    html+=`<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 18px;color:#166534;font-size:13px;font-weight:600;margin-bottom:28px;">✅ All stores are on target for ${_pfYear}.</div>`;
+    html+=`<div class="pf-all-ok">✅ All stores are on target for ${_pfYear}.</div>`;
   } else {
     html+=`<div style="margin-bottom:28px;">`;
-    for(const a of topAlerts){
-      html+=`<div class="pf-alert-item${a.sev==='high'?'':' warn'}">
+    topAlerts.forEach((a,idx)=>{
+      const isTop=idx===0;
+      html+=`<div class="pf-alert-item${a.sev==='high'?'':' warn'}${isTop?' pf-alert-top':''}">
+        ${isTop?`<div class="pf-alert-rank">#1</div>`:'<div class="pf-alert-rank-blank"></div>'}
         <div class="pf-alert-icon">${a.icon}</div>
         <div style="flex:1;min-width:0;">
           <div class="pf-alert-loc">${a.loc}</div>
           <div class="pf-alert-kpi">${a.kpi} · ${a.delta}${a.impact?` · <strong style="color:#b91c1c;">${a.impact}</strong>`:''}</div>
         </div>
-        <div style="text-align:right;">
+        <div style="text-align:right;flex-shrink:0;">
           <div class="pf-alert-actual">${a.actual}</div>
           <div class="pf-alert-tgt">tgt ${a.target}</div>
         </div>
       </div>`;
-    }
+    });
     html+=`</div>`;
   }
 
-  // ── SECTION 2: Top Performing Stores ─────────────────────────────────────
-  const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
-  const topN=Math.min(3,ranked.length);
-  if(topN>0){
-    html+=`<div class="pf-section-hdr">🏆 Top Performing Stores</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;">`;
-    for(let i=0;i<topN;i++){
-      const s=ranked[i];
-      const medal=i===0?'🥇':i===1?'🥈':'🥉';
-      const stats=[
-        s.ytd.fpct!=null?`Food ${fmtP(s.ytd.fpct)}`:null,
-        s.ytd.lpct!=null?`Labor ${fmtP(s.ytd.lpct)}`:null,
-        s.uber!=null?`Uber ${s.uber.toFixed(2)}`:null,
-        s.ytd.ts>0?`Sales ${fmtK(s.ytd.ts)}`:null,
-      ].filter(Boolean);
-      html+=`<div class="pf-top-store">
-        <div style="font-size:24px;margin-bottom:4px;">${medal}</div>
-        <div class="pf-top-store-loc">${s.loc}</div>
-        <div style="margin-bottom:10px;">${_pfHSPill(s.hs)}</div>
-        <div style="font-size:12px;color:#64748b;line-height:1.8;">${stats.join('<br>')}</div>
-      </div>`;
-    }
-    html+=`</div>`;
-  }
-
-  // ── SECTION 3: Store Comparison Table ────────────────────────────────────
+  // ── SECTION 2: Comparison Table (main decision tool) ──────────────────────
   const COLS=[
-    {k:'sales',   lbl:'Net Sales',  asc:false},
-    {k:'fp',      lbl:'Food Cost',  asc:true },
-    {k:'lp',      lbl:'Labor',      asc:true },
-    {k:'dp',      lbl:'D&amp;C',    asc:true },
-    {k:'uber',    lbl:'Uber',       asc:false},
-    {k:'reviews', lbl:'Reviews',    asc:false},
-    {k:'check',   lbl:'Avg Check',  asc:false},
-    {k:'hs',      lbl:'Health',     asc:false},
+    {k:'sales',   lbl:'Net Sales',  asc:false, tip:'YTD net sales'},
+    {k:'yoy',     lbl:'vs LY',      asc:false, tip:'Sales vs prior year'},
+    {k:'fp',      lbl:'Food Cost',  asc:true,  tip:`Target ≤ ${fmtP(DEFAULT_TGTS.fp)}`},
+    {k:'lp',      lbl:'Labor',      asc:true,  tip:`Target ≤ ${fmtP(DEFAULT_TGTS.lp)}`},
+    {k:'dp',      lbl:'D&amp;C',    asc:true,  tip:`Target ≤ ${fmtP(DEFAULT_TGTS.dp)}`},
+    {k:'uber',    lbl:'Uber',       asc:false, tip:`Target ≥ ${DEFAULT_TGTS.uber}`},
+    {k:'reviews', lbl:'Reviews',    asc:false, tip:'New reviews this year'},
+    {k:'check',   lbl:'Avg Check',  asc:false, tip:'Avg revenue per order'},
+    {k:'hs',      lbl:'Health',     asc:false, tip:'Composite health score'},
   ];
   const getVal=(s,k)=>{
     if(k==='sales')   return s.ytd?.ts??null;
+    if(k==='yoy')     return s.salesYoY??null;
     if(k==='fp')      return s.ytd?.fpct??null;
     if(k==='lp')      return s.ytd?.lpct??null;
     if(k==='dp')      return s.ytd?.dpct??null;
@@ -15844,13 +16321,14 @@ function renderPortfolioPage(){
     if(k==='hs')      return s.hs;
     return null;
   };
+  // Best/worst per column
   const bw={};
   for(const {k,asc} of COLS){
     const vals=stores.map(s=>getVal(s,k)).filter(v=>v!=null);
     if(!vals.length){bw[k]={b:null,w:null};continue;}
     bw[k]={b:asc?Math.min(...vals):Math.max(...vals),w:asc?Math.max(...vals):Math.min(...vals)};
   }
-  const sorted=[...stores].sort((a,b)=>{
+  const tbSort=[...stores].sort((a,b)=>{
     const av=getVal(a,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
     const bv=getVal(b,_pfSortCol)??(_pfSortDir==='desc'?-Infinity:Infinity);
     return _pfSortDir==='asc'?(av>bv?1:-1):(av<bv?1:-1);
@@ -15859,68 +16337,85 @@ function renderPortfolioPage(){
     if(_pfSortCol!==k)return'<span class="pf-sort-arr">↕</span>';
     return`<span class="pf-sort-arr">${_pfSortDir==='desc'?'↓':'↑'}</span>`;
   };
-  // Cell coloring strategy:
-  //   KPI target cols (fp/lp/dp/uber): absolute thresholds → real operational meaning
-  //   Sales/check/reviews: relative gradient within this store set → comparison signal
-  //   Health: pill already encodes color
-  // Best value in column → bold green text; worst → bold red text (overlaid on bg)
   const fmtCell=(k,s)=>{
     const v=getVal(s,k);
-    if(v==null)return`<td style="text-align:center;color:#94a3b8;">—</td>`;
-    if(k==='hs')return`<td style="text-align:center;">${_pfHSPill(v)}</td>`;
-    let txt;
-    if(k==='sales')  txt=fmtK(v);
+    if(v==null)return`<td class="pf-td-na">—</td>`;
+    if(k==='hs')return`<td style="text-align:center;padding:8px 6px;">${_pfHSPill(v)}</td>`;
+    let txt,badge='';
+    if(k==='sales')       txt=fmtK(v);
+    else if(k==='yoy')    txt=(v>=1?'+':'')+(((v-1)*100).toFixed(1))+'%';
     else if(k==='fp'||k==='lp'||k==='dp') txt=fmtP(v)||'—';
-    else if(k==='check') txt=fmt$(v);
-    else if(k==='uber')  txt=v.toFixed(2);
-    else if(k==='reviews') txt=v>0?`+${v}`:'—';
+    else if(k==='check')  txt=fmt$(v);
+    else if(k==='uber')   txt=v.toFixed(2);
+    else if(k==='reviews')txt=v>0?`+${v}`:'—';
     else txt=String(v);
     const {b,w}=bw[k]||{};
-    const isBest=b!=null&&Math.abs(v-b)<0.00001;
+    const isBest =b!=null&&Math.abs(v-b)<0.00001;
     const isWorst=w!=null&&b!==w&&Math.abs(v-w)<0.00001;
-    // Background color
+    if(isBest)  badge=`<span class="pf-cell-crown" title="Best in fleet">▲</span>`;
+    if(isWorst) badge=`<span class="pf-cell-nadir"  title="Worst in fleet">▼</span>`;
+    // Background gradient
     let bg='';
-    if(k==='fp')      bg=v<=THR.fp.g?'#d1fae5':v<=THR.fp.y?'#fef3c7':'#fee2e2';
-    else if(k==='lp') bg=v<=THR.lp.g?'#d1fae5':v<=THR.lp.y?'#fef3c7':'#fee2e2';
-    else if(k==='dp') bg=v<=THR.dp.g?'#d1fae5':v<=THR.dp.y?'#fef3c7':'#fee2e2';
-    else if(k==='uber') bg=v>=DEFAULT_TGTS.uber?'#d1fae5':v>=DEFAULT_TGTS.uber-0.2?'#fef3c7':'#fee2e2';
+    if(k==='fp')       bg=v<=THR.fp.g?'#d1fae5':v<=THR.fp.y?'#fef3c7':'#fee2e2';
+    else if(k==='lp')  bg=v<=THR.lp.g?'#d1fae5':v<=THR.lp.y?'#fef3c7':'#fee2e2';
+    else if(k==='dp')  bg=v<=THR.dp.g?'#d1fae5':v<=THR.dp.y?'#fef3c7':'#fee2e2';
+    else if(k==='uber')bg=v>=DEFAULT_TGTS.uber?'#d1fae5':v>=DEFAULT_TGTS.uber-0.2?'#fef3c7':'#fee2e2';
+    else if(k==='yoy') bg=v>=1.02?'#d1fae5':v>=0.98?'#fef3c7':'#fee2e2';
     else if(b!=null&&w!=null&&b!==w){
       const col=COLS.find(c=>c.k===k);
-      // goodRatio: 1 = at best value, 0 = at worst value
       const goodRatio=col?.asc?(w-v)/(w-b):(v-w)/(b-w);
       bg=goodRatio>=0.65?'#d1fae5':goodRatio>=0.35?'#fef3c7':'#fee2e2';
     }
-    let st=`text-align:center;${bg?`background:${bg};`:''}`;
-    if(isBest)       st+='font-weight:700;color:#166534;';
-    else if(isWorst) st+='font-weight:700;color:#991b1b;';
-    return`<td style="${st}">${txt}</td>`;
+    let st=`text-align:center;padding:8px 6px;${bg?`background:${bg};`:''}`;
+    if(isBest)       st+='font-weight:800;color:#166534;';
+    else if(isWorst) st+='font-weight:800;color:#991b1b;';
+    return`<td style="${st}">${txt}${badge}</td>`;
+  };
+  // Store name cell: loc + insight
+  const locCell=s=>{
+    const hsRank=ranked.findIndex(r=>r.loc===s.loc)+1;
+    const medal=hsRank===1?'🥇':hsRank===2?'🥈':hsRank===3?'🥉':'';
+    return`<td style="padding:8px 10px;white-space:nowrap;">
+      <div style="font-weight:700;color:#1e293b;font-size:13px;">${medal}${s.loc}</div>
+      <div class="pf-td-insight">${s.insight||''}</div>
+    </td>`;
   };
 
-  html+=`<div class="pf-section-hdr">📊 Store Comparison · ${_pfYear}</div>
+  html+=`<div class="pf-section-hdr">📊 Store Comparison · ${_pfYear}
+    <span class="pf-shdr-sub">▲ = fleet best &nbsp;·&nbsp; ▼ = fleet worst &nbsp;·&nbsp; Click headers to sort</span></div>
   <div class="pf-tbl-wrap" style="margin-bottom:32px;"><table class="pf-tbl">
     <thead><tr>
-      <th style="text-align:left;" onclick="pfSort('loc')">Store ${arr('loc')}</th>
-      ${COLS.map(({k,lbl})=>`<th class="${_pfSortCol===k?'sort-on':''}" onclick="pfSort('${k}')">${lbl} ${arr(k)}</th>`).join('')}
+      <th style="text-align:left;padding:10px 10px;" onclick="pfSort('loc')">Store ${arr('loc')}</th>
+      ${COLS.map(({k,lbl,tip})=>`<th class="${_pfSortCol===k?'sort-on':''}" onclick="pfSort('${k}')" title="${tip}">${lbl} ${arr(k)}</th>`).join('')}
     </tr></thead>
     <tbody>
-    ${sorted.map(s=>`<tr>
-      <td style="font-weight:600;color:#1e293b;white-space:nowrap;">${s.loc}</td>
+    ${tbSort.map(s=>`<tr class="pf-tr-hover">
+      ${locCell(s)}
       ${COLS.map(({k})=>fmtCell(k,s)).join('')}
     </tr>`).join('')}
     </tbody>
   </table></div>`;
 
-  // ── SECTION 4: Health Score Ranking ──────────────────────────────────────
-  if(ranked.length>1){
+  // ── SECTION 3: Health Score Ranking + Breakdown ───────────────────────────
+  if(ranked.length>0){
     const maxHs=ranked[0].hs||100;
-    html+=`<div class="pf-section-hdr">🏅 Health Score Ranking</div>
+    html+=`<div class="pf-section-hdr">🏅 Health Score Ranking
+      <span class="pf-shdr-sub">Weighted: Food 25 · Labor 20 · Uber 20 · Sales YoY 15 · Reviews 10 · Avg Check 5 · D&amp;C 5</span></div>
     <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:8px 20px;margin-bottom:32px;">`;
     ranked.forEach((s,idx)=>{
       const barPct=maxHs>0?(s.hs/maxHs*100).toFixed(1):0;
       const barColor=s.hs>=85?'#16a34a':s.hs>=70?'#ca8a04':s.hs>=55?'#ea580c':'#dc2626';
+      // Score breakdown mini-chips
+      const compChips=(s.hsComps||[]).filter(c=>c.score!=null).map(c=>{
+        const col=c.score>=70?'#16a34a':c.score>=50?'#ca8a04':'#dc2626';
+        return`<span class="pf-comp-chip" style="color:${col};">${c.label} ${Math.round(c.score)}</span>`;
+      }).join('');
       html+=`<div class="pf-rank-row" style="${idx===ranked.length-1?'border-bottom:none;':''}">
         <div class="pf-rank-num">${idx+1}</div>
-        <div class="pf-rank-loc">${s.loc}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="pf-rank-loc">${s.loc}</div>
+          ${compChips?`<div class="pf-comp-chips">${compChips}</div>`:''}
+        </div>
         <div class="pf-rank-bar-wrap"><div class="pf-rank-bar" style="width:${barPct}%;background:${barColor};"></div></div>
         <div style="width:52px;text-align:right;">${_pfHSPill(s.hs)}</div>
       </div>`;
@@ -15928,7 +16423,7 @@ function renderPortfolioPage(){
     html+=`</div>`;
   }
 
-  // ── SECTION 5: KPI Targets vs Actual ─────────────────────────────────────
+  // ── SECTION 4: KPI Targets vs Actual ─────────────────────────────────────
   html+=`<div class="pf-section-hdr">🎯 KPI Targets vs Actual · ${_pfYear}</div>
   <div class="pf-kpi-tgt-grid">`;
   for(const s of stores){
@@ -15940,12 +16435,15 @@ function renderPortfolioPage(){
         <span class="pf-kpi-tgt-val ${hit?'pf-kpi-hit':'pf-kpi-miss'}">${hit?'✓':'✗'} ${actual}</span>
       </div>`;
     };
+    const yoyLbl=s.salesYoY!=null?(s.salesYoY>=1?'+':'')+((s.salesYoY-1)*100).toFixed(1)+'%':null;
     html+=`<div class="pf-kpi-tgt-item">
       <div class="pf-kpi-tgt-store">${s.loc}</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-style:italic;">${s.insight||''}</div>
       ${mkRow('Food Cost', y.fpct!=null?fmtP(y.fpct):null, fmtP(DEFAULT_TGTS.fp), y.fpct!=null&&y.fpct<=DEFAULT_TGTS.fp)}
       ${mkRow('Labor',     y.lpct!=null?fmtP(y.lpct):null, fmtP(DEFAULT_TGTS.lp), y.lpct!=null&&y.lpct<=DEFAULT_TGTS.lp)}
       ${mkRow('D&C',       y.dpct!=null?fmtP(y.dpct):null, fmtP(DEFAULT_TGTS.dp), y.dpct!=null&&y.dpct<=DEFAULT_TGTS.dp)}
       ${mkRow('Uber',      s.uber!=null?s.uber.toFixed(2):null, DEFAULT_TGTS.uber.toFixed(1), s.uber!=null&&s.uber>=DEFAULT_TGTS.uber)}
+      ${mkRow('Sales YoY', yoyLbl, '≥ 0%', s.salesYoY!=null&&s.salesYoY>=1.0)}
     </div>`;
   }
   html+=`</div>`;
