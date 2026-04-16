@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v47.1 -->
+<!-- BUILD: 2026-04-15-v47.8 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2042,9 +2042,18 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .sx-disc-hdr   { background:var(--mustard); padding:10px 16px; font-family:'Oswald',sans-serif;
                  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#5a4c2e; }
 .sx-void-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.sx-void-card  { background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+.sx-void-card  { background:var(--surf); border:1.5px solid var(--border); border-radius:10px; padding:16px; text-align:center; transition:border-color .2s; }
+.sx-void-card.vc-ok   { border-color:#86efac; background:linear-gradient(160deg,#fff,#f0fdf4); }
+.sx-void-card.vc-warn { border-color:#fcd34d; background:linear-gradient(160deg,#fff,#fffbeb); }
+.sx-void-card.vc-bad  { border-color:#fca5a5; background:linear-gradient(160deg,#fff,#fef2f2); }
 .sx-void-card .vc-val { font-size:22px; font-weight:800; color:var(--text); }
 .sx-void-card .vc-lbl { font-size:11px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.04em; }
+.sx-void-card .vc-badge { font-size:10px; font-weight:700; margin-top:4px; }
+.sx-void-card .vc-trend { font-size:10px; font-weight:600; margin-top:2px; }
+.sx-void-signal { border-radius:10px; padding:13px 18px; margin-bottom:18px; display:flex; align-items:flex-start; gap:12px; }
+.sx-void-signal .vs-icon { font-size:20px; line-height:1.3; flex-shrink:0; }
+.sx-void-signal .vs-title { font-size:14px; font-weight:800; }
+.sx-void-signal .vs-body  { font-size:12px; margin-top:3px; opacity:.88; line-height:1.5; }
 .sx-pct-bar-wrap { display:flex; align-items:center; gap:8px; }
 .sx-pct-bar      { flex:1; height:6px; background:#e8e3d8; border-radius:3px; overflow:hidden; min-width:50px; }
 .sx-pct-fill     { height:100%; background:var(--accent); border-radius:3px; }
@@ -3630,7 +3639,8 @@ try {
 }
 const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
 
-let _slUser     = null;
+let _slUser        = null;
+let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
 let _slRole     = null;
 let _slState    = 'all';  // 'all', 'FL', or 'NY'
 // _slHasScope: true only when a user_scopes row exists for this user.
@@ -3835,7 +3845,7 @@ async function doLogin(){
 
 async function doLogout(){
   await _supa.auth.signOut();
-  _slUser = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slLocations = null; _slPerms = null;
+  _slUser = null; _slDisplayName = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slLocations = null; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
   S.page = 'home';
   // Reset MN state so maintenance filters start clean on next login
@@ -3880,6 +3890,7 @@ async function _initApp(user){
     const uinfo = document.getElementById('nb-user-info');
     if(uinfo){
       const _displayName = profile?.name || user.email.split('@')[0];
+    _slDisplayName = _displayName; // persist globally for maintenance accountability
       const _initial = _displayName[0].toUpperCase();
       const roleLabel = _slRole==='admin'?'Admin':_slRole==='manager'?'Manager':'Viewer';
       const roleColor = _slRole==='admin'?'#c4a035':_slRole==='manager'?'rgba(255,255,255,.55)':'rgba(255,255,255,.35)';
@@ -6027,7 +6038,7 @@ function setLoc(l){
     const idx=S.cmpLocs.indexOf(l);
     if(idx>-1)S.cmpLocs.splice(idx,1);else S.cmpLocs.push(l);
   } else { S.loc=l; }
-  renderLocBar(); renderCards(); renderCharts(); renderTable(); renderHeatmap();
+  renderLocBar(); renderCards(); renderCharts(); renderTable(); renderHeatmap(); renderForecast();
 }
 function toggleCmp(){
   S.cmpMode=!S.cmpMode;
@@ -8641,32 +8652,59 @@ function renderSalesCompareBanner(allRecs){
   const availMonths=locRecs.map(r=>r.month).sort((a,b)=>a-b);
   const availLocs=[...new Set(filtered.map(r=>r.loc))];
 
-  let aPills='', bPills='';
+  // Year-vs-year: all records for this store (all years)
+  const allStoreRecs=allRecs.filter(r=>r.state===SX.state&&r.loc===SX.loc);
+  const otherYears=[...new Set(allStoreRecs.filter(r=>r.year!==SX.year).map(r=>r.year))].sort().reverse();
+  const otherYear=otherYears[0]||null; // most recent other year
+
+  let aPills='', bPills='', yearBannerExtra='';
   if(SX.cmpType==='month'){
     aPills=availMonths.map(m=>
       `<button class="mx-cmp-pill ${SX.month===m?'on':''}" onclick="sxSetMonth(${m})">${MSHORT[m]}</button>`).join('');
     bPills=availMonths.filter(m=>m!==SX.month).map(m=>
       `<button class="mx-cmp-pill ${SX.cmpMonth===m?'on':''}" onclick="sxSetCmpMonth(${m})">${MSHORT[m]}</button>`).join('');
     if(!bPills) bPills='<span style="font-size:12px;color:var(--muted);font-style:italic;">Upload more months to compare</span>';
-  } else {
+  } else if(SX.cmpType==='store'){
     aPills=availLocs.map(loc=>
       `<button class="mx-cmp-pill ${SX.loc===loc?'on':''}" onclick="sxSetLoc('${loc}')">${loc}</button>`).join('');
     bPills=availLocs.filter(l=>l!==SX.loc).map(loc=>
       `<button class="mx-cmp-pill ${SX.cmpLoc===loc?'on':''}" onclick="sxSetCmpLoc('${loc}')">${loc}</button>`).join('');
     if(!bPills) bPills='<span style="font-size:12px;color:var(--muted);font-style:italic;">Upload data for other stores to compare</span>';
+  } else {
+    // Year vs Year — pick a month, years are auto-derived
+    const allStoreMonths=[...new Set(allStoreRecs.map(r=>r.month))].sort((a,b)=>a-b);
+    const monthPills=allStoreMonths.map(m=>
+      `<button class="mx-cmp-pill ${SX.cmpYearMonth===m?'on':''}" onclick="sxSetCmpYearMonth(${m})">${MSHORT[m]}</button>`).join('');
+    if(otherYear){
+      yearBannerExtra=`
+        <div class="mx-cmp-sep"></div>
+        <span class="mx-cmp-label">Month:</span>
+        <div class="mx-cmp-pills">${monthPills||'<span style="font-size:12px;color:var(--muted);font-style:italic;">No data for this store</span>'}</div>
+        <div class="mx-cmp-sep"></div>
+        <span class="mx-cmp-label" style="white-space:nowrap;">Comparing:</span>
+        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;">${SX.year} <span style="color:var(--muted);font-weight:400;">vs</span> ${otherYear}</div>`;
+    } else {
+      yearBannerExtra=`
+        <div class="mx-cmp-sep"></div>
+        <span style="font-size:12px;color:var(--muted);font-style:italic;">Upload data for a second year to compare</span>`;
+    }
   }
-  return `
-    <div class="mx-cmp-bar">
-      <div class="mx-cmp-type">
-        <button class="mx-cmp-type-btn ${SX.cmpType==='month'?'on':''}" onclick="sxSetCmpType('month')">Month vs Month</button>
-        <button class="mx-cmp-type-btn ${SX.cmpType==='store'?'on':''}" onclick="sxSetCmpType('store')">Store vs Store</button>
-      </div>
+
+  const abPillsSection = SX.cmpType!=='year' ? `
       <div class="mx-cmp-sep"></div>
       <span class="mx-cmp-label">Period A:</span>
       <div class="mx-cmp-pills">${aPills}</div>
       <div class="mx-cmp-sep"></div>
       <span class="mx-cmp-label">Period B:</span>
-      <div class="mx-cmp-pills">${bPills}</div>
+      <div class="mx-cmp-pills">${bPills}</div>` : yearBannerExtra;
+
+  return `
+    <div class="mx-cmp-bar">
+      <div class="mx-cmp-type">
+        <button class="mx-cmp-type-btn ${SX.cmpType==='month'?'on':''}" onclick="sxSetCmpType('month')">Month vs Month</button>
+        <button class="mx-cmp-type-btn ${SX.cmpType==='store'?'on':''}" onclick="sxSetCmpType('store')">Store vs Store</button>
+        <button class="mx-cmp-type-btn ${SX.cmpType==='year'?'on':''}" onclick="sxSetCmpType('year')">Year vs Year</button>
+      </div>${abPillsSection}
     </div>`;
 }
 
@@ -8678,10 +8716,47 @@ function renderSalesCompare(rec, allRecs){
   const fmtD=v=>(v>=0?'+':'')+fmt$(v);
   const fmtPct=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
   const banner=renderSalesCompareBanner(allRecs);
-  const labelA=SX.cmpType==='month'?MSHORT[rec.month]+' '+rec.year:rec.loc;
 
-  // Period B
+  // ── Year-vs-Year mode: resolve recA and recB independently
   let recB=null;
+  if(SX.cmpType==='year'){
+    // Find the other available year for this store
+    const allStoreRecs=allRecs.filter(r=>r.state===SX.state&&r.loc===SX.loc);
+    const otherYears=[...new Set(allStoreRecs.filter(r=>r.year!==SX.year).map(r=>r.year))].sort().reverse();
+    const otherYear=otherYears[0]||null;
+
+    if(!otherYear || SX.cmpYearMonth===null){
+      const cmpMsg=!otherYear
+        ? 'Upload data for a second year to enable year-over-year comparison.'
+        : 'Select a month above to compare.';
+      el.innerHTML=`<div class="mx-cmp-page">${banner}${_slStateHtml('empty',{icon:'📅',title:'Select a month to compare',msg:cmpMsg})}</div>`;
+      return;
+    }
+
+    // recA: same store, current year, chosen month
+    rec=allRecs.find(r=>r.state===SX.state&&r.loc===SX.loc&&r.year===SX.year&&r.month===SX.cmpYearMonth)||null;
+    // recB: same store, other year, same month
+    recB=allRecs.find(r=>r.state===SX.state&&r.loc===SX.loc&&r.year===otherYear&&r.month===SX.cmpYearMonth)||null;
+
+    if(!rec&&!recB){
+      el.innerHTML=`<div class="mx-cmp-page">${banner}${_slStateHtml('empty',{icon:'📭',title:'No data for this month in either year',msg:`No ${MSHORT[SX.cmpYearMonth]} data found for ${SX.loc} in ${SX.year} or ${otherYear}.`})}</div>`;
+      return;
+    }
+    if(!rec){
+      el.innerHTML=`<div class="mx-cmp-page">${banner}${_slStateHtml('empty',{icon:'📭',title:'Missing '+SX.year+' data',msg:`No ${MSHORT[SX.cmpYearMonth]} ${SX.year} data for ${SX.loc}. Upload it to complete the comparison.`})}</div>`;
+      return;
+    }
+    if(!recB){
+      el.innerHTML=`<div class="mx-cmp-page">${banner}${_slStateHtml('empty',{icon:'📭',title:'Missing '+otherYear+' data',msg:`No ${MSHORT[SX.cmpYearMonth]} ${otherYear} data for ${SX.loc}. Upload it to complete the comparison.`})}</div>`;
+      return;
+    }
+  }
+
+  const labelA=SX.cmpType==='month'?MSHORT[rec.month]+' '+rec.year
+              :SX.cmpType==='year'  ?MSHORT[rec.month]+' '+rec.year
+              :rec.loc;
+
+  // ── Month / Store: resolve recB
   if(SX.cmpType==='month'&&SX.cmpMonth!==null)
     recB=allRecs.find(r=>r.state===SX.state&&r.year===SX.year&&r.loc===SX.loc&&r.month===SX.cmpMonth);
   else if(SX.cmpType==='store'&&SX.cmpLoc)
@@ -8695,10 +8770,14 @@ function renderSalesCompare(rec, allRecs){
     return;
   }
 
-  const labelB=SX.cmpType==='month'?MSHORT[recB.month]+' '+recB.year:recB.loc;
+  const labelB=SX.cmpType==='month'?MSHORT[recB.month]+' '+recB.year
+              :SX.cmpType==='year'  ?MSHORT[recB.month]+' '+recB.year
+              :recB.loc;
 
-  // Delta direction: always newer - older (trend over time)
-  const aIsNewer = SX.cmpType==='store' ? true : rec.month >= recB.month;
+  // Delta direction: newer year/month is A (newer → positive delta = growth)
+  const aIsNewer = SX.cmpType==='store' ? true
+                 : SX.cmpType==='year'  ? Number(rec.year)>=Number(recB.year)
+                 : rec.month >= recB.month;
 
   // deltaChip: vA = Period A value, vB = Period B value → delta = newer - older
   const deltaChip=(vA,vB,money=false)=>{
@@ -9425,14 +9504,22 @@ function renderMixDashboard(rec, locRecs, allRecs){
   // Summary cards
   // Build pie data: main cats + Others
   const PIE_CATS = ['SMASHED BURGERS','SIDES','MILKSHAKES','DRINKS'];
-  const PIE_COLORS = ['#9b292c','#c45b5e','#e2d5b8','#4a9ac4','#b8b0a0'];
+  // Color map keyed by display name — deterministic, never index-shifted
+  const PIE_COLOR_MAP = {
+    'Burgers':    '#7A1E1E',
+    'Sides':      '#C65A5A',
+    'Milkshakes': '#D8C9A6',
+    'Drinks':     '#4C8FB5',
+    'Others':     '#B0A99F',
+  };
+  const PIE_FALLBACK = '#CCCCCC';
   const pieData = PIE_CATS.map(name=>{
     const c = categories.find(x=>x.name.toUpperCase()===name);
     return { name: name==='SMASHED BURGERS'?'Burgers': name==='NA BEVERAGES'?'Drinks': name.charAt(0)+name.slice(1).toLowerCase(), net: c?c.net:0 };
   });
   const othersNet = categories.filter(c=>!PIE_CATS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
   if(othersNet>0) pieData.push({name:'Others', net:othersNet});
-  const pieColors = PIE_COLORS.slice(0, pieData.length);
+  const pieColors = pieData.map(d => PIE_COLOR_MAP[d.name] || PIE_FALLBACK);
   const legendRows = pieData.map((d,i)=>{
     const pct = totalNet>0?(d.net/totalNet*100).toFixed(1):'0';
     return `<div class="mx-legend-row"><div class="mx-legend-dot" style="background:${pieColors[i]}"></div><span class="mx-legend-name">${d.name}</span><span class="mx-legend-pct">${pct}%</span></div>`;
@@ -9548,7 +9635,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
     <div class="mx-tabs">
       <button class="mx-tab all-tab ${MX.activeTab==='ALL'?'on':''}" onclick="mxSetTab('ALL')">📊 All</button>
       ${catNames.map(n=>`<button class="mx-tab ${MX.activeTab===n?'on':''}" onclick="mxSetTab('${n}')">${n}</button>`).join('')}
-      <button class="mx-tab ${MX.activeTab==='__eng__'?'on':''}" onclick="mxSetTab('__eng__')" style="${MX.activeTab==='__eng__'?'':''}">📐 Menu Engineering</button>
+      <button class="mx-tab ${MX.activeTab==='__perf__'?'on':''}" onclick="mxSetTab('__perf__')">📊 Performance</button>
       <button class="mx-tab ${MX.activeTab==='__xstore__'?'on':''}" onclick="mxSetTab('__xstore__')">🗺 Store Compare</button>
     </div>`;
 
@@ -9562,72 +9649,56 @@ function renderMixDashboard(rec, locRecs, allRecs){
     'CREW SIZE ORDERS':['','Other'],
   };
 
-  // ── Menu Engineering tab
+  // ── Product Performance tab
   let sectionsHTML = '';
-  if(MX.activeTab==='__eng__'){
-    const engItems=rec.items.filter(it=>it.qty>0&&it.net>0);
-    const totalQty=engItems.reduce((s,it)=>s+it.qty,0)||1;
-    const medianQtyShare=(()=>{
-      const sorted=[...engItems].sort((a,b)=>b.qty-a.qty);
-      const vals=sorted.map(it=>it.qty/totalQty*100);
-      const mid=Math.floor(vals.length/2);
-      return vals.length>0?(vals.length%2===0?(vals[mid-1]+vals[mid])/2:vals[mid]):0;
-    })();
-    const netPerUnit=engItems.map(it=>it.net/it.qty);
-    const medianNPU=(()=>{
-      const sorted=[...netPerUnit].sort((a,b)=>a-b);
-      const mid=Math.floor(sorted.length/2);
-      return sorted.length>0?(sorted.length%2===0?(sorted[mid-1]+sorted[mid])/2:sorted[mid]):0;
-    })();
-    const maxNet=engItems.reduce((m,it)=>Math.max(m,it.net),1);
-    const engData=engItems.map(it=>{
-      const xV=+(it.qty/totalQty*100).toFixed(2);
-      const yV=+(it.net/it.qty).toFixed(2);
-      const isHigh_x=xV>=medianQtyShare, isHigh_y=yV>=medianNPU;
-      const quad=isHigh_x&&isHigh_y?'Star':isHigh_x&&!isHigh_y?'Plowhorse':!isHigh_x&&isHigh_y?'Puzzle':'Dog';
-      const col=quad==='Star'?'rgba(34,197,94,.7)':quad==='Puzzle'?'rgba(59,130,246,.7)':quad==='Plowhorse'?'rgba(234,179,8,.7)':'rgba(239,68,68,.7)';
-      return {x:xV,y:yV,r:Math.max(5,Math.round(Math.sqrt(it.net/maxNet)*30)),name:it.name,net:it.net,qty:it.qty,quad,col};
+  if(MX.activeTab==='__perf__'){
+    // Aggregate items across all months for the selected store + year
+    const perfMap = {};
+    (locRecs||[]).forEach(r => {
+      (r.items||[]).forEach(it => {
+        if(!it.name || it.qty <= 0 || it.net <= 0) return;
+        if(!perfMap[it.name]) perfMap[it.name] = {name: it.name, qty: 0, net: 0};
+        perfMap[it.name].qty += (it.qty||0);
+        perfMap[it.name].net += (it.net||0);
+      });
     });
-    const quadCounts={Star:0,Puzzle:0,Plowhorse:0,Dog:0};
-    engData.forEach(d=>quadCounts[d.quad]++);
-    const quadDesc={Star:'High popularity + high margin. These are your MVPs — protect them.',Puzzle:'Low popularity + high margin. Consider promoting or repricing.',Plowhorse:'High popularity + low margin. Simplify or find cost savings.',Dog:'Low popularity + low margin. Prime candidates for menu pruning.'};
-    const tableRows=engData.sort((a,b)=>b.net-a.net).map(d=>`<tr>
-      <td style="font-weight:500;">${d.name}</td>
-      <td style="text-align:center;"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${d.col.replace('.7','0.18')};color:${d.col.replace('rgba','rgb').replace(/,[^,]+\)$/,')')};">${d.quad}</span></td>
-      <td class="num">${d.qty.toLocaleString('en-US')}</td>
-      <td class="num">${fmt$(d.net)}</td>
-      <td class="num">$${(d.net/d.qty).toFixed(2)}</td>
-    </tr>`).join('');
-    const summaryCards=['Star','Puzzle','Plowhorse','Dog'].map(q=>{
-      const c=q==='Star'?'rgba(34,197,94,.15)':q==='Puzzle'?'rgba(59,130,246,.15)':q==='Plowhorse'?'rgba(234,179,8,.15)':'rgba(239,68,68,.15)';
-      const tc=q==='Star'?'#15803d':q==='Puzzle'?'#1d4ed8':q==='Plowhorse'?'#854d0e':'#b91c1c';
-      const ico=q==='Star'?'⭐':q==='Puzzle'?'🧩':q==='Plowhorse'?'🐎':q==='Dog'?'🐕':'';
-      return `<div style="background:${c};border-radius:10px;padding:12px 16px;min-width:130px;flex:1;">
-        <div style="font-size:11px;font-weight:700;color:${tc};margin-bottom:4px;">${ico} ${q}s <span style="font-size:18px;font-weight:900;">${quadCounts[q]}</span></div>
-        <div style="font-size:10px;color:var(--muted);line-height:1.4;">${quadDesc[q]}</div>
-      </div>`;
-    }).join('');
-    sectionsHTML=`
-      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;">${summaryCards}</div>
-      <div class="mx-sec">
-        <div class="mx-sec-title">Menu Engineering Matrix <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">· Bubble size = Total Net Revenue · X = Popularity · Y = Net Revenue per Unit Sold</span></div>
-        <div style="position:relative;height:380px;"><canvas id="mx-eng-chart"></canvas></div>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px;flex-wrap:wrap;">
-          <span style="color:#15803d;font-weight:700;">⭐ Stars — grow</span>
-          <span style="color:#1d4ed8;font-weight:700;">🧩 Puzzles — promote/price</span>
-          <span style="color:#854d0e;font-weight:700;">🐎 Plowhorses — cut costs</span>
-          <span style="color:#b91c1c;font-weight:700;">🐕 Dogs — consider eliminating</span>
+    const perfItems = Object.values(perfMap).filter(it => it.net > 0 && it.qty > 0);
+    perfItems.sort((a, b) => b.net - a.net);
+    const perfTop = perfItems.slice(0, 5);
+    const perfBot = perfItems.length > 5 ? [...perfItems].reverse().slice(0, 5) : [];
+    const storeName = rec ? rec.loc : (S.loc||'Store');
+    const perfYear = MX.year;
+    const perfTH = `<thead><tr>
+      <th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Item</th>
+      <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Net Revenue</th>
+      <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Units Sold</th>
+      <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">$/Unit</th>
+    </tr></thead>`;
+    const perfRow = (it, color) => `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px 12px;font-weight:500;font-size:13px;">${it.name}</td>
+      <td style="text-align:right;padding:8px 12px;font-weight:700;color:${color};font-size:13px;">$${Math.round(it.net).toLocaleString('en-US')}</td>
+      <td style="text-align:right;padding:8px 12px;color:var(--muted);font-size:13px;">${it.qty.toLocaleString('en-US')}</td>
+      <td style="text-align:right;padding:8px 12px;color:var(--muted);font-size:13px;">$${(it.net/it.qty).toFixed(2)}</td>
+    </tr>`;
+    if(perfItems.length === 0){
+      sectionsHTML = _slStateHtml('empty',{title:'No item data',msg:'No item-level sales data available for '+storeName+' · '+perfYear+'.'});
+    } else {
+      sectionsHTML = `
+        <div class="mx-sec" style="margin-bottom:16px;">
+          <div class="mx-sec-title" style="color:#15803d;">🟢 Top 5 Items by Revenue — ${storeName} · YTD ${perfYear}</div>
+          <div class="mx-item-table-wrap"><table class="mx-item-table" style="border-collapse:collapse;width:100%;">
+            ${perfTH}
+            <tbody>${perfTop.map(it=>perfRow(it,'#15803d')).join('')}</tbody>
+          </table></div>
         </div>
-      </div>
-      <div class="mx-sec">
-        <div class="mx-sec-title">Item Detail</div>
-        <div class="mx-item-table-wrap"><table class="mx-item-table">
-          <thead><tr><th>Item</th><th style="text-align:center;">Quadrant</th><th class="num">Qty Sold</th><th class="num">Net Revenue</th><th class="num">$/Unit</th></tr></thead>
-          <tbody>${tableRows}</tbody>
-        </table></div>
-      </div>`;
-    // Store eng data for chart init
-    window._mxEngData=engData; window._mxEngMedX=medianQtyShare; window._mxEngMedY=medianNPU;
+        <div class="mx-sec">
+          <div class="mx-sec-title" style="color:#b91c1c;">🔴 Bottom 5 Items by Revenue — ${storeName} · YTD ${perfYear}</div>
+          <div class="mx-item-table-wrap"><table class="mx-item-table" style="border-collapse:collapse;width:100%;">
+            ${perfTH}
+            <tbody>${perfBot.map(it=>perfRow(it,'#b91c1c')).join('')}</tbody>
+          </table></div>
+        </div>`;
+    }
   }
 
   // ── Store Compare tab
@@ -9697,9 +9768,9 @@ function renderMixDashboard(rec, locRecs, allRecs){
     window._mxXStoreTrendData=trendData;
   }
 
-  const activeCats = MX.activeTab==='ALL' ? categories : (MX.activeTab==='__eng__'||MX.activeTab==='__xstore__'?[]:categories.filter(c=>c.name===MX.activeTab));
+  const activeCats = MX.activeTab==='ALL' ? categories : (MX.activeTab==='__perf__'||MX.activeTab==='__xstore__'?[]:categories.filter(c=>c.name===MX.activeTab));
 
-  if(MX.activeTab!=='__eng__'&&MX.activeTab!=='__xstore__') {
+  if(MX.activeTab!=='__perf__'&&MX.activeTab!=='__xstore__') {
   if(activeCats.length===0 && MX.activeTab!=='ALL'){
     sectionsHTML=_slStateHtml('filtered',{
       title:'No items match this category filter',
@@ -9833,7 +9904,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
         </div>
       </div>`;
   }
-  } // end if not __eng__
+  } // end if not __perf__
 
   el.innerHTML = `
     <div class="mx-page">
@@ -9846,9 +9917,9 @@ function renderMixDashboard(rec, locRecs, allRecs){
       ${sectionsHTML}
     </div>`;
 
-  // Init donut chart (only for non-engineering tabs)
+  // Init donut chart (only for category tabs, not performance)
   if(window._mxPieChart){ window._mxPieChart.destroy(); window._mxPieChart=null; }
-  if(MX.activeTab!=='__eng__'){
+  if(MX.activeTab!=='__perf__'){
   const cvs = document.getElementById(canvasId);
   if(cvs && typeof Chart !== 'undefined'){
     window._mxPieChart = new Chart(cvs, {
@@ -9866,7 +9937,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       }
     });
   }
-  } // end if not __eng__ (donut)
+  } // end if not __perf__ (donut)
 
   // Init Burger Modifier Trend chart — fires whenever canvas is in DOM (ALL tab or SMASHED BURGERS tab)
   if(typeof Chart!=='undefined'){
@@ -9968,51 +10039,6 @@ function renderMixDashboard(rec, locRecs, allRecs){
     },50);
   }
 
-  // Init Menu Engineering bubble chart
-  if(MX.activeTab==='__eng__' && window._mxEngData && typeof Chart!=='undefined'){
-    if(window._mxEngChart){window._mxEngChart.destroy();window._mxEngChart=null;}
-    const engCvs=document.getElementById('mx-eng-chart');
-    if(engCvs){
-      const medX=window._mxEngMedX, medY=window._mxEngMedY;
-      const QUAD_COLORS={Star:'rgba(34,197,94,.7)',Puzzle:'rgba(59,130,246,.7)',Plowhorse:'rgba(234,179,8,.7)',Dog:'rgba(239,68,68,.7)'};
-      const byQuad={Star:[],Puzzle:[],Plowhorse:[],Dog:[]};
-      window._mxEngData.forEach(d=>{byQuad[d.quad].push(d);});
-      const datasets=Object.entries(byQuad).map(([q,items])=>({
-        label:q,
-        data:items.map(d=>({x:d.x,y:d.y,r:d.r,name:d.name,net:d.net,qty:d.qty})),
-        backgroundColor:QUAD_COLORS[q],
-        borderColor:QUAD_COLORS[q].replace('.7','1'),
-        borderWidth:1
-      }));
-      // Quadrant lines
-      const maxX=Math.max(...window._mxEngData.map(d=>d.x),medX*2)+0.5;
-      const maxY=Math.max(...window._mxEngData.map(d=>d.y),medY*2)+0.5;
-      window._mxEngChart=new Chart(engCvs,{
-        type:'bubble',
-        data:{datasets},
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          plugins:{
-            legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},
-            tooltip:{callbacks:{label:c=>{
-              const d=c.raw;
-              return [`${d.name}`, `Qty: ${d.qty.toLocaleString()}  Net: $${Math.round(d.net).toLocaleString()}`, `$/unit: $${(d.net/d.qty).toFixed(2)}`];
-            }}},
-            annotation:{
-              annotations:{
-                vLine:{type:'line',xMin:medX,xMax:medX,borderColor:'rgba(0,0,0,.25)',borderWidth:1.5,borderDash:[5,4]},
-                hLine:{type:'line',yMin:medY,yMax:medY,borderColor:'rgba(0,0,0,.25)',borderWidth:1.5,borderDash:[5,4]}
-              }
-            }
-          },
-          scales:{
-            x:{title:{display:true,text:'Popularity (% of Total Qty)',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'},min:0,max:maxX,ticks:{callback:v=>v.toFixed(1)+'%',font:{size:10}}},
-            y:{title:{display:true,text:'Net Revenue per Unit Sold ($)',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'},min:0,max:maxY,ticks:{callback:v=>'$'+v.toFixed(2),font:{size:10}}}
-          }
-        }
-      });
-    }
-  }
   _dbgMarkRender('mix');
 }
 
@@ -10093,7 +10119,7 @@ function loadToastJson(input){
           channels:(loc.channels||[]).map(ch=>({name:ch.name,netSales:+(ch.netSales||0).toFixed(2),orders:ch.orders,discount:0,items:0})),
           dayparts:(loc.dayparts||[]).map(dp=>({name:dp.name,orders:dp.orders,netSales:+(dp.netSales||0).toFixed(2),discount:0})),
           itemDiscounts:[], checkDiscounts:(loc.discounts||[]).map(d=>({name:d.name,count:d.count,orders:d.count,amount:+(d.amount||0).toFixed(2)})),
-          voidAmount:loc.voidAmount||0, voidOrders:loc.voidOrders||0, voidItems:0, voidPct:loc.voidPct||0
+          voidAmount:loc.voidAmount??null, voidOrders:loc.voidOrders??null, voidItems:loc.voidItems??null, voidPct:loc.voidPct??null
         });
         for(const day of (loc.daily||[])){
           const dd=new Date(day.date+'T12:00:00');
@@ -10132,7 +10158,7 @@ function loadToastJson(input){
 
 // Sales state (mirrors MX pattern)
 let SX = { state:'FL', loc:null, year:'2026', month:null, activeTab:'overview',
-           cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null, voidTgt:2.0,
+           cmpMode:false, cmpType:'month', cmpMonth:null, cmpLoc:null, cmpYearMonth:null, voidTgt:2.0,
            rankSort:{col:'netSales',dir:'desc'},
            viewMode:'month', quarter:0, selectedDay:null };
 
@@ -10173,10 +10199,16 @@ function sxAggregateRecs(recs){
     }
     return Object.values(map);
   };
-  const voidAmount=recs.reduce((s,r)=>s+(r.voidAmount||0),0);
-  const voidOrders=recs.reduce((s,r)=>s+(r.voidOrders||0),0);
-  const voidItems =recs.reduce((s,r)=>s+(r.voidItems ||0),0);
-  const voidPct   =totalNS>0?voidAmount/totalNS*100:0;
+  // Null-aware aggregation: if ALL records have null, result is null (no data).
+  // If at least one record has a real value, sum only the non-null ones.
+  const _nullSum=(prop)=>{
+    const vals=recs.map(r=>r[prop]).filter(v=>v!=null);
+    return vals.length ? vals.reduce((s,v)=>s+v,0) : null;
+  };
+  const voidAmount=_nullSum('voidAmount');
+  const voidOrders=_nullSum('voidOrders');
+  const voidItems =_nullSum('voidItems');
+  const voidPct   =(voidAmount!=null&&totalNS>0)?+(voidAmount/totalNS*100).toFixed(2):null;
   return {
     ...recs[recs.length-1],
     netSales:totalNS, totalOrders,
@@ -10208,7 +10240,7 @@ function getSxTopItems(rec){
 }
 
 function sxSetYear(y){
-  SX.year=y; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null;
+  SX.year=y; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null; SX.cmpYearMonth=null;
   // Keep current loc if it has data for the new year, otherwise reset so renderSalesPage picks a valid one
   if(SX.loc && SX.loc!=='ALL'){
     const hasData=getSalesRecords().some(r=>r.state===SX.state&&r.loc===SX.loc&&r.year===y);
@@ -10217,7 +10249,7 @@ function sxSetYear(y){
   try{ renderSalesPage(); }catch(e){ console.error(e); }
   renderNavRight();
 }
-function sxSetState(st){ SX.state=st; SX.loc=null; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null; try{ renderSalesPage(); }catch(e){ console.error(e); } renderNavRight(); }
+function sxSetState(st){ SX.state=st; SX.loc=null; SX.month=null; SX.activeTab='overview'; SX.cmpMode=false; SX.cmpMonth=null; SX.cmpYearMonth=null; try{ renderSalesPage(); }catch(e){ console.error(e); } renderNavRight(); }
 // Ensures SX.year is valid for the current state+loc; snaps to most recent available year if not.
 function sxEnsureValidYear(){
   if(!SX.loc || SX.loc==='ALL') return;
@@ -10229,7 +10261,7 @@ function sxEnsureValidYear(){
 }
 function sxSetLoc(loc){
   // Reset compare mode whenever crossing the fleet boundary (to or from ALL)
-  if(loc==='ALL' || SX.loc==='ALL'){ SX.cmpMode=false; SX.cmpMonth=null; SX.cmpLoc=null; }
+  if(loc==='ALL' || SX.loc==='ALL'){ SX.cmpMode=false; SX.cmpMonth=null; SX.cmpLoc=null; SX.cmpYearMonth=null; }
   SX.loc=loc; SX.month=null; SX.activeTab='overview';
   if(loc!=='ALL') sxEnsureValidYear(); // auto-snap year if the new loc has no data for current year
   renderSalesPage();
@@ -10238,18 +10270,29 @@ function sxSetMonth(m){ SX.month=m; SX.activeTab='overview'; renderSalesPage(); 
 function sxSetTab(tab){ SX.activeTab=tab; renderSalesDashboard(..._sxCurrentArgs()); }
 function sxSetCmpMonth(m){ SX.cmpMonth=m; renderSalesPage(); }
 function sxSetCmpLoc(loc){ SX.cmpLoc=loc; renderSalesPage(); }
-function sxSetCmpType(t){ SX.cmpType=t; SX.cmpMonth=null; SX.cmpLoc=null; renderSalesPage(); }
+function sxSetCmpYearMonth(m){ SX.cmpYearMonth=m; renderSalesPage(); }
+function sxSetCmpType(t){ SX.cmpType=t; SX.cmpMonth=null; SX.cmpLoc=null; SX.cmpYearMonth=null; renderSalesPage(); }
 function sxToggleCmp(){
   // Compare mode is not available in fleet (ALL) view — silently ignore
   if(SX.loc==='ALL') return;
   SX.cmpMode=!SX.cmpMode; SX.cmpLoc=null;
   if(SX.cmpMode){
-    const locRecs=getSalesRecords()
-      .filter(r=>r.state===SX.state&&r.year===SX.year&&r.loc===SX.loc)
-      .sort((a,b)=>b.month-a.month);
-    if(locRecs.length>=2){ SX.month=locRecs[0].month; SX.cmpMonth=locRecs[1].month; }
-    else { SX.cmpMonth=null; }
-  } else { SX.cmpMonth=null; }
+    if(SX.cmpType==='month'){
+      const locRecs=getSalesRecords()
+        .filter(r=>r.state===SX.state&&r.year===SX.year&&r.loc===SX.loc)
+        .sort((a,b)=>b.month-a.month);
+      if(locRecs.length>=2){ SX.month=locRecs[0].month; SX.cmpMonth=locRecs[1].month; }
+      else { SX.cmpMonth=null; }
+    } else if(SX.cmpType==='year'){
+      // Auto-pick: prefer a month that exists in both years; else pick most recent from current year
+      const all=getSalesRecords().filter(r=>r.state===SX.state&&r.loc===SX.loc);
+      const monthsThisYear=all.filter(r=>r.year===SX.year).map(r=>r.month);
+      const otherYears=[...new Set(all.filter(r=>r.year!==SX.year).map(r=>r.year))];
+      const monthsOtherYears=all.filter(r=>otherYears.includes(r.year)).map(r=>r.month);
+      const inBoth=monthsThisYear.filter(m=>monthsOtherYears.includes(m)).sort((a,b)=>b-a);
+      SX.cmpYearMonth = inBoth.length ? inBoth[0] : (monthsThisYear.sort((a,b)=>b-a)[0]??null);
+    }
+  } else { SX.cmpMonth=null; SX.cmpYearMonth=null; }
   renderSalesPage(); renderNavRight();
 }
 
@@ -10329,33 +10372,40 @@ function parseSalesFile(file, state, loc, year, month){
         }));
 
         // Void summary — keyword scan within the Void section, validated against netSales
+        // Init to null: null = "not found in file"; 0 = "genuinely zero"
         const vSectionIdx = findRow('Void summary');
-        let voidAmount=0, voidOrders=0, voidItems=0, voidPct=0;
+        let voidAmount=null, voidOrders=null, voidItems=null, voidPct=null;
         if(vSectionIdx>=0){
-          // Scan up to 10 rows after the section header; stop at next blank section break
+          // Scan up to 15 rows after the section header; stop at double-blank
           let blanks=0;
           for(let vi=vSectionIdx+1; vi<Math.min(vSectionIdx+15, rows.length); vi++){
             const vr=rows[vi]; if(!vr) continue;
             const lbl=(vr[0]!=null?String(vr[0]).trim().toLowerCase():'');
             if(!lbl){ blanks++; if(blanks>=2) break; continue; }
             blanks=0;
-            const raw=vr[1]!=null?Number(vr[1]):null;
-            if(raw===null||isNaN(raw)) continue;
+            // Scan columns 1, 2, 3 — Toast sometimes shifts values right
+            let raw=null;
+            for(let ci=1; ci<=3; ci++){
+              if(vr[ci]!=null){ const n=Number(vr[ci]); if(!isNaN(n)){ raw=n; break; } }
+            }
+            if(raw===null) continue;
             if(lbl.includes('amount') && !lbl.includes('%') && !lbl.includes('pct')){
-              // sanity: void amount must be < gross sales and > 0
-              voidAmount = (raw>0 && raw<(grossSales||netSales||1e9)) ? raw : 0;
+              // Toast exports void amounts as negative; use abs value
+              const absRaw=Math.abs(raw);
+              // sanity: must be less than gross sales (generous upper bound)
+              voidAmount = absRaw<=(grossSales||netSales||1e9) ? +absRaw.toFixed(2) : null;
             } else if(lbl.includes('order')){
-              voidOrders = (raw>=0 && raw<1e6) ? Math.round(raw) : 0;
+              voidOrders = (raw>=0 && raw<1e6) ? Math.round(raw) : null;
             } else if(lbl.includes('item')){
-              voidItems  = (raw>=0 && raw<1e6) ? Math.round(raw) : 0;
+              voidItems  = (raw>=0 && raw<1e6) ? Math.round(raw) : null;
             } else if(lbl.includes('%') || lbl.includes('pct')){
               // normalise: some files store 0.031 (decimal), others 3.1 (already %)
               const pctVal = (raw>0 && raw<1) ? raw*100 : raw;
-              voidPct = (pctVal>=0 && pctVal<=100) ? +pctVal.toFixed(2) : 0;
+              voidPct = (pctVal>=0 && pctVal<=100) ? +pctVal.toFixed(2) : null;
             }
           }
-          // fallback: derive % from amount/netSales if still 0
-          if(!voidPct && voidAmount>0 && netSales>0){
+          // Derive % from amount/netSales if pct row was absent but amount parsed OK
+          if(voidPct===null && voidAmount!=null && voidAmount>0 && netSales>0){
             voidPct = +((voidAmount/netSales)*100).toFixed(2);
           }
         }
@@ -11032,8 +11082,8 @@ function renderSalesDashboard(rec, locRecs, allRecs){
 
   // Void alert banner
   const voidDispPct=(()=>{
-    if(rec.voidPct>=0&&rec.voidPct<=100) return rec.voidPct;
-    if(rec.voidAmount>0&&rec.netSales>0) return +(rec.voidAmount/rec.netSales*100).toFixed(2);
+    if(rec.voidPct!=null&&rec.voidPct>=0&&rec.voidPct<=100) return rec.voidPct;
+    if(rec.voidAmount!=null&&rec.voidAmount>0&&rec.netSales>0) return +(rec.voidAmount/rec.netSales*100).toFixed(2);
     return null;
   })();
   const voidAlertHtml=(voidDispPct!=null&&voidDispPct>SX.voidTgt)
@@ -11224,36 +11274,109 @@ function renderSalesDashboard(rec, locRecs, allRecs){
   }
 
   if(SX.activeTab==='voids'){
-    // For each void field: check if the stored value is logically possible
-    const ns = rec.netSales || 1;
-    const vAmt   = rec.voidAmount;
-    const vOrd   = rec.voidOrders;
-    const vItm   = rec.voidItems;
-    const vPct   = rec.voidPct;
-    // Valid ranges: amount < net sales, orders < 100k, items < 100k, pct 0-100
-    const amtOk  = vAmt  >= 0 && vAmt  <= ns;
-    const ordOk  = vOrd  >= 0 && vOrd  <  1e5;
-    const itmOk  = vItm  >= 0 && vItm  <  1e5;
-    const pctOk  = vPct  >= 0 && vPct  <= 100;
-    // Derive % from amount/netSales if stored pct is bad but amount is good
-    const dispPct = pctOk ? vPct : (amtOk && vAmt>0) ? +((vAmt/ns)*100).toFixed(2) : null;
-    const corrupt = !amtOk || !ordOk || !itmOk || !pctOk;
+    const ns   = rec.netSales || 1;
+    const vAmt = rec.voidAmount;
+    const vOrd = rec.voidOrders;
+    const vItm = rec.voidItems;
+    const vPct = rec.voidPct;
+
+    // Null-aware validity checks
+    const amtOk = vAmt != null && vAmt >= 0 && vAmt <= ns;
+    const ordOk = vOrd != null && vOrd >= 0 && vOrd < 1e5;
+    const itmOk = vItm != null && vItm >= 0 && vItm < 1e5;
+    const pctOk = vPct != null && vPct >= 0 && vPct <= 100;
+    const dispPct = pctOk ? vPct : (amtOk && vAmt > 0) ? +((vAmt / ns) * 100).toFixed(2) : null;
+
+    // Data quality banners
+    const inconsistent  = ordOk && vOrd > 0 && vAmt === null;
+    const corrupt       = (!amtOk && vAmt !== null) || (!ordOk && vOrd !== null) || (!itmOk && vItm !== null) || (!pctOk && vPct !== null);
     const corruptBanner = corrupt ? `
-      <div style="background:#fef3cd;border:1px solid #e6c96c;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#7c5e00;display:flex;align-items:center;gap:8px;">
-        <span>⚠️</span>
-        <span>Some Void data for this month was imported with a formatting error. <strong>Re-import the file</strong> to correct it.</span>
+      <div style="background:#fef3cd;border:1px solid #e6c96c;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7c5e00;display:flex;align-items:center;gap:8px;">
+        <span>⚠️</span><span>Some void data was imported with a formatting error. <strong>Re-import the file</strong> to correct it.</span>
       </div>` : '';
+    const inconsistentBanner = (!corrupt && inconsistent) ? `
+      <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#9a3412;display:flex;align-items:center;gap:8px;">
+        <span>ℹ️</span><span><strong>${vOrd} void orders</strong> were recorded but the dollar amount could not be read from this file. Re-import to recover full data.</span>
+      </div>` : '';
+
+    // Trend vs previous month
+    const _sortedRecs = [...locRecs].sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month));
+    const _curIdx     = _sortedRecs.findIndex(r=>r.month===SX.month && String(r.year)===String(SX.year));
+    const _prevRec    = _curIdx > 0 ? _sortedRecs[_curIdx-1] : null;
+    const _getPct = r => {
+      if(!r) return null;
+      if(r.voidPct!=null&&r.voidPct>=0&&r.voidPct<=100) return r.voidPct;
+      if(r.voidAmount!=null&&r.voidAmount>0&&r.netSales>0) return +(r.voidAmount/r.netSales*100).toFixed(2);
+      return null;
+    };
+    const prevPct    = _getPct(_prevRec);
+    const trendDelta = (dispPct!=null && prevPct!=null) ? +(dispPct - prevPct).toFixed(2) : null;
+    const trendUp    = trendDelta != null && trendDelta >  0.1;
+    const trendDown  = trendDelta != null && trendDelta < -0.1;
+    const prevMonLabel = _prevRec ? (MONTHS_SHORT[_prevRec.month]||'') : '';
+
+    // ── Problem Signal ──────────────────────────────────────────────────────
+    let sigColor, sigBg, sigBorder, sigIcon, sigTitle, sigWhere;
+    if(dispPct === null){
+      sigColor='#6b7280'; sigBg='#f9fafb'; sigBorder='#d1d5db';
+      sigIcon='❔'; sigTitle='Void data not available';
+      sigWhere='This file did not contain a readable Void summary. Re-import the file to load void metrics.';
+    } else if(dispPct > SX.voidTgt && trendUp){
+      sigColor='#991b1b'; sigBg='#fef2f2'; sigBorder='#fecaca';
+      sigIcon='🔴'; sigTitle='Voids require attention';
+      sigWhere=`Void rate is <strong>${dispPct.toFixed(1)}%</strong> — above the ${SX.voidTgt}% target and rising (+${trendDelta.toFixed(1)}% vs ${prevMonLabel}). Review recent shifts with your team.`;
+    } else if(dispPct > SX.voidTgt && trendDown){
+      sigColor='#92400e'; sigBg='#fffbeb'; sigBorder='#fcd34d';
+      sigIcon='🟡'; sigTitle='Voids trending high';
+      sigWhere=`Void rate is <strong>${dispPct.toFixed(1)}%</strong> — above target but improving (${trendDelta.toFixed(1)}% vs ${prevMonLabel}). Keep monitoring.`;
+    } else if(dispPct > SX.voidTgt){
+      sigColor='#92400e'; sigBg='#fffbeb'; sigBorder='#fcd34d';
+      sigIcon='🟡'; sigTitle='Voids trending high';
+      sigWhere=`Void rate is <strong>${dispPct.toFixed(1)}%</strong> — above the ${SX.voidTgt}% target. Compare with previous months to identify the cause.`;
+    } else if(trendUp && trendDelta > 0.3){
+      sigColor='#92400e'; sigBg='#fffbeb'; sigBorder='#fcd34d';
+      sigIcon='🟡'; sigTitle='Voids trending high';
+      sigWhere=`Within target at <strong>${dispPct.toFixed(1)}%</strong>, but rising +${trendDelta.toFixed(1)}% vs ${prevMonLabel}. Worth keeping an eye on.`;
+    } else {
+      sigColor='#14532d'; sigBg='#f0fdf4'; sigBorder='#86efac';
+      sigIcon='🟢'; sigTitle='Voids under control';
+      sigWhere = trendDown
+        ? `Void rate is <strong>${dispPct.toFixed(1)}%</strong> — within target and improving (${trendDelta.toFixed(1)}% vs ${prevMonLabel}).`
+        : `Void rate is <strong>${dispPct.toFixed(1)}%</strong> — within the ${SX.voidTgt}% target${prevPct!=null&&!trendUp&&!trendDown?' and stable':''}. No action needed.`;
+    }
+
+    // ── KPI card helpers ────────────────────────────────────────────────────
     const fmtV = (val, ok, isMoney=false) => ok
       ? (isMoney ? fmtD(val) : Math.round(val).toLocaleString('en-US'))
       : `<span style="color:var(--muted);font-size:18px;">—</span>`;
-    const pctColor = dispPct!=null && dispPct>SX.voidTgt ? 'color:#b91c1c;' : '';
-    const pctDisplay = dispPct!=null
-      ? `<span style="${pctColor}">${dispPct.toFixed(1)}%</span>`
-      : `<span style="color:var(--muted);font-size:18px;">—</span>`;
-    content=`${corruptBanner}
+
+    // % card gets full status treatment; other cards get neutral styling
+    const pctClass  = dispPct==null ? '' : dispPct > SX.voidTgt ? 'vc-bad' : 'vc-ok';
+    const pctValClr = dispPct==null ? '' : dispPct > SX.voidTgt ? 'color:#b91c1c;' : 'color:#15803d;';
+    const pctBadge  = dispPct==null ? '' : dispPct > SX.voidTgt
+      ? `<div class="vc-badge" style="color:#b91c1c;">▲ Above ${SX.voidTgt}% target</div>`
+      : `<div class="vc-badge" style="color:#15803d;">✓ Within target</div>`;
+    const trendChip = trendDelta==null ? '' :
+      `<div class="vc-trend" style="color:${trendUp?'#b91c1c':trendDown?'#15803d':'#6b7280'}">` +
+      `${trendUp?'▲':trendDown?'▼':'→'} ${trendDelta>0?'+':''}${trendDelta.toFixed(1)}% vs ${prevMonLabel}</div>`;
+
+    // Amt card: tint red if rate is over target (same signal as %)
+    const amtClass = (amtOk && dispPct!=null && dispPct > SX.voidTgt) ? 'vc-bad' : '';
+    const amtValClr= (amtOk && dispPct!=null && dispPct > SX.voidTgt) ? 'color:#b91c1c;' : '';
+
+    content=`${corruptBanner}${inconsistentBanner}
+      <!-- ── Problem Signal ───────────────────── -->
+      <div class="sx-void-signal" style="background:${sigBg};border:1.5px solid ${sigBorder};">
+        <div class="vs-icon">${sigIcon}</div>
+        <div>
+          <div class="vs-title" style="color:${sigColor};">${sigTitle}</div>
+          <div class="vs-body"  style="color:${sigColor};">${sigWhere}</div>
+        </div>
+      </div>
+      <!-- ── KPI Cards ─────────────────────────── -->
       <div class="sx-void-cards">
-        <div class="sx-void-card">
-          <div class="vc-val" style="${amtOk&&dispPct!=null&&dispPct>SX.voidTgt?'color:#b91c1c;':''}">${fmtV(vAmt,amtOk,true)}</div>
+        <div class="sx-void-card ${amtClass}">
+          <div class="vc-val" style="${amtValClr}">${fmtV(vAmt,amtOk,true)}</div>
           <div class="vc-lbl">Void Amount</div>
         </div>
         <div class="sx-void-card">
@@ -11264,11 +11387,14 @@ function renderSalesDashboard(rec, locRecs, allRecs){
           <div class="vc-val">${fmtV(vItm,itmOk)}</div>
           <div class="vc-lbl">Void Items</div>
         </div>
-        <div class="sx-void-card">
-          <div class="vc-val">${pctDisplay}</div>
+        <div class="sx-void-card ${pctClass}">
+          <div class="vc-val" style="${pctValClr}">${dispPct!=null?dispPct.toFixed(1)+'%':'<span style="color:var(--muted);font-size:18px;">—</span>'}</div>
           <div class="vc-lbl">% of Sales</div>
+          ${pctBadge}
+          ${trendChip}
         </div>
       </div>
+      <!-- ── Target Row ─────────────────────────── -->
       <div class="sx-void-tgt-row">
         <span>Void Rate Target:</span>
         <input type="number" id="sx-void-tgt-input" value="${SX.voidTgt}" min="0" max="100" step="0.1"
@@ -11276,10 +11402,11 @@ function renderSalesDashboard(rec, locRecs, allRecs){
         <button onclick="sxSetVoidTgt(document.getElementById('sx-void-tgt-input').value)">Set Target</button>
         <span style="color:var(--muted);">%  (default 2.0%)</span>
       </div>
+      <!-- ── Trend Chart ─────────────────────────── -->
       ${locRecs.length>=2?`<div class="sx-chart-panel" style="margin-top:20px;">
         <div class="sx-panel-title">📈 Void Rate Trend — % of Net Sales by Month</div>
-        <div style="position:relative;height:200px;"><canvas id="sx-void-trend-chart"></canvas></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px;">Dashed line = your void rate target (${SX.voidTgt}%). Red months = over target.</div>
+        <div style="position:relative;height:230px;"><canvas id="sx-void-trend-chart"></canvas></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;">Dashed line = ${SX.voidTgt}% target · 🔴 Red = over target · Labels show Δ vs prior month</div>
       </div>`:'<div class="sx-top-items-none" style="margin-top:20px;">Upload more months to see the void rate trend.</div>'}`;
   }
 
@@ -11683,13 +11810,43 @@ function initSxVoidTrendChart(locRecs){
   if(sorted.length<2){ canvas.style.display='none'; return; }
   canvas.style.display='';
   const labels=sorted.map(r=>MONTHS_SHORT[r.month]+' '+String(r.year).slice(2));
-  const voidPcts=sorted.map(r=>{
-    if(r.voidPct>=0&&r.voidPct<=100) return +r.voidPct.toFixed(2);
-    if(r.voidAmount>0&&r.netSales>0) return +(r.voidAmount/r.netSales*100).toFixed(2);
+  const _getPct2=r=>{
+    if(r.voidPct!=null&&r.voidPct>=0&&r.voidPct<=100) return +r.voidPct.toFixed(2);
+    if(r.voidAmount!=null&&r.voidAmount>0&&r.netSales>0) return +(r.voidAmount/r.netSales*100).toFixed(2);
     return null;
+  };
+  const voidPcts=sorted.map(_getPct2);
+  // Deltas vs previous month (null if no prior data point)
+  const deltas=voidPcts.map((v,i)=>{
+    if(i===0||v===null||voidPcts[i-1]===null) return null;
+    return +(v-voidPcts[i-1]).toFixed(2);
   });
   const targetLine=sorted.map(()=>SX.voidTgt);
   const pointColors=voidPcts.map(v=>v!=null&&v>SX.voidTgt?'#dc2626':'#1e3a5f');
+
+  // Plugin: draw delta labels above each data point
+  const deltaLabelPlugin={
+    id:'voidDeltaLabels',
+    afterDatasetsDraw(chart){
+      const ds=chart.data.datasets[0]; // only label the void rate line
+      const meta=chart.getDatasetMeta(0);
+      const ctx2=chart.ctx;
+      ctx2.save();
+      meta.data.forEach((pt,i)=>{
+        const d=deltas[i];
+        if(d===null) return;
+        const lbl=(d>0?'+':'')+d.toFixed(1)+'%';
+        const clr=d>0.1?'#dc2626':d<-0.1?'#16a34a':'#6b7280';
+        ctx2.font='bold 9px system-ui,sans-serif';
+        ctx2.fillStyle=clr;
+        ctx2.textAlign='center';
+        ctx2.textBaseline='bottom';
+        ctx2.fillText(lbl, pt.x, pt.y-7);
+      });
+      ctx2.restore();
+    }
+  };
+
   new Chart(canvas,{
     type:'line',
     data:{
@@ -11701,7 +11858,8 @@ function initSxVoidTrendChart(locRecs){
           borderColor:'#1e3a5f',
           pointBackgroundColor:pointColors,
           pointBorderColor:pointColors,
-          backgroundColor:'rgba(30,58,95,.08)',
+          pointBorderWidth:2,
+          backgroundColor:'rgba(30,58,95,.07)',
           borderWidth:2.5, tension:.3, pointRadius:5, fill:true, spanGaps:false
         },
         {
@@ -11717,9 +11875,17 @@ function initSxVoidTrendChart(locRecs){
     },
     options:{
       responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20}},
       plugins:{
         legend:{position:'bottom',labels:{font:{size:10},padding:10,boxWidth:12}},
-        tooltip:{callbacks:{label:c=>c.parsed.y!=null?' '+c.dataset.label+': '+c.parsed.y.toFixed(2)+'%':null}}
+        tooltip:{callbacks:{
+          label:c=>c.parsed.y!=null?' '+c.dataset.label+': '+c.parsed.y.toFixed(2)+'%':null,
+          afterLabel:(c)=>{
+            if(c.datasetIndex!==0) return null;
+            const d=deltas[c.dataIndex];
+            return d!=null?'  Δ vs prior: '+(d>0?'+':'')+d.toFixed(2)+'%':null;
+          }
+        }}
       },
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11}}},
@@ -11729,7 +11895,8 @@ function initSxVoidTrendChart(locRecs){
           ticks:{font:{size:11},callback:v=>v+'%'}
         }
       }
-    }
+    },
+    plugins:[deltaLabelPlugin]
   });
 }
 
@@ -13932,6 +14099,16 @@ function pxToggleCmpFull(){
 // ══════════════════════════════════════════════════
 //  STORE MAINTENANCE TRACKER
 // ══════════════════════════════════════════════════
+
+// Returns the currently logged-in user's id + display name.
+// Used by all work-order actions so no manual name entry is ever needed.
+function mnCurrentUser(){
+  return {
+    id:   _slUser?.id   || null,
+    name: _slDisplayName || _slUser?.email?.split('@')[0] || 'Unknown'
+  };
+}
+
 let MN = { state:'ALL', filterStore:'ALL', filterPriority:'ALL', filterStatus:'ALL', filterCategory:'ALL', filterOverdue:false, search:'', tab:'orders' };
 // MN.state is set properly in goMaint() based on _slState
 
@@ -13980,12 +14157,23 @@ function mnSanitizeRecord(r){
     status:       VALID_STATUSES.includes(r.status)    ? r.status          : 'open',
     createdBy:    typeof r.createdBy==='string'        ? r.createdBy       : null,
     createdAt:    (typeof r.createdAt==='string' && r.createdAt) ? r.createdAt : new Date().toISOString(),
-    techName:     typeof r.techName==='string'         ? r.techName        : null,
-    techNote:     typeof r.techNote==='string'         ? r.techNote        : null,
-    performedAt:  typeof r.performedAt==='string'      ? r.performedAt     : null,
-    closingPhotos:Array.isArray(r.closingPhotos)       ? r.closingPhotos   : [],
-    reviewedBy:   typeof r.reviewedBy==='string'       ? r.reviewedBy      : null,
-    reviewedAt:   typeof r.reviewedAt==='string'       ? r.reviewedAt      : null,
+    // ── Legacy text fields (kept for backward-compat display of old records)
+    techName:          typeof r.techName==='string'          ? r.techName          : null,
+    techNote:          typeof r.techNote==='string'          ? r.techNote          : null,
+    performedAt:       typeof r.performedAt==='string'       ? r.performedAt       : null,
+    closingPhotos:     Array.isArray(r.closingPhotos)        ? r.closingPhotos     : [],
+    reviewedBy:        typeof r.reviewedBy==='string'        ? r.reviewedBy        : null,
+    reviewedAt:        typeof r.reviewedAt==='string'        ? r.reviewedAt        : null,
+    // ── Accountability: user id + display name for each action
+    createdByUserId:   typeof r.createdByUserId==='string'   ? r.createdByUserId   : null,
+    startedByUserId:   typeof r.startedByUserId==='string'   ? r.startedByUserId   : null,
+    startedByName:     typeof r.startedByName==='string'     ? r.startedByName     : null,
+    workedByUserId:    typeof r.workedByUserId==='string'    ? r.workedByUserId    : null,
+    workedByName:      typeof r.workedByName==='string'      ? r.workedByName      : null,
+    closedByUserId:    typeof r.closedByUserId==='string'    ? r.closedByUserId    : null,
+    closedByName:      typeof r.closedByName==='string'      ? r.closedByName      : null,
+    reopenedByUserId:  typeof r.reopenedByUserId==='string'  ? r.reopenedByUserId  : null,
+    reopenedByName:    typeof r.reopenedByName==='string'    ? r.reopenedByName    : null,
   };
   if(!out.state || !out.loc) out._incomplete = true;
   return out;
@@ -14022,7 +14210,7 @@ function mnGenId(){ return 'mn_'+Date.now()+'_'+Math.random().toString(36).slice
 function mnValidateCreate(fields){
   const errors = [];
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const { title, state, loc, date, prio, cat, author } = fields;
+  const { title, state, loc, date, prio, cat } = fields;
   if(!title || !title.trim())
     errors.push('Title is required.');
   else if(title.trim().length > 120)
@@ -14039,8 +14227,7 @@ function mnValidateCreate(fields){
     errors.push('Priority must be High, Medium, or Low.');
   if(!MN_CATEGORIES.includes(cat))
     errors.push(`Category must be one of: ${MN_CATEGORIES.join(', ')}.`);
-  if(!author || !author.trim())
-    errors.push('Your name is required.');
+  // author is now auto-captured from the logged-in user — no manual entry required
   return { ok: errors.length===0, errors };
 }
 
@@ -14329,10 +14516,11 @@ function mnCard(r, isHistory){
     `<img src="${p}" onclick="mnViewPhoto('${r.id}')" title="View photo" style="width:68px;height:68px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #e5e7eb;transition:border-color .15s;" onmouseover="this.style.borderColor='#7e2023'" onmouseout="this.style.borderColor='#e5e7eb'">`
   ).join('');
 
-  // Tech note block
-  const techHTML = r.techName ? `
+  // Tech note block — prefer workedByName (new), fall back to techName (legacy)
+  const _techActor = r.workedByName || r.techName;
+  const techHTML = _techActor ? `
     <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:11px;line-height:1.5;">
-      <div style="font-weight:700;color:#15803d;margin-bottom:2px;">🔧 ${r.techName}</div>
+      <div style="font-weight:700;color:#15803d;margin-bottom:2px;">🔧 ${_techActor}</div>
       ${r.techNote?`<div style="color:#374151;">${r.techNote}</div>`:''}
       ${r.performedAt?`<div style="color:#6b7280;margin-top:3px;font-size:10px;">Completed ${new Date(r.performedAt).toLocaleDateString()}</div>`:''}
     </div>` : '';
@@ -14361,7 +14549,7 @@ function mnCard(r, isHistory){
     ? `<div class="maint-card-footer">${primaryAction}${secondaryAction}</div>`
     : isHistory
       ? `<div class="maint-card-footer" style="align-items:center;justify-content:space-between;">
-          <span style="font-size:11px;color:#6b7280;">✅ Closed${r.reviewedAt?' '+new Date(r.reviewedAt).toLocaleDateString():''}${r.reviewedBy?' · '+r.reviewedBy:''}</span>
+          <span style="font-size:11px;color:#6b7280;">✅ Closed${r.reviewedAt?' '+new Date(r.reviewedAt).toLocaleDateString():''}${(r.closedByName||r.reviewedBy)?' · '+(r.closedByName||r.reviewedBy):''}</span>
           <button class="maint-action-btn gray" onclick="mnReopenOrder('${r.id}')" style="font-size:11px;padding:6px 14px;">↩ Reopen</button>
         </div>`
       : '';
@@ -14390,6 +14578,7 @@ function mnCard(r, isHistory){
           ${isOverdue?'⚠️ Overdue:':'📆'} ${new Date(r.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}
         </span>`:''}
         ${r.createdBy?`<span class="maint-meta-chip">👤 ${r.createdBy}</span>`:''}
+        ${r.startedByName?`<span class="maint-meta-chip" style="background:#fefce8;border-color:#fde68a;color:#92400e;">▶ ${r.startedByName}</span>`:''}
       </div>
 
       <!-- Category + priority badges -->
@@ -14498,9 +14687,8 @@ function mnOpenCreate(){
           <label>Due Date (optional)</label>
           <input type="date" id="mn-c-due" class="mn-input">
         </div>
-        <div class="maint-form-row">
-          <label>Your Name *</label>
-          <input type="text" id="mn-c-author" class="mn-input" placeholder="Who is submitting this?">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;color:#15803d;display:flex;align-items:center;gap:6px;">
+          👤 Submitting as <strong>${mnCurrentUser().name}</strong>
         </div>
         <div class="maint-form-row">
           <label>Photos (up to 2)</label>
@@ -14565,11 +14753,11 @@ async function mnSubmitCreate(){
   const desc       = document.getElementById('mn-c-desc')?.value?.trim()||'';
   const assignedTo = document.getElementById('mn-c-assigned')?.value?.trim()||null;
   const dueDate    = document.getElementById('mn-c-due')?.value||null;
-  const author     = document.getElementById('mn-c-author')?.value?.trim()||'';
   const prio       = window._mnPrio||'red';
+  const cu         = mnCurrentUser(); // logged-in user — no manual name entry
 
   // ── Deep validation ───────────────────────────────────────
-  const v = mnValidateCreate({ title, state, loc, date, prio, cat, author });
+  const v = mnValidateCreate({ title, state, loc, date, prio, cat });
   if(!v.ok){
     alert('Please fix the following:\n\n• ' + v.errors.join('\n• '));
     return;
@@ -14601,9 +14789,13 @@ async function mnSubmitCreate(){
     id:mnGenId(), state, loc, date, priority:prio, category:cat,
     title, description:desc||null, photos,
     assignedTo, dueDate:dueDate||null,
-    status:'open', createdBy:author, createdAt:new Date().toISOString(),
+    status:'open', createdBy:cu.name, createdByUserId:cu.id, createdAt:new Date().toISOString(),
     techName:null, techNote:null, performedAt:null,
-    closingPhotos:[], reviewedBy:null, reviewedAt:null
+    closingPhotos:[], reviewedBy:null, reviewedAt:null,
+    workedByUserId:null, workedByName:null,
+    closedByUserId:null, closedByName:null,
+    startedByUserId:null, startedByName:null,
+    reopenedByUserId:null, reopenedByName:null
   });
   if(!rec){
     alert('Failed to create work order — record failed validation. Please check all fields.');
@@ -14648,9 +14840,8 @@ function mnOpenTechModal(id){
         <button onclick="mnCloseModal('tech')" class="maint-modal-close">×</button>
       </div>
       <div class="maint-modal-body">
-        <div class="maint-form-row">
-          <label>Technician Name *</label>
-          <input type="text" id="mn-tech-name" class="mn-input" placeholder="Your full name">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;color:#15803d;display:flex;align-items:center;gap:6px;">
+          🔧 Submitting as <strong>${mnCurrentUser().name}</strong>
         </div>
         <div class="maint-form-row">
           <label>Work Performed</label>
@@ -14685,9 +14876,8 @@ function mnOpenTechModal(id){
 }
 
 async function mnSubmitTech(id){
-  const name = document.getElementById('mn-tech-name')?.value?.trim();
+  const cu   = mnCurrentUser();
   const note = document.getElementById('mn-tech-note')?.value?.trim();
-  if(!name){ alert('Please enter your name.'); return; }
   const btn = document.querySelector('#maint-modal-tech .maint-action-btn.green');
   if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
   const closingPhotos=[];
@@ -14708,11 +14898,13 @@ async function mnSubmitTech(id){
   }
   // Scoped update — only touch tech-resolution fields
   recs[idx] = Object.assign({}, recs[idx], {
-    status:       'pendingReview',
-    techName:     name,
-    techNote:     note||null,
-    performedAt:  new Date().toISOString(),
+    status:          'pendingReview',
+    techName:        cu.name,       // keep legacy field for display compat
+    techNote:        note||null,
+    performedAt:     new Date().toISOString(),
     closingPhotos,
+    workedByUserId:  cu.id,
+    workedByName:    cu.name,
   });
   saveMaintRecords(recs);
   mnCloseModal('tech');
@@ -14731,15 +14923,24 @@ function mnReopenOrder(id){
     console.error('[Maintenance] mnReopenOrder: id mismatch at idx', idx);
     return;
   }
-  // Scoped update — only reset resolution fields, preserve identity + history fields
+  const cu = mnCurrentUser();
+  // Scoped update — reset resolution fields, preserve identity + history fields, capture who reopened
   recs[idx] = Object.assign({}, recs[idx], {
-    status:       'open',
-    techName:     null,
-    techNote:     null,
-    performedAt:  null,
-    closingPhotos:[],
-    reviewedBy:   null,
-    reviewedAt:   null,
+    status:           'open',
+    techName:         null,
+    techNote:         null,
+    performedAt:      null,
+    closingPhotos:    [],
+    reviewedBy:       null,
+    reviewedAt:       null,
+    workedByUserId:   null,
+    workedByName:     null,
+    closedByUserId:   null,
+    closedByName:     null,
+    startedByUserId:  null,
+    startedByName:    null,
+    reopenedByUserId: cu.id,
+    reopenedByName:   cu.name,
   });
   saveMaintRecords(recs);
   MN.tab='orders';
@@ -14772,9 +14973,8 @@ function mnOpenReviewModal(id){
       </div>
       <div class="maint-modal-body">
         <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">Are you satisfied with the work? This moves the order to History.</p>
-        <div class="maint-form-row">
-          <label>Your Name *</label>
-          <input type="text" id="mn-rev-name" class="mn-input" placeholder="Manager confirming completion">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;color:#15803d;display:flex;align-items:center;gap:6px;">
+          ✅ Confirming as <strong>${mnCurrentUser().name}</strong>
         </div>
       </div>
       <div class="maint-modal-ftr">
@@ -14786,8 +14986,7 @@ function mnOpenReviewModal(id){
 }
 
 function mnSubmitReview(id){
-  const name = document.getElementById('mn-rev-name')?.value?.trim();
-  if(!name){ alert('Please enter your name.'); return; }
+  const cu   = mnCurrentUser();
   const recs = getMaintRecords();
   const idx  = recs.findIndex(r=>r.id===id);
   if(idx===-1){
@@ -14802,9 +15001,11 @@ function mnSubmitReview(id){
   }
   // Scoped update — only touch review-close fields
   recs[idx] = Object.assign({}, recs[idx], {
-    status:     'finished',
-    reviewedBy: name,
-    reviewedAt: new Date().toISOString(),
+    status:          'finished',
+    reviewedBy:      cu.name,    // keep legacy field for display compat
+    reviewedAt:      new Date().toISOString(),
+    closedByUserId:  cu.id,
+    closedByName:    cu.name,
   });
   saveMaintRecords(recs);
   mnCloseModal('review');
@@ -14828,8 +15029,14 @@ function mnSetStatus(id, status){
     console.error('[Maintenance] mnSetStatus: id mismatch at idx', idx);
     return;
   }
-  // Scoped update — only change status
-  recs[idx] = Object.assign({}, recs[idx], { status });
+  // Scoped update — capture who started the job when transitioning to inprogress
+  const statusUpdate = { status };
+  if(status === 'inprogress'){
+    const cu = mnCurrentUser();
+    statusUpdate.startedByUserId = cu.id;
+    statusUpdate.startedByName   = cu.name;
+  }
+  recs[idx] = Object.assign({}, recs[idx], statusUpdate);
   saveMaintRecords(recs);
   renderMaintOrders();
   updateMaintBadge();
@@ -15454,18 +15661,30 @@ function _pfAvgCheck(loc){
   return to>0?ts/to:null;
 }
 
-// Health score — state-agnostic rebuild using _pfYTD + _pfUber.
+// Health score — weighted model reflecting Skinny Louie QSR operations.
+// Weights (sum to 100 when all components have data):
+//   Food Cost  30 — primary margin driver
+//   Labor      25 — primary margin driver
+//   Uber       25 — brand signal + direct revenue impact for QSR
+//   Reviews    15 — growth signal (target: 24 new reviews/year ≈ 2/month)
+//   D&C         5 — real cost but smaller individual impact
+// Missing components are excluded and remaining weights are renormalized.
 function _pfHealthScore(loc){
   const y=_pfYTD(loc); if(!y)return null;
   const uber=_pfUber(loc);
+  const grNew=_pfGRNew(loc);
+  // Cost scorer: at/below target = 100; degrades linearly to 0 at 2× target
   const cc=(a,t)=>{if(a==null)return null;return a<=t?100:Math.max(0,100*(2-a/t));};
+  // Rating scorer: capped at 100
   const rc=(a,t)=>{if(a==null)return null;return Math.min(100,(a/t)*100);};
-  const W={fp:40,lp:30,dp:10,rat:20};
+  // Reviews scorer: target = 24 new reviews/year; capped at 100
+  const revScore=grNew!=null?Math.min(100,(grNew/24)*100):null;
   const comps=[
-    {score:cc(y.fpct,DEFAULT_TGTS.fp),w:W.fp},
-    {score:cc(y.lpct,DEFAULT_TGTS.lp),w:W.lp},
-    {score:cc(y.dpct,DEFAULT_TGTS.dp),w:W.dp},
-    {score:rc(uber,DEFAULT_TGTS.uber),w:W.rat},
+    {score:cc(y.fpct,DEFAULT_TGTS.fp),w:30},
+    {score:cc(y.lpct,DEFAULT_TGTS.lp),w:25},
+    {score:rc(uber,DEFAULT_TGTS.uber),w:25},
+    {score:revScore,w:15},
+    {score:cc(y.dpct,DEFAULT_TGTS.dp),w:5},
   ];
   let wSum=0,wTotal=0;
   for(const c of comps){if(c.score!=null){wSum+=c.score*c.w;wTotal+=c.w;}}
@@ -15514,28 +15733,44 @@ function renderPortfolioPage(){
   let html='';
 
   // ── SECTION 1: Needs Attention ────────────────────────────────────────────
+  // Severity = dollar_impact × sales_weight × issue_type_weight
+  // dollar_impact  = deviation × store_ytd_sales (actual dollars at risk)
+  // sales_weight   = 0.4–1.0 (higher-sales stores get proportionally higher priority)
+  // type_weight    = food 3.0 / labor 2.5 / uber 2.0 / d&c 1.0
+  const maxSales=Math.max(...stores.map(s=>s.ytd.ts||0));
+  const sf=s=>maxSales>0?0.4+0.6*((s.ytd.ts||0)/maxSales):1;
   const alerts=[];
   for(const s of stores){
-    const y=s.ytd; const loc=s.loc;
+    const y=s.ytd; const loc=s.loc; const sales=s.ytd.ts||0;
     if(y.fpct!=null && y.fpct>DEFAULT_TGTS.fp){
       const over=y.fpct-DEFAULT_TGTS.fp;
-      alerts.push({loc,severity:over*200,kpi:'Food Cost',icon:'🍔',sev:over>0.05?'high':'med',
-        actual:fmtP(y.fpct),target:fmtP(DEFAULT_TGTS.fp),delta:`+${(over*100).toFixed(1)}% over target`});
+      const dollarImpact=over*sales;
+      alerts.push({loc,severity:dollarImpact*3.0*sf(s),kpi:'Food Cost',icon:'🍔',
+        sev:over>0.04?'high':'med',actual:fmtP(y.fpct),target:fmtP(DEFAULT_TGTS.fp),
+        delta:`+${(over*100).toFixed(1)}% over target`,
+        impact:dollarImpact>500?`~${fmtK(dollarImpact)} excess`:null});
     }
     if(y.lpct!=null && y.lpct>DEFAULT_TGTS.lp){
       const over=y.lpct-DEFAULT_TGTS.lp;
-      alerts.push({loc,severity:over*200,kpi:'Labor',icon:'👥',sev:over>0.05?'high':'med',
-        actual:fmtP(y.lpct),target:fmtP(DEFAULT_TGTS.lp),delta:`+${(over*100).toFixed(1)}% over target`});
+      const dollarImpact=over*sales;
+      alerts.push({loc,severity:dollarImpact*2.5*sf(s),kpi:'Labor',icon:'👥',
+        sev:over>0.04?'high':'med',actual:fmtP(y.lpct),target:fmtP(DEFAULT_TGTS.lp),
+        delta:`+${(over*100).toFixed(1)}% over target`,
+        impact:dollarImpact>500?`~${fmtK(dollarImpact)} excess`:null});
     }
     if(s.uber!=null && s.uber<DEFAULT_TGTS.uber){
       const gap=DEFAULT_TGTS.uber-s.uber;
-      alerts.push({loc,severity:gap*30,kpi:'Uber Rating',icon:'⭐',sev:gap>0.2?'high':'med',
-        actual:s.uber.toFixed(2),target:DEFAULT_TGTS.uber.toFixed(1),delta:`-${gap.toFixed(2)} below target`});
+      alerts.push({loc,severity:(gap/DEFAULT_TGTS.uber)*sales*2.0*sf(s),kpi:'Uber Rating',icon:'⭐',
+        sev:gap>0.15?'high':'med',actual:s.uber.toFixed(2),target:DEFAULT_TGTS.uber.toFixed(1),
+        delta:`-${gap.toFixed(2)} below target`,impact:null});
     }
     if(y.dpct!=null && y.dpct>DEFAULT_TGTS.dp){
       const over=y.dpct-DEFAULT_TGTS.dp;
-      alerts.push({loc,severity:over*150,kpi:'D&C',icon:'🧹',sev:over>0.01?'high':'med',
-        actual:fmtP(y.dpct),target:fmtP(DEFAULT_TGTS.dp),delta:`+${(over*100).toFixed(1)}% over target`});
+      const dollarImpact=over*sales;
+      alerts.push({loc,severity:dollarImpact*1.0*sf(s),kpi:'D&C',icon:'🧹',
+        sev:over>0.01?'high':'med',actual:fmtP(y.dpct),target:fmtP(DEFAULT_TGTS.dp),
+        delta:`+${(over*100).toFixed(1)}% over target`,
+        impact:dollarImpact>200?`~${fmtK(dollarImpact)} excess`:null});
     }
   }
   alerts.sort((a,b)=>b.severity-a.severity);
@@ -15551,7 +15786,7 @@ function renderPortfolioPage(){
         <div class="pf-alert-icon">${a.icon}</div>
         <div style="flex:1;min-width:0;">
           <div class="pf-alert-loc">${a.loc}</div>
-          <div class="pf-alert-kpi">${a.kpi} · ${a.delta}</div>
+          <div class="pf-alert-kpi">${a.kpi} · ${a.delta}${a.impact?` · <strong style="color:#b91c1c;">${a.impact}</strong>`:''}</div>
         </div>
         <div style="text-align:right;">
           <div class="pf-alert-actual">${a.actual}</div>
@@ -15624,6 +15859,11 @@ function renderPortfolioPage(){
     if(_pfSortCol!==k)return'<span class="pf-sort-arr">↕</span>';
     return`<span class="pf-sort-arr">${_pfSortDir==='desc'?'↓':'↑'}</span>`;
   };
+  // Cell coloring strategy:
+  //   KPI target cols (fp/lp/dp/uber): absolute thresholds → real operational meaning
+  //   Sales/check/reviews: relative gradient within this store set → comparison signal
+  //   Health: pill already encodes color
+  // Best value in column → bold green text; worst → bold red text (overlaid on bg)
   const fmtCell=(k,s)=>{
     const v=getVal(s,k);
     if(v==null)return`<td style="text-align:center;color:#94a3b8;">—</td>`;
@@ -15636,11 +15876,23 @@ function renderPortfolioPage(){
     else if(k==='reviews') txt=v>0?`+${v}`:'—';
     else txt=String(v);
     const {b,w}=bw[k]||{};
-    let st='text-align:center;';
-    if(b!=null&&b!==w){
-      if(Math.abs(v-b)<0.00001) st+='color:#166534;font-weight:700;';
-      else if(Math.abs(v-w)<0.00001) st+='color:#991b1b;font-weight:700;';
+    const isBest=b!=null&&Math.abs(v-b)<0.00001;
+    const isWorst=w!=null&&b!==w&&Math.abs(v-w)<0.00001;
+    // Background color
+    let bg='';
+    if(k==='fp')      bg=v<=THR.fp.g?'#d1fae5':v<=THR.fp.y?'#fef3c7':'#fee2e2';
+    else if(k==='lp') bg=v<=THR.lp.g?'#d1fae5':v<=THR.lp.y?'#fef3c7':'#fee2e2';
+    else if(k==='dp') bg=v<=THR.dp.g?'#d1fae5':v<=THR.dp.y?'#fef3c7':'#fee2e2';
+    else if(k==='uber') bg=v>=DEFAULT_TGTS.uber?'#d1fae5':v>=DEFAULT_TGTS.uber-0.2?'#fef3c7':'#fee2e2';
+    else if(b!=null&&w!=null&&b!==w){
+      const col=COLS.find(c=>c.k===k);
+      // goodRatio: 1 = at best value, 0 = at worst value
+      const goodRatio=col?.asc?(w-v)/(w-b):(v-w)/(b-w);
+      bg=goodRatio>=0.65?'#d1fae5':goodRatio>=0.35?'#fef3c7':'#fee2e2';
     }
+    let st=`text-align:center;${bg?`background:${bg};`:''}`;
+    if(isBest)       st+='font-weight:700;color:#166534;';
+    else if(isWorst) st+='font-weight:700;color:#991b1b;';
     return`<td style="${st}">${txt}</td>`;
   };
 
