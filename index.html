@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.00 -->
+<!-- BUILD: 2026-04-16-v49.01 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2239,15 +2239,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .mx-mod-cards   { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px; }
 .mx-mod-card    { background:#fff; border-radius:10px; padding:14px 16px; text-align:center; border:2px solid transparent; position:relative; }
 .mx-mod-card.mod-single { border-color:#f5c6c6; }
-.mx-mod-card.mod-doble  { border-color:#e8a0a0; }
+.mx-mod-card.mod-double  { border-color:#e8a0a0; }
 .mx-mod-card.mod-triple { border-color:#c97070; }
 .mx-mod-name    { font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
 .mod-single .mx-mod-name { color:#e07070; }
-.mod-doble  .mx-mod-name { color:#c45b5e; }
+.mod-double  .mx-mod-name { color:#c45b5e; }
 .mod-triple .mx-mod-name { color:#9b292c; }
 .mx-mod-pct     { font-family:'Oswald',sans-serif; font-size:48px; font-weight:800; line-height:1; letter-spacing:-.02em; }
 .mod-single .mx-mod-pct  { color:#e07070; }
-.mod-doble  .mx-mod-pct  { color:#c45b5e; }
+.mod-double  .mx-mod-pct  { color:#c45b5e; }
 .mod-triple .mx-mod-pct  { color:#9b292c; }
 .mx-mod-qty     { font-size:13px; font-weight:600; color:var(--muted); margin-top:8px; }
 .mx-mod-net     { font-size:11px; color:var(--muted); margin-top:2px; }
@@ -9759,11 +9759,11 @@ function renderMixDashboard(rec, locRecs, allRecs){
 
   // Categories — exclude "Open Food" and any category with 0 qty AND 0 net
   const EXCLUDED_CATS = ['Open Food','OPEN FOOD'];
-  const categories = rec.categories.filter(c => !EXCLUDED_CATS.includes(c.name) && (c.qty > 0 || c.net > 0));
+  const categories = (rec.categories||[]).filter(c => !EXCLUDED_CATS.includes(c.name) && (c.qty > 0 || c.net > 0));
 
   const totalNet = rec.totalNet || categories.reduce((s,c)=>s+c.net,0);
   const totalQty = rec.totalQty || categories.reduce((s,c)=>s+c.qty,0);
-  const totalItems = rec.items.length;
+  const _items = rec.items||[];
 
   // Month pills — available months for this location
   const availMonths = locRecs.map(r=>r.month).sort((a,b)=>a-b);
@@ -9819,22 +9819,22 @@ function renderMixDashboard(rec, locRecs, allRecs){
     </div>`;
 
   // ── ABC Analysis: rank all non-zero items by net, top 20% = A, mid 60% = B, bottom 20% = C
-  const abcItems = [...rec.items].filter(it=>it.net>0).sort((a,b)=>b.net-a.net);
+  const abcItems = [..._items].filter(it=>it.net>0).sort((a,b)=>b.net-a.net);
   const abcN = abcItems.length;
   const abcMap = {};
   abcItems.forEach((it,idx)=>{
     const rank = abcN>0 ? idx/abcN : 1;
     abcMap[it.name] = rank<0.2?'A': rank<0.8?'B':'C';
   });
-  rec.items.filter(it=>it.net<=0||!abcMap[it.name]).forEach(it=>{ abcMap[it.name]='C'; });
+  _items.filter(it=>it.net<=0||!abcMap[it.name]).forEach(it=>{ abcMap[it.name]='C'; });
 
   // ── Mix Shift Alert: items >10% of total revenue that dropped ≥15% in qty vs prev month
-  const sortedLR = [...locRecs].sort((a,b)=>a.month-b.month);
-  const currLRIdx = sortedLR.findIndex(r=>r.month===rec.month);
+  const sortedLR = _slSortChron(locRecs); // chronological — safe across year boundaries
+  const currLRIdx = sortedLR.findIndex(r=>r.month===rec.month&&r.year===rec.year);
   const prevRec = currLRIdx>0 ? sortedLR[currLRIdx-1] : null;
   const shiftAlerts = [];
   if(prevRec){
-    for(const item of rec.items){
+    for(const item of _items){
       if(item.net < 0.10*totalNet) continue;
       const prev = prevRec.items.find(i=>i.name===item.name);
       if(!prev || prev.qty<=0) continue;
@@ -9853,7 +9853,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
 
   // ── Top 5 / Bottom 5 with trend vs previous month
   const top5bottom5HTML = (()=>{
-    const validItems = rec.items.filter(it=>it.net>0&&it.qty>0);
+    const validItems = _items.filter(it=>it.net>0&&it.qty>0);
     if(validItems.length < 3) return '';
     const sorted = [...validItems].sort((a,b)=>b.net-a.net);
     const top5 = sorted.slice(0,5);
@@ -9866,16 +9866,16 @@ function renderMixDashboard(rec, locRecs, allRecs){
       const arrow = delta>=0?'↑':'↓';
       return `<span style="color:${col};font-weight:700;font-size:11px;">${arrow} ${Math.abs(delta).toFixed(0)}%</span>`;
     };
-    const makeRow = (item, prevItems) => {
+    const makeRow = (item, prevItems, rowStyle) => {
       const prev = prevItems ? prevItems.find(i=>i.name===item.name) : null;
       const trend = makeTrendArrow(item, prev);
-      return `<tr>
+      return `<tr style="${rowStyle}">
         <td style="font-weight:500;font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</td>
         <td style="text-align:right;font-size:12px;font-weight:700;">${fmtAmt(item.net)}</td>
         <td style="text-align:center;">${trend}</td>
       </tr>`;
     };
-    const prevItems = prevRec ? prevRec.items : null;
+    const prevItems = prevRec ? (prevRec.items||[]) : null;
     const thStyle = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 8px;';
     const tdBorder = 'border-bottom:1px solid var(--border);';
     return `
@@ -9889,7 +9889,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
                 <th style="${thStyle}text-align:right;">Revenue</th>
                 <th style="${thStyle}text-align:center;">vs Prev</th>
               </tr></thead>
-              <tbody>${top5.map(it=>`<tr style="${tdBorder}">${makeRow(it,prevItems).replace(/<tr>/,'').replace(/<\/tr>/,'')}</tr>`).join('')}</tbody>
+              <tbody>${top5.map(it=>makeRow(it,prevItems,tdBorder)).join('')}</tbody>
             </table>
           </div>
           <div>
@@ -9900,7 +9900,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
                 <th style="${thStyle}text-align:right;">Revenue</th>
                 <th style="${thStyle}text-align:center;">vs Prev</th>
               </tr></thead>
-              <tbody>${bot5.map(it=>`<tr style="${tdBorder}">${makeRow(it,prevItems).replace(/<tr>/,'').replace(/<\/tr>/,'')}</tr>`).join('')}</tbody>
+              <tbody>${bot5.map(it=>makeRow(it,prevItems,tdBorder)).join('')}</tbody>
             </table>
           </div>
         </div>
@@ -9944,7 +9944,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       <div class="mx-mod-title">🍔 Burger Modifier Split · ${Math.round(totalModQty).toLocaleString('en-US')} total burgers</div>
       <div class="mx-mod-cards">
         ${makeCard('Single', sQty, prevS, 'mod-single')}
-        ${makeCard('Double', dQty, prevD, 'mod-doble')}
+        ${makeCard('Double', dQty, prevD, 'mod-double')}
         ${makeCard('Triple', tQty, prevT, 'mod-triple')}
       </div>
       ${!prevMods?'<div style="font-size:10px;color:var(--muted);margin-top:8px;">Upload a previous month to see trend arrows.</div>':''}
@@ -9979,7 +9979,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
   const subcatBreakdownHTML = (()=>{
     if(categories.length === 0) return '';
     const prevCats = prevRec ? (prevRec.categories || []) : null;
-    const prevTotalNet = prevRec ? (prevRec.netSales || 0) : 0;
+    const prevTotalNet = prevRec ? (prevRec.totalNet || prevRec.netSales || 0) : 0;
     const fmtAmt = v=>'$'+Math.round(v).toLocaleString('en-US');
     const catCards = categories.map(cat => {
       const catPct = totalNet > 0 ? (cat.net/totalNet*100) : 0;
@@ -9999,7 +9999,10 @@ function renderMixDashboard(rec, locRecs, allRecs){
       const catKey = cat.name.toUpperCase();
       const mapKey = Object.keys(MENU_TO_ITEM_CAT).find(k=>k===catKey);
       const validCatNames = mapKey ? MENU_TO_ITEM_CAT[mapKey] : [cat.name];
-      const catItems = rec.items.filter(it=>(mapKey ? validCatNames.includes(it.cat) : it.cat.toUpperCase()===catKey) && it.net>0);
+      const catItems = _items.filter(it=>{
+        const itCat = it.cat||'';
+        return (mapKey ? validCatNames.includes(itCat) : itCat.toUpperCase()===catKey) && it.net>0;
+      });
       const top3 = [...catItems].sort((a,b)=>b.net-a.net).slice(0,3);
       const top3HTML = top3.map(it=>{
         const iPct = cat.net>0 ? (it.net/cat.net*100).toFixed(0) : '0';
@@ -10021,14 +10024,14 @@ function renderMixDashboard(rec, locRecs, allRecs){
 
   // ── ALL-tab: Top 10 items by revenue with % of total mix and vs-prev trend
   const topItemsHTML = (()=>{
-    const validItems = rec.items.filter(it=>it.net>0&&it.qty>0);
+    const validItems = _items.filter(it=>it.net>0&&it.qty>0);
     if(validItems.length < 3) return '';
     const sorted = [...validItems].sort((a,b)=>b.net-a.net);
     const top10 = sorted.slice(0, 10);
     const maxNet = top10[0] ? top10[0].net : 1;
     const fmtAmt = v=>'$'+Math.round(v).toLocaleString('en-US');
-    const prevItems = prevRec ? prevRec.items : null;
-    const prevTotalNet = prevRec ? (prevRec.netSales || 1) : 1;
+    const prevItems = prevRec ? (prevRec.items||[]) : null;
+    const prevTotalNet = prevRec ? (prevRec.totalNet || prevRec.netSales || 1) : 1;
     const thSt = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 10px;';
     const rows = top10.map((item, idx) => {
       const mixPct = totalNet > 0 ? (item.net/totalNet*100) : 0;
@@ -10230,9 +10233,9 @@ function renderMixDashboard(rec, locRecs, allRecs){
     let displayItems;
     if(mapKey){
       const validCats = MENU_TO_ITEM_CAT[mapKey];
-      displayItems = rec.items.filter(it=>validCats.includes(it.cat));
+      displayItems = _items.filter(it=>validCats.includes(it.cat||''));
     } else {
-      displayItems = rec.items.filter(it=>it.cat.toUpperCase()===catKey);
+      displayItems = _items.filter(it=>(it.cat||'').toUpperCase()===catKey);
     }
 
     const catPct = totalNet>0 ? (cat.net/totalNet*100) : 0;
@@ -10269,7 +10272,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
             <div class="mx-mod-title">🍔 Burger Modifier Split · ${Math.round(totalModQty).toLocaleString('en-US')} total burgers</div>
             <div class="mx-mod-cards">
               ${makeModCard('mod-single','Single',sQty)}
-              ${makeModCard('mod-doble','Double',dQty)}
+              ${makeModCard('mod-double','Double',dQty)}
               ${makeModCard('mod-triple','Triple',tQty)}
             </div>
             ${hasTrend?`<div style="margin-top:18px;">
@@ -10355,6 +10358,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       ${MX.activeTab!=='__xstore__'?cardsHTML:''}
       ${MX.activeTab==='ALL'?burgerModOverviewHTML:''}
       ${MX.activeTab==='ALL'?subcatBreakdownHTML:''}
+      ${MX.activeTab==='ALL'?top5bottom5HTML:''}
       ${MX.activeTab==='ALL'?topItemsHTML:''}
       ${tabsHTML}
       ${xstoreHTML}
