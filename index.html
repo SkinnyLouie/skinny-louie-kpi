@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-15-v43 -->
+<!-- BUILD: 2026-04-15-v44 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2777,6 +2777,17 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .home-no-access-icon{font-size:40px;margin-bottom:16px;}
 .home-no-access-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;letter-spacing:.04em;color:#1e3a5f;margin-bottom:10px;}
 .home-no-access-msg{font-size:13px;color:#64748b;line-height:1.7;}
+/* Store access selector */
+.adm-loc-note{font-size:11px;color:#94a3b8;margin-bottom:10px;line-height:1.5;}
+.adm-loc-state-hdr{font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.07em;text-transform:uppercase;padding:6px 0 4px;}
+.adm-loc-grid{display:flex;flex-direction:column;gap:4px;margin-bottom:24px;}
+.adm-loc-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid #e8e2d8;border-radius:8px;cursor:pointer;background:#fff;transition:all .15s;}
+.adm-loc-item:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-loc-item.on{border-color:#7e2023;background:#fff5f0;}
+.adm-loc-check{width:16px;height:16px;border:1.5px solid #d4c9b8;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#7e2023;flex-shrink:0;transition:all .15s;}
+.adm-loc-check.on{border-color:#7e2023;background:#7e2023;color:#fff;}
+.adm-loc-name{font-size:12px;font-weight:600;color:#374151;}
+.adm-loc-item.on .adm-loc-name{color:#7e2023;font-weight:700;}
 /* Location scope selector */
 .adm-scope-row{display:flex;gap:8px;margin-bottom:24px;}
 .adm-scope-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 8px;border:1.5px solid #e8e2d8;border-radius:10px;cursor:pointer;background:#fff;transition:all .15s;}
@@ -3538,6 +3549,29 @@ let _slState    = 'all';  // 'all', 'FL', or 'NY'
 // _slHasScope: true only when a user_scopes row exists for this user.
 // false = no scope assigned → no location access (fail-closed).
 let _slHasScope = false;
+// _slLocations: null = loading; empty Set = no store restriction (scope controls);
+// non-empty Set = explicit store whitelist (intersected with state scope).
+let _slLocations = null;
+
+// Returns true if the current user is allowed to see the given location.
+// Evaluation: admin bypass → state scope → store whitelist.
+function _isLocAllowed(loc){
+  if(_slRole === 'admin') return true;
+  // State scope check
+  if(_slState && _slState !== 'all'){
+    const stateLocs = LOC_MAP[_slState] || [];
+    if(!stateLocs.includes(loc)) return false;
+  }
+  // Store-level whitelist (only active when rows exist)
+  if(_slLocations && _slLocations.size > 0) return _slLocations.has(loc);
+  return true; // no store restriction — scope alone controls
+}
+
+// Wraps locs() with permission filtering.
+// Use _allowedLocs() everywhere that builds a user-visible location list.
+function _allowedLocs(){
+  return locs().filter(l => _isLocAllowed(l));
+}
 // _slPerms: null = not yet loaded; Set of module strings = explicit permission list.
 // FAIL-CLOSED: admins bypass, null = blocked, empty Set = no access.
 let _slPerms = null;
@@ -3714,7 +3748,7 @@ async function doLogin(){
 
 async function doLogout(){
   await _supa.auth.signOut();
-  _slUser = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slPerms = null;
+  _slUser = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slLocations = null; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
   S.page = 'home';
   // Reset MN state so maintenance filters start clean on next login
@@ -3736,10 +3770,11 @@ async function _initApp(user){
   _slUser = user;
   // Fetch profile, user_permissions, and user_scopes in parallel — fail gracefully
   try {
-    const [profileRes, permsRes, scopeRes] = await Promise.all([
+    const [profileRes, permsRes, scopeRes, locsRes] = await Promise.all([
       _supa.from('profiles').select('role,name').eq('id', user.id).single(),
       _supa.from('user_permissions').select(_PERM_COL).eq('user_id', user.id),
-      _supa.from('user_scopes').select('scope').eq('user_id', user.id).single()
+      _supa.from('user_scopes').select('scope').eq('user_id', user.id).single(),
+      _supa.from('user_locations').select('location').eq('user_id', user.id)
     ]);
     const profile = profileRes.data;
     _slRole  = profile?.role || 'manager';
@@ -3751,6 +3786,8 @@ async function _initApp(user){
     // Build permissions Set — FAIL-CLOSED: empty Set = no module access (not permissive)
     const permRows = permsRes.data || [];
     _slPerms = new Set((permRows || []).map(r => r[_PERM_COL]));
+    // Store-level whitelist — empty Set = no restriction (scope controls)
+    _slLocations = new Set((locsRes.data || []).map(r => r.location));
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
     const uinfo = document.getElementById('nb-user-info');
@@ -3765,10 +3802,11 @@ async function _initApp(user){
     }
   } catch(e) {
     console.error('[SL] Profile/scope fetch failed:', e);
-    _slRole     = 'manager';
-    _slState    = 'all';
-    _slHasScope = false; // fail-closed: no scope on error
-    _slPerms    = new Set(); // fail-closed: no permissions on error
+    _slRole      = 'manager';
+    _slState     = 'all';
+    _slHasScope  = false;   // fail-closed: no scope on error
+    _slLocations = new Set(); // fail-closed: no store restriction on error (perms block access anyway)
+    _slPerms     = new Set(); // fail-closed: no permissions on error
     const loginEl = document.getElementById('pg-login');
     if(loginEl) loginEl.style.display = 'none';
   }
@@ -5516,7 +5554,7 @@ const _ADM_MODULES = [
 ];
 
 // Session state for admin editor
-let _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', perms: new Set() };
+let _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set() };
 
 // Location scope options — maps to user_scopes.scope values
 const SCOPE_OPTIONS = [
@@ -5548,6 +5586,26 @@ function _admSetScope(scope){
 // RLS policy on profiles uses a security-definer helper that checks user_permissions
 // for an 'admin' row — avoids recursive self-reference on the profiles table.
 //
+// SUPABASE SETUP — run once in SQL editor to create user_locations table:
+//
+//   CREATE TABLE public.user_locations (
+//     user_id  uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+//     location text NOT NULL,
+//     PRIMARY KEY (user_id, location)
+//   );
+//   ALTER TABLE public.user_locations ENABLE ROW LEVEL SECURITY;
+//
+//   -- Users can read their own allowed locations
+//   CREATE POLICY "users_read_own_locations" ON public.user_locations
+//     FOR SELECT USING (auth.uid() = user_id);
+//
+//   -- Admins can read and write all location rows
+//   CREATE POLICY "admins_manage_locations" ON public.user_locations
+//     FOR ALL USING (
+//       EXISTS (SELECT 1 FROM public.user_permissions
+//               WHERE user_id = auth.uid() AND permission = 'admin')
+//     );
+//
 // SUPABASE SETUP — run once in SQL editor to create user_scopes table:
 //
 //   CREATE TABLE public.user_scopes (
@@ -5576,7 +5634,7 @@ async function renderAdminPage(){
   const editor = document.getElementById('adm-perm-editor');
   if(empty)  empty.style.display = 'flex';
   if(editor) editor.style.display = 'none';
-  _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', perms: new Set() };
+  _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set() };
 
   try {
     const { data: profiles, error } = await _supa
@@ -5640,30 +5698,36 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(nameEl)   nameEl.textContent   = displayName;
   if(subEl)    subEl.textContent    = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${state==='all'?'All States':state}`;
 
-  // Load permissions and scope for this user in parallel
-  _admCtx = { userId, displayName, role, state, scope: 'ALL', perms: new Set() };
+  // Load permissions, scope, and store locations in parallel
+  _admCtx = { userId, displayName, role, state, scope: 'ALL', locations: new Set(), perms: new Set() };
   _admSetActionMsg('');
-  _renderAdmPermGrid(null); // show loading state
-  _renderAdmScopeRow('ALL'); // default while loading
+  _renderAdmPermGrid(null);
+  _renderAdmScopeRow('ALL');
+  _renderAdmLocGrid(null); // show loading state
 
   try {
-    const [permsRes, scopeRes] = await Promise.all([
+    const [permsRes, scopeRes, locsRes] = await Promise.all([
       _supa.from('user_permissions').select(_PERM_COL).eq('user_id', userId),
-      _supa.from('user_scopes').select('scope').eq('user_id', userId).single()
+      _supa.from('user_scopes').select('scope').eq('user_id', userId).single(),
+      _supa.from('user_locations').select('location').eq('user_id', userId)
     ]);
     if(permsRes.error) throw permsRes.error;
-    _admCtx.perms = new Set((permsRes.data||[]).map(r => r[_PERM_COL]));
-    _admCtx.scope = scopeRes.data?.scope || 'ALL';
+    _admCtx.perms     = new Set((permsRes.data||[]).map(r => r[_PERM_COL]));
+    _admCtx.scope     = scopeRes.data?.scope || 'ALL';
+    _admCtx.locations = new Set((locsRes.data||[]).map(r => r.location));
     _renderAdmPermGrid(_admCtx.perms);
     _renderAdmScopeRow(_admCtx.scope);
+    _renderAdmLocGrid(_admCtx.locations);
     // Update sub-label with live scope value
     const subEl = document.getElementById('adm-sel-sub');
     const scopeLabel = _admCtx.scope === 'ALL' ? 'All Cities' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
-    if(subEl) subEl.textContent = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${scopeLabel}`;
+    const locSuffix  = _admCtx.locations.size > 0 ? ` · ${_admCtx.locations.size} store(s)` : '';
+    if(subEl) subEl.textContent = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${scopeLabel}${locSuffix}`;
   } catch(e){
     console.error('[Admin] _adminSelectUser fetch error:', e);
     _renderAdmPermGrid(new Set());
     _renderAdmScopeRow('ALL');
+    _renderAdmLocGrid(new Set());
   }
 }
 
@@ -5731,7 +5795,19 @@ async function _adminSavePerms(){
       .upsert({ user_id: _admCtx.userId, scope: _admCtx.scope }, { onConflict: 'user_id' });
     if(scopeErr) throw scopeErr;
 
-    console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope);
+    // Delete existing location rows, then insert selected ones
+    const { error: locDelErr } = await _supa
+      .from('user_locations')
+      .delete()
+      .eq('user_id', _admCtx.userId);
+    if(locDelErr) throw locDelErr;
+    if(_admCtx.locations.size > 0){
+      const locRows = [..._admCtx.locations].map(loc => ({ user_id: _admCtx.userId, location: loc }));
+      const { error: locInsErr } = await _supa.from('user_locations').insert(locRows);
+      if(locInsErr) throw locInsErr;
+    }
+
+    console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
     _admSetActionMsg(`✓ Saved for ${_admCtx.displayName}`, 'ok');
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
@@ -5750,6 +5826,38 @@ function _adminClearAll(){
   if(!_admCtx.userId) return;
   _admCtx.perms = new Set();
   _renderAdmPermGrid(_admCtx.perms);
+  _admSetActionMsg('');
+}
+
+function _renderAdmLocGrid(locs){
+  const container = document.getElementById('adm-loc-section');
+  if(!container) return;
+  if(locs === null){
+    container.innerHTML = '<div class="adm-loc-note" style="color:#94a3b8;">Loading…</div>';
+    return;
+  }
+  // Empty set = no store restrictions (scope controls access)
+  let html = '<div class="adm-loc-note">Restrict this user to specific stores. Leave all unchecked to grant access to all stores within their location scope.</div>';
+  for(const [state, storeLocs] of Object.entries(LOC_MAP)){
+    html += `<div class="adm-loc-state-hdr">${state === 'FL' ? '🌴 Florida' : '🗽 New York'}</div>`;
+    html += '<div class="adm-loc-grid">';
+    for(const loc of storeLocs){
+      const on = locs.has(loc);
+      html += `<div class="adm-loc-item${on?' on':''}" onclick="_admToggleLocation('${loc}')">
+        <div class="adm-loc-check${on?' on':''}">${on?'✓':''}</div>
+        <span class="adm-loc-name">${loc}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function _admToggleLocation(loc){
+  if(!_admCtx.userId) return;
+  if(_admCtx.locations.has(loc)) _admCtx.locations.delete(loc);
+  else _admCtx.locations.add(loc);
+  _renderAdmLocGrid(_admCtx.locations);
   _admSetActionMsg('');
 }
 
@@ -5793,7 +5901,7 @@ function _adminInviteUser(){
 }
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
-  const ls=locs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
+  const ls=_allowedLocs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
 function setLoc(l){
   if(S.cmpMode){
     const idx=S.cmpLocs.indexOf(l);
@@ -5949,7 +6057,7 @@ function renderLocBar(){
   if(S.cmpMode){
     // Compare mode — multi-select buttons (checkboxes not practical in <select>)
     let h=`<span style="font-size:10px;font-weight:700;color:#94a3b8;padding:0 12px;white-space:nowrap;text-transform:uppercase;letter-spacing:.6px;">📍 Select Stores to Compare:</span>`;
-    for(const l of locs())
+    for(const l of _allowedLocs())
       h+=`<button class="loc-tab ${S.cmpLocs.includes(l)?'cmp-sel':''}" onclick="setLoc('${l}')">${S.cmpLocs.includes(l)?'✓ ':''} ${l}</button>`;
     bar.innerHTML=h;
     return;
@@ -5957,7 +6065,7 @@ function renderLocBar(){
   // Normal mode — grouped store selector
   let opts=`<option value="ALL"${S.loc==='ALL'?' selected':''}>📊 All Locations</option>`;
   for(const [st, stLocs] of Object.entries(LOC_MAP)){
-    const available=stLocs.filter(l=>locs().includes(l));
+    const available=stLocs.filter(l=>_allowedLocs().includes(l));
     if(!available.length) continue;
     opts+=`<optgroup label="── ${st} ──">`;
     for(const l of available)
@@ -15231,6 +15339,9 @@ migrate();
           <!-- Location scope -->
           <div class="adm-perm-section-title">Location Access</div>
           <div class="adm-scope-row" id="adm-scope-row"></div>
+          <!-- Store access -->
+          <div class="adm-perm-section-title">Store Access</div>
+          <div id="adm-loc-section"></div>
           <!-- Permission toggles -->
           <div class="adm-perm-section-title">Dashboard Access</div>
           <div class="adm-perm-grid" id="adm-perm-grid"></div>
