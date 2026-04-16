@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.01 -->
+<!-- BUILD: 2026-04-16-v49.02 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -9262,21 +9262,37 @@ function parsePMixFile(file, state, loc, year, month){
           state = detected.state; loc = detected.loc;
         }
 
+        // ── Column auto-detection helper
+        // Scans a header row for the first cell matching any candidate keyword.
+        // Returns column index, or -1 if not found.
+        const _findCol = (row, candidates) => {
+          if(!row) return -1;
+          for(let i=0;i<row.length;i++){
+            const h = row[i] != null ? String(row[i]).toLowerCase().trim() : '';
+            if(h && candidates.some(c=>h.includes(c))) return i;
+          }
+          return -1;
+        };
+
         // ── Menu groups sheet
         const mgSheet = wb.Sheets['Menu groups'];
         if(!mgSheet){ reject('Sheet "Menu groups" not found'); return; }
         const mgRows = XLSX.utils.sheet_to_json(mgSheet, {header:1, defval:null});
         // Row 0 = headers, Row 1 = totals, Rows 2+ = categories
-        // Col indices: name=3, qty=5, net=11
-        const totalQty = mgRows[1] && mgRows[1][5] != null ? Number(mgRows[1][5]) : 0;
-        const totalNet = mgRows[1] && mgRows[1][11] != null ? Number(mgRows[1][11]) : 0;
+        // Auto-detect column indices from header row; fall back to original hardcoded indices
+        const mgHdr = mgRows[0] || [];
+        const MG_NAME = (()=>{ const c=_findCol(mgHdr,['menu group','group name','group']); return c>=0?c:3; })();
+        const MG_QTY  = (()=>{ const c=_findCol(mgHdr,['qty','quantity']); return c>=0?c:5; })();
+        const MG_NET  = (()=>{ const c=_findCol(mgHdr,['net']); return c>=0?c:11; })();
+        const totalQty = mgRows[1] && mgRows[1][MG_QTY] != null ? Number(mgRows[1][MG_QTY]) : 0;
+        const totalNet = mgRows[1] && mgRows[1][MG_NET] != null ? Number(mgRows[1][MG_NET]) : 0;
         const categories = [];
         for(let i=2; i<mgRows.length; i++){
           const row = mgRows[i];
           if(!row) continue;
-          const name = row[3];
-          const qty  = row[5];
-          const net  = row[11];
+          const name = row[MG_NAME];
+          const qty  = row[MG_QTY];
+          const net  = row[MG_NET];
           if(name == null || name === '') continue;
           categories.push({
             name: String(name).trim(),
@@ -9290,15 +9306,20 @@ function parsePMixFile(file, state, loc, year, month){
         if(!itSheet){ reject('Sheet "Items" not found'); return; }
         const itRows = XLSX.utils.sheet_to_json(itSheet, {header:1, defval:null});
         // Row 0 = headers, Row 1 = totals, Rows 2+ = items
-        // Col indices: name=3, salesCat=4, qty=7, net=14
+        // Auto-detect column indices from header row; fall back to original hardcoded indices
+        const itHdr = itRows[0] || [];
+        const IT_NAME = (()=>{ const c=_findCol(itHdr,['menu item','item name','item']); return c>=0?c:3; })();
+        const IT_CAT  = (()=>{ const c=_findCol(itHdr,['sales category','menu group','category']); return c>=0?c:4; })();
+        const IT_QTY  = (()=>{ const c=_findCol(itHdr,['qty','quantity']); return c>=0?c:7; })();
+        const IT_NET  = (()=>{ const c=_findCol(itHdr,['net']); return c>=0?c:14; })();
         const items = [];
         for(let i=2; i<itRows.length; i++){
           const row = itRows[i];
           if(!row) continue;
-          const name    = row[3];
-          const salesCat= row[4];
-          const qty     = row[7];
-          const net     = row[14];
+          const name    = row[IT_NAME];
+          const salesCat= row[IT_CAT];
+          const qty     = row[IT_QTY];
+          const net     = row[IT_NET];
           if(name == null || name === '') continue;
           const catStr = (salesCat == null || salesCat !== salesCat || String(salesCat).trim() === '')
                          ? 'Other' : String(salesCat).trim();
@@ -9757,13 +9778,23 @@ function renderMixDashboard(rec, locRecs, allRecs){
   const MFULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const MSHORT=MONTHS_SHORT;
 
-  // Categories — exclude "Open Food" and any category with 0 qty AND 0 net
+  // Categories — exclude internal Toast catch-alls only; never filter by qty/net
+  // (the qty/net filter was too aggressive: exported records can have 0 on the category row
+  //  even when items for that category are present and correctly parsed)
   const EXCLUDED_CATS = ['Open Food','OPEN FOOD'];
-  const categories = (rec.categories||[]).filter(c => !EXCLUDED_CATS.includes(c.name) && (c.qty > 0 || c.net > 0));
+  const categories = (rec.categories||[]).filter(c => !EXCLUDED_CATS.includes(c.name));
 
   const totalNet = rec.totalNet || categories.reduce((s,c)=>s+c.net,0);
   const totalQty = rec.totalQty || categories.reduce((s,c)=>s+c.qty,0);
   const _items = rec.items||[];
+
+  // Build a lookup: item cat (uppercased) → summed net — used as fallback when cat.net is 0
+  // Handles exports where Menu groups net is stale/wrong but Items sheet is correct
+  const _itemNetByRawCat = {};
+  _items.forEach(it=>{
+    const k = (it.cat||'').toUpperCase();
+    _itemNetByRawCat[k] = (_itemNetByRawCat[k]||0) + (it.net||0);
+  });
 
   // Month pills — available months for this location
   const availMonths = locRecs.map(r=>r.month).sort((a,b)=>a-b);
@@ -9793,10 +9824,24 @@ function renderMixDashboard(rec, locRecs, allRecs){
   };
   const PIE_FALLBACK = '#CCCCCC';
   const pieData = PIE_CAT_DEFS.map(p=>{
+    // Primary: match against rec.categories (from Menu groups sheet)
     const c = categories.find(x=>p.keys.includes(x.name.toUpperCase()));
-    return { name: p.label, net: c?c.net:0 };
+    let net = c ? c.net : 0;
+    // Fallback: sum from _items when cat.net is 0/missing (Menu groups net column may be wrong)
+    if(!net){
+      net = p.keys.reduce((s,k)=>s+(_itemNetByRawCat[k]||0), 0);
+    }
+    return { name: p.label, net };
   });
-  const othersNet = categories.filter(c=>!PIE_ALL_KEYS.includes(c.name.toUpperCase())).reduce((s,c)=>s+c.net,0);
+  const pieKnownNet = pieData.reduce((s,d)=>s+d.net, 0);
+  // Others = everything not matched by a known category key (by both methods)
+  const othersNetCat = categories
+    .filter(c=>!PIE_ALL_KEYS.includes(c.name.toUpperCase()))
+    .reduce((s,c)=>s+c.net, 0);
+  const othersNetItems = Object.keys(_itemNetByRawCat)
+    .filter(k=>!PIE_ALL_KEYS.includes(k) && k!=='OTHER')
+    .reduce((s,k)=>s+_itemNetByRawCat[k], 0);
+  const othersNet = Math.max(othersNetCat, othersNetItems);
   if(othersNet>0) pieData.push({name:'Others', net:othersNet});
   const pieColors = pieData.map(d => PIE_COLOR_MAP[d.name] || PIE_FALLBACK);
   const legendRows = pieData.map((d,i)=>{
@@ -9982,7 +10027,17 @@ function renderMixDashboard(rec, locRecs, allRecs){
     const prevTotalNet = prevRec ? (prevRec.totalNet || prevRec.netSales || 0) : 0;
     const fmtAmt = v=>'$'+Math.round(v).toLocaleString('en-US');
     const catCards = categories.map(cat => {
-      const catPct = totalNet > 0 ? (cat.net/totalNet*100) : 0;
+      const catKey0 = cat.name.toUpperCase();
+      // Use item-net for % when cat.net is missing (Menu groups net column may differ across export versions)
+      const catItemNet0 = _items.filter(it=>{
+        const k=(it.cat||'').toUpperCase();
+        if(k===catKey0) return it.net>0;
+        const mk=Object.keys(MENU_TO_ITEM_CAT).find(x=>x===catKey0);
+        if(mk) return (MENU_TO_ITEM_CAT[mk]||[]).some(v=>v&&(it.cat||'').toLowerCase()===v.toLowerCase()) && it.net>0;
+        return false;
+      }).reduce((s,it)=>s+it.net,0);
+      const catNetEff = catItemNet0 > 0 ? catItemNet0 : cat.net;
+      const catPct = totalNet > 0 ? (catNetEff/totalNet*100) : 0;
       const prevCat = prevCats ? prevCats.find(c=>c.name===cat.name) : null;
       const prevCatPct = (prevCat && prevTotalNet > 0) ? (prevCat.net/prevTotalNet*100) : null;
       let deltaHTML = '';
@@ -9998,20 +10053,28 @@ function renderMixDashboard(rec, locRecs, allRecs){
       }
       const catKey = cat.name.toUpperCase();
       const mapKey = Object.keys(MENU_TO_ITEM_CAT).find(k=>k===catKey);
-      const validCatNames = mapKey ? MENU_TO_ITEM_CAT[mapKey] : [cat.name];
+      const validCatNames = mapKey ? MENU_TO_ITEM_CAT[mapKey] : [];
+      // Item matching: direct catKey match first (most common — Toast items have same name as menu group),
+      // then MENU_TO_ITEM_CAT display-name match (legacy data where items have cleaner names like 'Burgers')
       const catItems = _items.filter(it=>{
         const itCat = it.cat||'';
-        return (mapKey ? validCatNames.includes(itCat) : itCat.toUpperCase()===catKey) && it.net>0;
+        const itCatUp = itCat.toUpperCase();
+        if(itCatUp === catKey) return it.net>0;
+        if(validCatNames.length && validCatNames.some(v=>v&&itCat.toLowerCase()===v.toLowerCase())) return it.net>0;
+        return false;
       });
+      // Use items-based net as primary (more reliable than cat.net from Menu groups sheet)
+      const catNetFromItems = catItems.reduce((s,it)=>s+it.net, 0);
+      const catNetDisplay = catNetFromItems > 0 ? catNetFromItems : cat.net;
       const top3 = [...catItems].sort((a,b)=>b.net-a.net).slice(0,3);
       const top3HTML = top3.map(it=>{
-        const iPct = cat.net>0 ? (it.net/cat.net*100).toFixed(0) : '0';
+        const iPct = catNetDisplay>0 ? (it.net/catNetDisplay*100).toFixed(0) : '0';
         return `<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name} <span style="color:var(--text);font-weight:600;">${iPct}%</span></div>`;
       }).join('');
       return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
         <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${cat.name}</div>
         <div style="font-size:20px;font-weight:800;font-family:'Oswald',sans-serif;">${catPct.toFixed(1)}%</div>
-        <div style="font-size:11px;color:var(--muted);">${fmtAmt(cat.net)}</div>
+        <div style="font-size:11px;color:var(--muted);">${fmtAmt(catNetDisplay)}</div>
         ${deltaHTML}
         ${top3HTML?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">${top3HTML}</div>`:''}
       </div>`;
@@ -10230,13 +10293,16 @@ function renderMixDashboard(rec, locRecs, allRecs){
   for(const cat of activeCats){
     const catKey = cat.name.toUpperCase();
     const mapKey = Object.keys(MENU_TO_ITEM_CAT).find(k=>k===catKey);
-    let displayItems;
-    if(mapKey){
-      const validCats = MENU_TO_ITEM_CAT[mapKey];
-      displayItems = _items.filter(it=>validCats.includes(it.cat||''));
-    } else {
-      displayItems = _items.filter(it=>(it.cat||'').toUpperCase()===catKey);
-    }
+    const validCatNames2 = mapKey ? (MENU_TO_ITEM_CAT[mapKey]||[]) : [];
+    // Direct catKey match first (Toast items store the menu group name as-is),
+    // then MENU_TO_ITEM_CAT display-name match as fallback for legacy data
+    displayItems = _items.filter(it=>{
+      const itCat = it.cat||'';
+      const itCatUp = itCat.toUpperCase();
+      if(itCatUp===catKey) return true;
+      if(validCatNames2.length && validCatNames2.some(v=>v&&itCat.toLowerCase()===v.toLowerCase())) return true;
+      return false;
+    });
 
     const catPct = totalNet>0 ? (cat.net/totalNet*100) : 0;
 
