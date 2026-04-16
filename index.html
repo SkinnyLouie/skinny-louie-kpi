@@ -2554,6 +2554,80 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .maint-stats-overall { color:#166534;font-weight:600; }
 .maint-stats-sep { color:#86efac; }
 .maint-stats-store { color:#374151;background:#fff;border:1px solid #bbf7d0;border-radius:99px;padding:2px 10px;font-size:11px;white-space:nowrap; }
+/* ══ NEW DEAL STATUS ═════════════════════════════════ */
+#pg-deals { display:none; min-height:calc(100vh - 62px); background:#faf9f7; }
+.deal-topbar { display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
+.deal-topbar-title { font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px; }
+/* ── Filter bar ── */
+.deal-filter-bar { display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
+.deal-filter-group { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.deal-filter-label { font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap; }
+.deal-filter-pills { display:flex;gap:5px;flex-wrap:wrap; }
+.deal-fpill { font-size:11px;font-weight:600;padding:5px 14px;border-radius:99px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s; }
+.deal-fpill:hover { border-color:#94a3b8; }
+.deal-fpill.on { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
+/* ── KPI summary bar ── */
+.deal-summary-bar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
+.deal-kpi-chip { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;color:#374151;white-space:nowrap;letter-spacing:.01em; }
+/* ── Search bar ── */
+.deal-search { padding:7px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:220px;transition:border .15s; }
+.deal-search:focus { outline:none;border-color:#7e2023; }
+/* ── Cards grid ── */
+.deal-cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:20px;padding:24px 0; }
+/* ── Card shell ── */
+.deal-card { background:#fff;border-radius:14px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e8e2d8;display:flex;flex-direction:column;transition:box-shadow .2s,transform .15s;overflow:hidden; }
+.deal-card:hover { box-shadow:0 6px 22px rgba(0,0,0,.11);transform:translateY(-1px); }
+/* ── Card body ── */
+.deal-card-body { padding:16px 18px 14px;display:flex;flex-direction:column;gap:11px;flex:1; }
+.deal-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }
+.deal-card-title { font-size:15px;font-weight:700;color:#1e293b;line-height:1.4;flex:1;word-break:break-word; }
+.deal-stat-badge { font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em; }
+.deal-card-meta { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
+.deal-meta-chip { display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1px solid #e8e2d8;border-radius:6px;padding:2px 8px;font-size:11px;color:#475569;font-weight:500;white-space:nowrap; }
+/* ── Progress bar ── */
+.deal-progress-wrap { display:flex;flex-direction:column;gap:3px; }
+.deal-progress-labels { display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em; }
+.deal-progress-track { background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden; }
+.deal-progress-fill { height:100%;border-radius:6px;transition:width .4s ease; }
+/* ── Card comment ── */
+.deal-card-comment { font-size:12px;color:#374151;line-height:1.6;padding-top:10px;border-top:1px solid #f1f5f9; }
+/* ── Card footer (actions) ── */
+.deal-card-footer { padding:12px 18px;border-top:1px solid #f1f5f9;display:flex;gap:8px;flex-wrap:wrap;background:#fafaf9; }
+.deal-action-btn { font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s;white-space:nowrap;letter-spacing:.01em; }
+.deal-action-btn:hover { filter:brightness(.93); }
+.deal-action-btn.primary { flex:1;text-align:center; }
+.deal-action-btn.blue { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
+.deal-action-btn.red { background:#7e2023;border-color:#7e2023;color:#fff; }
+.deal-action-btn.gray { background:#f1f5f9;border-color:#e2e8f0;color:#475569; }
+/* ── Map preview ── */
+.deal-map-preview { width:100%;height:140px;border-radius:0;border-bottom:1px solid #e8e2d8;background:#e5e7eb;overflow:hidden;position:relative; }
+.deal-map-preview iframe { width:100%;height:100%;border:none; }
+.deal-map-placeholder { width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:600; }
+/* ── Empty state ── */
+.deal-empty { padding:64px 40px;text-align:center;color:#9ca3af;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:14px; }
+/* ── Modals ── */
+.deal-modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px); }
+.deal-modal-box { position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:90%;max-width:580px;max-height:90vh;overflow-y:auto;z-index:1; }
+.deal-modal-hdr { display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:16px;color:#1e293b;font-family:'Oswald',sans-serif;letter-spacing:.03em; }
+.deal-modal-body { padding:20px;display:flex;flex-direction:column;gap:14px; }
+.deal-modal-ftr { padding:16px 20px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end; }
+.deal-modal-close { background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1; }
+.deal-form-row { display:flex;flex-direction:column;gap:5px; }
+.deal-form-row label { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.04em; }
+.dl-input { padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:100%;box-sizing:border-box;transition:border .15s; }
+.dl-input:focus { outline:none;border-color:#7e2023; }
+.dl-input-row { display:flex;gap:10px; }
+.dl-input-row > .deal-form-row { flex:1; }
+/* ── Holding badges ── */
+.deal-holding-dev { background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd; }
+.deal-holding-intl { background:#fce7f3;color:#be185d;border:1px solid #f9a8d4; }
+/* ── Status colors ── */
+.deal-st-lease { background:#dcfce7;color:#166534; }
+.deal-st-loi { background:#dbeafe;color:#1e40af; }
+.deal-st-waiting { background:#fef9c3;color:#854d0e; }
+.deal-st-hold { background:#fee2e2;color:#991b1b; }
+.deal-st-info { background:#f3e8ff;color:#6b21a8; }
+
 /* ══ INVENTORY PAGE ══════════════════════════════════ */
 #pg-inv { display:none; min-height:calc(100vh - 62px); background:var(--bg); }
 .inv-topbar { background:var(--surf); border-bottom:1px solid var(--brd); padding:0 24px; display:flex; align-items:center; gap:16px; min-height:56px; flex-wrap:wrap; }
@@ -3131,6 +3205,13 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
        <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
        <div class="hcard-tag">Active · All Locations</div>
      </div>
+    <div id="hcard-deals" class="hcard c5" onclick="goDeals()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">📍</span>
+      <div class="hcard-title">New Deal Status</div>
+      <div class="hcard-desc">Track real estate expansion pipeline. View LOIs, leases, and deal progress with broker info and map previews.</div>
+      <div class="hcard-tag">Active · Pipeline Tracker</div>
+      <span id="deals-active-badge" style="display:none;position:absolute;top:12px;right:12px;background:#2563eb;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;align-items:center;justify-content:center;min-width:22px;"></span>
+    </div>
 <!-- Admin footer button: small, secondary, admin-only. Shown via _applyPermissionsUI(). -->
     <div id="admin-home-card" style="display:none;grid-column:1/-1;"></div>
     <div id="hcard-events" class="hcard c8" style="position:relative;">
@@ -3729,7 +3810,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_deals_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4090,6 +4171,7 @@ function _applyPermissionsUI(){
     dm_report:   'hcard-dm_report',
     events:      'hcard-events',
     portfolio:   'hcard-portfolio',
+    deals:       'hcard-deals',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -4838,6 +4920,12 @@ function goMaint(){
     if(states.length === 1) MN.state = states[0];
     else MN.state = 'ALL';
   }
+  render();
+}
+
+function goDeals(){
+  if(!_hasPermission('deals')){ _showAccessDenied('New Deal Status'); return; }
+  S.page='deals';
   render();
 }
 
@@ -5747,6 +5835,7 @@ const _ADM_MODULES = [
   { id:'inventory',   label:'Inventory',         icon:'📦', desc:'Stock levels, usage & waste by location' },
   { id:'dm_report',   label:'DM Scorecard',       icon:'📋', desc:'19-KPI PDF report for district managers' },
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
+  { id:'deals',       label:'New Deal Status',    icon:'📍', desc:'Real estate expansion pipeline tracker' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6145,10 +6234,10 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','deals'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
-  if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
+  if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); setTimeout(updateDealsBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
   else if(S.page==='sales'){ try{ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }catch(e){ console.error('renderSalesPage',e); } }
   else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
@@ -6156,6 +6245,7 @@ function render(){
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
   else if(S.page==='admin'){ try{ renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
   else if(S.page==='portfolio'){ try{ renderPortfolioPage(); }catch(e){ console.error('renderPortfolioPage',e); } }
+  else if(S.page==='deals'){ try{ if(typeof renderDealsPage!=='undefined') renderDealsPage(); }catch(e){ console.error('renderDealsPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -6181,7 +6271,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',deals:'New Deal Status'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -15440,6 +15530,361 @@ function pxToggleCmpFull(){
 }
 
 // ══════════════════════════════════════════════════
+//  NEW DEAL STATUS PIPELINE
+// ══════════════════════════════════════════════════
+
+const DL_STATUSES = ['LEASE','LOI','WAITING','HOLD','INFO'];
+const DL_STATUS_LABEL = { LEASE:'Lease', LOI:'LOI', WAITING:'Waiting', HOLD:'Hold', INFO:'Info' };
+const DL_STATUS_CLASS = { LEASE:'deal-st-lease', LOI:'deal-st-loi', WAITING:'deal-st-waiting', HOLD:'deal-st-hold', INFO:'deal-st-info' };
+const DL_HOLDINGS  = ['DEVELOPMENT','INTERNATIONAL'];
+const DL_HOLD_LABEL = { DEVELOPMENT:'Development', INTERNATIONAL:'International' };
+const DL_HOLD_CLASS = { DEVELOPMENT:'deal-holding-dev', INTERNATIONAL:'deal-holding-intl' };
+const DL_PROGRESS_COLORS = {
+  0:'#e5e7eb', 10:'#fca5a5', 20:'#fdba74', 30:'#fde68a', 40:'#fde047',
+  50:'#bef264', 60:'#86efac', 70:'#6ee7b7', 80:'#5eead4', 90:'#67e8f9', 100:'#34d399'
+};
+
+let DL = { filterStatus:'ALL', filterHolding:'ALL', filterProgress:'ALL', search:'' };
+
+function dlProgressColor(pct){
+  const keys = Object.keys(DL_PROGRESS_COLORS).map(Number).sort((a,b)=>a-b);
+  let best = keys[0];
+  for(const k of keys){ if(pct >= k) best = k; }
+  return DL_PROGRESS_COLORS[best];
+}
+
+// ── Storage ────────────────────────────────────────
+function getDealRecords(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('sl_deals_v1')||'[]');
+    if(!Array.isArray(raw)) return [];
+    return raw;
+  }catch(e){ console.error('[Deals] parse error:', e); return []; }
+}
+function saveDealRecords(arr){
+  if(!Array.isArray(arr)){ console.error('[Deals] expected array'); return; }
+  localStorage.setItem('sl_deals_v1', JSON.stringify(arr));
+}
+function dlGenId(){ return 'dl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+// ── Badge ──────────────────────────────────────────
+function updateDealsBadge(){
+  const badge = document.getElementById('deals-active-badge');
+  if(!badge) return;
+  try{
+    const recs = getDealRecords();
+    const active = recs.filter(r => r.status !== 'HOLD').length;
+    if(active>0){ badge.textContent=active; badge.style.display='inline-flex'; }
+    else badge.style.display='none';
+  }catch(e){ badge.style.display='none'; }
+}
+
+// ── Render page ────────────────────────────────────
+function renderDealsPage(){
+  renderDealFilters();
+  renderDealSummary();
+  renderDealCards();
+  updateDealsBadge();
+}
+
+function renderDealFilters(){
+  const el = document.getElementById('deal-filters');
+  if(!el) return;
+  const mkPill = (val, label, field) => {
+    const on = DL[field] === val ? ' on' : '';
+    return `<button class="deal-fpill${on}" onclick="dlSetFilter('${field}','${val}')">${label}</button>`;
+  };
+  let h = `<div class="deal-filter-bar">`;
+  // Status pills
+  h += `<div class="deal-filter-group"><span class="deal-filter-label">Status</span><div class="deal-filter-pills">`;
+  h += mkPill('ALL','All','filterStatus');
+  DL_STATUSES.forEach(s => { h += mkPill(s, DL_STATUS_LABEL[s], 'filterStatus'); });
+  h += `</div></div>`;
+  // Holding pills
+  h += `<div class="deal-filter-group"><span class="deal-filter-label">Holding</span><div class="deal-filter-pills">`;
+  h += mkPill('ALL','All','filterHolding');
+  DL_HOLDINGS.forEach(s => { h += mkPill(s, DL_HOLD_LABEL[s], 'filterHolding'); });
+  h += `</div></div>`;
+  // Progress pills
+  h += `<div class="deal-filter-group"><span class="deal-filter-label">Progress</span><div class="deal-filter-pills">`;
+  h += mkPill('ALL','All','filterProgress');
+  h += mkPill('LOW','0–30%','filterProgress');
+  h += mkPill('MID','40–60%','filterProgress');
+  h += mkPill('HIGH','70–100%','filterProgress');
+  h += `</div></div>`;
+  // Search
+  h += `<div style="margin-left:auto;"><input class="deal-search" type="text" placeholder="Search deals..." value="${DL.search.replace(/"/g,'&quot;')}" oninput="dlSetSearch(this.value)"></div>`;
+  h += `</div>`;
+  el.innerHTML = h;
+}
+
+function dlSetFilter(field, val){
+  DL[field] = val;
+  renderDealFilters();
+  renderDealCards();
+}
+function dlSetSearch(val){
+  DL.search = val;
+  renderDealCards();
+}
+
+function renderDealSummary(){
+  const el = document.getElementById('deal-summary');
+  if(!el) return;
+  const recs = getDealRecords();
+  const total = recs.length;
+  const byStat = {};
+  DL_STATUSES.forEach(s => byStat[s] = 0);
+  recs.forEach(r => { if(byStat[r.status] !== undefined) byStat[r.status]++; });
+  const avgProg = total ? Math.round(recs.reduce((a,r) => a + (r.progress||0), 0) / total) : 0;
+  let h = `<div class="deal-summary-bar">`;
+  h += `<span class="deal-kpi-chip"><strong>${total}</strong>&nbsp;Total Deals</span>`;
+  DL_STATUSES.forEach(s => {
+    if(byStat[s]) h += `<span class="deal-kpi-chip"><span class="deal-stat-badge ${DL_STATUS_CLASS[s]}" style="padding:2px 8px;font-size:10px;">${DL_STATUS_LABEL[s]}</span>&nbsp;${byStat[s]}</span>`;
+  });
+  h += `<span class="deal-kpi-chip">Avg Progress:&nbsp;<strong>${avgProg}%</strong></span>`;
+  h += `</div>`;
+  el.innerHTML = h;
+}
+
+function dlFilteredRecords(){
+  let recs = getDealRecords();
+  if(DL.filterStatus !== 'ALL') recs = recs.filter(r => r.status === DL.filterStatus);
+  if(DL.filterHolding !== 'ALL') recs = recs.filter(r => r.holding === DL.filterHolding);
+  if(DL.filterProgress === 'LOW') recs = recs.filter(r => (r.progress||0) <= 30);
+  else if(DL.filterProgress === 'MID') recs = recs.filter(r => (r.progress||0) >= 40 && (r.progress||0) <= 60);
+  else if(DL.filterProgress === 'HIGH') recs = recs.filter(r => (r.progress||0) >= 70);
+  if(DL.search){
+    const q = DL.search.toLowerCase();
+    recs = recs.filter(r =>
+      (r.location||'').toLowerCase().includes(q) ||
+      (r.area||'').toLowerCase().includes(q) ||
+      (r.address||'').toLowerCase().includes(q) ||
+      (r.broker||'').toLowerCase().includes(q) ||
+      (r.comment||'').toLowerCase().includes(q)
+    );
+  }
+  // Sort: active statuses first, then by progress desc
+  const statOrder = { LEASE:0, LOI:1, WAITING:2, INFO:3, HOLD:4 };
+  recs.sort((a,b) => (statOrder[a.status]||9) - (statOrder[b.status]||9) || (b.progress||0) - (a.progress||0));
+  return recs;
+}
+
+function renderDealCards(){
+  const pane = document.getElementById('deal-cards-pane');
+  if(!pane) return;
+  const recs = dlFilteredRecords();
+  if(!recs.length){
+    pane.innerHTML = `<div class="deal-empty"><span style="font-size:48px;">📍</span><div>No deals match your filters.</div><button class="deal-action-btn blue" onclick="dlOpenCreate()">+ Add First Deal</button></div>`;
+    return;
+  }
+  let h = `<div class="deal-cards-grid">`;
+  recs.forEach(r => { h += dlCard(r); });
+  h += `</div>`;
+  pane.innerHTML = h;
+}
+
+function dlCard(r){
+  const pct = r.progress || 0;
+  const pColor = dlProgressColor(pct);
+  const statClass = DL_STATUS_CLASS[r.status] || 'deal-st-info';
+  const statLabel = DL_STATUS_LABEL[r.status] || r.status;
+  const holdClass = DL_HOLD_CLASS[r.holding] || '';
+  const holdLabel = DL_HOLD_LABEL[r.holding] || r.holding || '';
+
+  // Map preview
+  let mapHtml = '';
+  if(r.address && r.address.trim()){
+    const encoded = encodeURIComponent(r.address.trim());
+    mapHtml = `<div class="deal-map-preview"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-82,25,-80,27&layer=mapnik&marker=0,0" loading="lazy" title="Map" style="pointer-events:none;"></iframe>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(241,245,249,.85);font-size:11px;font-weight:600;color:#475569;padding:8px;text-align:center;">📍 ${r.address.replace(/</g,'&lt;').slice(0,80)}</div></div>`;
+  }
+
+  let h = `<div class="deal-card">`;
+  h += mapHtml;
+  h += `<div class="deal-card-body">`;
+  // Top: location + status badge
+  h += `<div class="deal-card-top">`;
+  h += `<div class="deal-card-title">${(r.location||'Untitled').replace(/</g,'&lt;')}</div>`;
+  h += `<span class="deal-stat-badge ${statClass}">${statLabel}</span>`;
+  h += `</div>`;
+  // Meta chips
+  h += `<div class="deal-card-meta">`;
+  if(r.area) h += `<span class="deal-meta-chip">📌 ${r.area.replace(/</g,'&lt;')}</span>`;
+  if(r.broker) h += `<span class="deal-meta-chip">🤝 ${r.broker.replace(/</g,'&lt;')}</span>`;
+  if(holdLabel) h += `<span class="deal-meta-chip ${holdClass}" style="font-weight:700;">${holdLabel}</span>`;
+  h += `</div>`;
+  // Progress bar
+  h += `<div class="deal-progress-wrap">`;
+  h += `<div class="deal-progress-labels"><span>Progress</span><span>${pct}%</span></div>`;
+  h += `<div class="deal-progress-track"><div class="deal-progress-fill" style="width:${pct}%;background:${pColor};"></div></div>`;
+  h += `</div>`;
+  // Comment
+  if(r.comment) h += `<div class="deal-card-comment">${r.comment.replace(/</g,'&lt;')}</div>`;
+  h += `</div>`; // end card-body
+  // Footer
+  h += `<div class="deal-card-footer">`;
+  h += `<button class="deal-action-btn blue primary" onclick="dlOpenEdit('${r.id}')">✏️ Edit</button>`;
+  h += `<button class="deal-action-btn gray" onclick="dlDeleteDeal('${r.id}')">🗑</button>`;
+  h += `</div>`;
+  h += `</div>`; // end card
+  return h;
+}
+
+// ── Create / Edit Modal ────────────────────────────
+function dlOpenCreate(){
+  dlShowModal(null);
+}
+function dlOpenEdit(id){
+  const r = getDealRecords().find(x => x.id === id);
+  if(!r){ alert('Deal not found'); return; }
+  dlShowModal(r);
+}
+
+function dlShowModal(existing){
+  const modal = document.getElementById('deal-modal');
+  if(!modal) return;
+  const isEdit = !!existing;
+  const r = existing || {};
+  const title = isEdit ? 'Edit Deal' : 'New Deal';
+  const statusOpts = DL_STATUSES.map(s =>
+    `<option value="${s}" ${r.status===s?'selected':''}>${DL_STATUS_LABEL[s]}</option>`
+  ).join('');
+  const holdOpts = `<option value="">— Select —</option>` + DL_HOLDINGS.map(h =>
+    `<option value="${h}" ${r.holding===h?'selected':''}>${DL_HOLD_LABEL[h]}</option>`
+  ).join('');
+
+  let h = `<div class="deal-modal-backdrop" onclick="dlCloseModal()"></div>`;
+  h += `<div class="deal-modal-box">`;
+  h += `<div class="deal-modal-hdr"><span>${title}</span><button class="deal-modal-close" onclick="dlCloseModal()">×</button></div>`;
+  h += `<div class="deal-modal-body">`;
+  // Row 1: Area + Location
+  h += `<div class="dl-input-row">`;
+  h += `<div class="deal-form-row"><label>Area</label><input class="dl-input" id="dl-f-area" value="${(r.area||'').replace(/"/g,'&quot;')}" placeholder="e.g. South Florida"></div>`;
+  h += `<div class="deal-form-row"><label>Location</label><input class="dl-input" id="dl-f-location" value="${(r.location||'').replace(/"/g,'&quot;')}" placeholder="e.g. Coral Springs"></div>`;
+  h += `</div>`;
+  // Row 2: Address
+  h += `<div class="deal-form-row"><label>Address</label><input class="dl-input" id="dl-f-address" value="${(r.address||'').replace(/"/g,'&quot;')}" placeholder="Full street address for map preview"></div>`;
+  // Row 3: Status + Progress
+  h += `<div class="dl-input-row">`;
+  h += `<div class="deal-form-row"><label>Status</label><select class="dl-input" id="dl-f-status">${statusOpts}</select></div>`;
+  h += `<div class="deal-form-row"><label>Progress (%)</label><input class="dl-input" id="dl-f-progress" type="number" min="0" max="100" step="5" value="${r.progress||0}"></div>`;
+  h += `</div>`;
+  // Row 4: Broker + Holding
+  h += `<div class="dl-input-row">`;
+  h += `<div class="deal-form-row"><label>Broker</label><input class="dl-input" id="dl-f-broker" value="${(r.broker||'').replace(/"/g,'&quot;')}" placeholder="Broker name"></div>`;
+  h += `<div class="deal-form-row"><label>Holding</label><select class="dl-input" id="dl-f-holding">${holdOpts}</select></div>`;
+  h += `</div>`;
+  // Row 5: Comment
+  h += `<div class="deal-form-row"><label>Comment</label><textarea class="dl-input" id="dl-f-comment" rows="3" placeholder="Notes about this deal...">${(r.comment||'').replace(/</g,'&lt;')}</textarea></div>`;
+  h += `</div>`; // end body
+  h += `<div class="deal-modal-ftr">`;
+  h += `<button class="deal-action-btn gray" onclick="dlCloseModal()">Cancel</button>`;
+  h += `<button class="deal-action-btn blue" onclick="dlSaveDeal('${isEdit?r.id:''}')">${isEdit?'Save Changes':'Create Deal'}</button>`;
+  h += `</div>`;
+  h += `</div>`; // end box
+  modal.innerHTML = h;
+  modal.style.display = 'flex';
+}
+
+function dlCloseModal(){
+  const modal = document.getElementById('deal-modal');
+  if(modal){ modal.style.display='none'; modal.innerHTML=''; }
+}
+
+function dlSaveDeal(editId){
+  const area     = (document.getElementById('dl-f-area')?.value||'').trim();
+  const location = (document.getElementById('dl-f-location')?.value||'').trim();
+  const address  = (document.getElementById('dl-f-address')?.value||'').trim();
+  const status   = document.getElementById('dl-f-status')?.value || 'WAITING';
+  const progress = Math.max(0, Math.min(100, parseInt(document.getElementById('dl-f-progress')?.value)||0));
+  const broker   = (document.getElementById('dl-f-broker')?.value||'').trim();
+  const holding  = document.getElementById('dl-f-holding')?.value || '';
+  const comment  = (document.getElementById('dl-f-comment')?.value||'').trim();
+
+  if(!location){ alert('Location is required.'); return; }
+
+  const recs = getDealRecords();
+  if(editId){
+    const idx = recs.findIndex(r => r.id === editId);
+    if(idx === -1){ alert('Deal not found'); return; }
+    recs[idx] = { ...recs[idx], area, location, address, status, progress, broker, holding, comment, updatedAt: new Date().toISOString() };
+  } else {
+    recs.push({
+      id: dlGenId(), area, location, address, status, progress, broker, holding, comment,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+  }
+  saveDealRecords(recs);
+  dlCloseModal();
+  renderDealsPage();
+}
+
+function dlDeleteDeal(id){
+  if(!confirm('Delete this deal?')) return;
+  const recs = getDealRecords().filter(r => r.id !== id);
+  saveDealRecords(recs);
+  renderDealsPage();
+}
+
+// ── Seed data (called once if sl_deals_v1 is empty) ──
+function dlSeedIfEmpty(){
+  if(getDealRecords().length > 0) return;
+  const seed = [
+    {area:"MIAMI",location:"MIDTOWN MIAMI",status:"LEASE",progress:80,comment:"Signed — buildout starting Q3",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"BRICKELL CITY CENTRE",status:"LOI",progress:60,comment:"LOI submitted, waiting landlord counter",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"WYNWOOD",status:"WAITING",progress:40,comment:"Waiting on zoning approval",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"COCONUT GROVE",status:"LOI",progress:50,comment:"LOI in review",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"CORAL GABLES",status:"INFO",progress:10,comment:"Early research phase",broker:"",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"DORAL",status:"HOLD",progress:20,comment:"On hold — market conditions",broker:"COLLIERS",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"SOUTH BEACH",status:"WAITING",progress:30,comment:"Permit pending",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"AVENTURA",status:"LOI",progress:55,comment:"LOI sent — follow up next week",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"HIALEAH",status:"INFO",progress:5,comment:"Demographic study underway",broker:"",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"FORT LAUDERDALE - LAS OLAS",status:"LEASE",progress:75,comment:"Lease signed, TI negotiation",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"HOLLYWOOD",status:"WAITING",progress:35,comment:"Waiting on landlord feedback",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"PLANTATION",status:"HOLD",progress:15,comment:"Paused for Q4 review",broker:"",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"PEMBROKE PINES",status:"LOI",progress:45,comment:"LOI negotiation in progress",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"CORAL SPRINGS",status:"INFO",progress:10,comment:"Site visit scheduled",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"WEST PALM BEACH",status:"LEASE",progress:70,comment:"Lease near final — attorney review",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"BOCA RATON",status:"LOI",progress:50,comment:"LOI submitted",broker:"COLLIERS",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"DELRAY BEACH",status:"WAITING",progress:25,comment:"Waiting on site plan approval",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"JUPITER",status:"INFO",progress:5,comment:"Exploring locations",broker:"",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"BOYNTON BEACH",status:"HOLD",progress:10,comment:"On hold pending budget allocation",broker:"",holding:"DEVELOPMENT"},
+    {area:"NEW YORK",location:"MANHATTAN - MIDTOWN",status:"LOI",progress:60,comment:"LOI counter received, reviewing terms",broker:"CBRE",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"MANHATTAN - SOHO",status:"WAITING",progress:40,comment:"Waiting on co-tenancy clause",broker:"JLL",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"BROOKLYN - WILLIAMSBURG",status:"LOI",progress:55,comment:"LOI in negotiation",broker:"CUSHMAN",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"BROOKLYN - DUMBO",status:"INFO",progress:15,comment:"Site assessment in progress",broker:"NEWMARK",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"QUEENS - ASTORIA",status:"HOLD",progress:20,comment:"On hold — rent too high",broker:"MARCUS & MILLICHAP",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"QUEENS - LIC",status:"WAITING",progress:30,comment:"Waiting on lease draft",broker:"COLLIERS",holding:"INTERNATIONAL"},
+    {area:"TEXAS",location:"AUSTIN - SOUTH CONGRESS",status:"LOI",progress:50,comment:"LOI sent to landlord",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"AUSTIN - DOMAIN",status:"INFO",progress:10,comment:"Market analysis underway",broker:"",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"DALLAS - DEEP ELLUM",status:"WAITING",progress:35,comment:"Waiting on tenant package review",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"HOUSTON - MONTROSE",status:"HOLD",progress:15,comment:"On hold — timing",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"SAN ANTONIO - PEARL",status:"LOI",progress:45,comment:"LOI terms under review",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"INTERNATIONAL",location:"BOGOTA - ZONA T",status:"INFO",progress:5,comment:"Exploring international expansion",broker:"LOCAL BROKER TBD",holding:"INTERNATIONAL"},
+  ];
+  const now = new Date().toISOString();
+  const records = seed.map((s,i) => ({
+    id: dlGenId() + i,
+    area: s.area,
+    location: s.location,
+    address: '',
+    status: s.status,
+    progress: s.progress,
+    comment: s.comment,
+    broker: s.broker,
+    holding: s.holding,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  saveDealRecords(records);
+  console.log('[Deals] Seeded', records.length, 'deals');
+}
+
+// Auto-seed on first load
+try{ dlSeedIfEmpty(); }catch(e){ console.error('[Deals] seed error:', e); }
+
+// ══════════════════════════════════════════════════
 //  STORE MAINTENANCE TRACKER
 // ══════════════════════════════════════════════════
 
@@ -17420,6 +17865,23 @@ migrate();
   <div id="maint-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-tech"   style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-review" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
+</div>
+
+<!-- ═══ NEW DEAL STATUS PAGE ═══ -->
+<div id="pg-deals" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div class="deal-topbar">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span class="deal-topbar-title">📍 NEW DEAL STATUS</span>
+    <div style="margin-left:auto;display:flex;gap:8px;padding:10px 0;">
+      <button class="deal-action-btn blue" onclick="dlOpenCreate()">+ New Deal</button>
+    </div>
+  </div>
+  <div id="deal-filters"></div>
+  <div id="deal-summary"></div>
+  <div style="padding:0 24px 40px;">
+    <div id="deal-cards-pane"></div>
+  </div>
+  <div id="deal-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
 </div>
 
 <!-- ═══ PORTFOLIO PAGE ═══ -->
