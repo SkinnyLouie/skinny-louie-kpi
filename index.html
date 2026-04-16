@@ -8464,9 +8464,9 @@ function updTotal(){
   const dv=parseFloat(document.getElementById('m-delivery').value)||0;
   const tot=di+dv;
   document.getElementById('m-total').textContent='$'+tot.toLocaleString('en-US');
-  // Recalculate Food Cost % and D&C % using P&L dollar amounts + entered net sales
-  // (P&L $ amounts are read-only; % shown here reflects: P&L $ / entered total sales)
-  if(tot>0){
+  // Recalculate Food Cost % and D&C % using P&L dollar amounts.
+  // Denominator = "Total for 1000 Sales" (grossSales from P&L), NOT entered total.
+  {
     const yr  = document.getElementById('m-year')?.value;
     const mi  = +document.getElementById('m-month')?.value;
     const lc  = getModalLoc();
@@ -8474,8 +8474,10 @@ function updTotal(){
       const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
       const faAmt  = pnlRec?.codeMap?.['2000'] ?? null;
       const daAmt  = pnlRec?.computedDcAmt ?? null;
-      document.getElementById('m-fp').value = faAmt!=null ? (faAmt/tot*100).toFixed(2) : '';
-      document.getElementById('m-dp').value = daAmt!=null ? (daAmt/tot*100).toFixed(2) : '';
+      const gs1000 = pnlRec?._sales1000 ?? pnlRec?.codeMap?.['1000'] ?? pnlRec?.grossSales ?? null;
+      const denom  = gs1000 > 0 ? gs1000 : (tot > 0 ? tot : null);
+      document.getElementById('m-fp').value = faAmt!=null && denom ? (faAmt/denom*100).toFixed(2) : '';
+      document.getElementById('m-dp').value = daAmt!=null && denom ? (daAmt/denom*100).toFixed(2) : '';
     }
   }
 }
@@ -8542,23 +8544,23 @@ function saveDataModal(){
 
   // ── Food Cost and D&C come exclusively from P&L import (not editable here)
   // fa and da are written by _pnlAutoSyncKPI on P&L import.
-  // We only recalculate their % ratios if net sales changed, preserving the P&L dollar amounts.
+  // Denominator = "Total for 1000 Sales" (grossSales from P&L), NOT manually entered total.
   const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
   const faFromPnL = pnlRec?.codeMap?.['2000'] ?? null;
   const daFromPnL = pnlRec?.computedDcAmt ?? null;
-  // Prefer P&L value; if no P&L yet, leave whatever is currently stored in DB untouched for fa/da
+  const gs1000 = pnlRec?._sales1000 ?? pnlRec?.codeMap?.['1000'] ?? pnlRec?.grossSales ?? null;
+  const denominator = gs1000 > 0 ? gs1000 : (tot > 0 ? tot : null);
   if(faFromPnL !== null){
     d.fa[mi] = faFromPnL;
-    d.fp[mi] = tot>0 ? faFromPnL/tot : null;
-  } else if(tot>0 && d.fa[mi]!=null){
-    // Net sales changed — recompute % using stored fa amount
-    d.fp[mi] = d.fa[mi]/tot;
+    d.fp[mi] = denominator ? faFromPnL/denominator : null;
+  } else if(denominator && d.fa[mi]!=null){
+    d.fp[mi] = d.fa[mi]/denominator;
   }
   if(daFromPnL !== null){
     d.da[mi] = daFromPnL;
-    d.dp[mi] = tot>0 ? daFromPnL/tot : null;
-  } else if(tot>0 && d.da[mi]!=null){
-    d.dp[mi] = d.da[mi]/tot;
+    d.dp[mi] = denominator ? daFromPnL/denominator : null;
+  } else if(denominator && d.da[mi]!=null){
+    d.dp[mi] = d.da[mi]/denominator;
   }
 
   save(); closeDataModal();
@@ -13653,21 +13655,23 @@ function _mapPnLFields(rows, col, rec){
   _setCode('3800', rec.professionalFees);
 
   // ── Computed KPIs from codeMap ────────────────────────────────────────────
+  //    Denominator for all = "Total for 1000 Sales" (grossSales), NOT netSales.
   const cm=rec.codeMap;
-  const sales=cm['1000']??null;
-  if(sales!=null && sales>0){
-    // COGS % = 2000 / 1000
-    if(cm['2000']!=null) rec.computedCogsPct=+(cm['2000']/sales*100).toFixed(2);
-    // D&C % = (3101 + 3102) / 1000
+  const sales1000=cm['1000']??rec.grossSales??null;  // Total for 1000 Sales
+  rec._sales1000=sales1000;  // store for _pnlAutoSyncKPI to reuse
+  if(sales1000!=null && sales1000>0){
+    // FOOD COST % = "Total for 2000 Cost of goods sold" / "Total for 1000 Sales"
+    if(cm['2000']!=null) rec.computedCogsPct=+(cm['2000']/sales1000*100).toFixed(2);
+    // D&C % = (3101 Disposables + 3102 Inventory Shrinkage) / "Total for 1000 Sales"
     const dc3101=cm['3101']??null;
     const dc3102=cm['3102']??null;
     if(dc3101!=null || dc3102!=null){
       const dcAmt=(dc3101??0)+(dc3102??0);
       rec.computedDcAmt=+dcAmt.toFixed(2);
-      rec.computedDcPct=+(dcAmt/sales*100).toFixed(2);
+      rec.computedDcPct=+(dcAmt/sales1000*100).toFixed(2);
     }
-    // Labor % = 3000 / 1000
-    if(cm['3000']!=null) rec.computedLaborPct=+(cm['3000']/sales*100).toFixed(2);
+    // Labor % = "Total for 3000 Payroll" / "Total for 1000 Sales"
+    if(cm['3000']!=null) rec.computedLaborPct=+(cm['3000']/sales1000*100).toFixed(2);
   }
 
   PNL_ALL_KEYS.forEach(k=>{ if(rec[k]==null) rec[k]=0; });
@@ -13742,10 +13746,11 @@ function _pnlAutoSyncKPI(records){
     };
     const d=DB[yr][st][lc];
     const cm=rec.codeMap||{};
-    // Use P&L netSales as the denominator; fall back to existing KPI net sales
-    const ns=rec.netSales>0?rec.netSales:(()=>{ const s=totalNS(d,mi); return s>0?s:null; })();
+    // Denominator = "Total for 1000 Sales" (grossSales), NOT netSales.
+    const gs=rec._sales1000??cm['1000']??rec.grossSales??null;
+    const ns=gs>0?gs:(()=>{ const s=totalNS(d,mi); return s>0?s:null; })();
 
-    // Food cost (COGS = account 2000)
+    // Food Cost = "Total for 2000 Cost of goods sold" / "Total for 1000 Sales"
     const cogVal=cm['2000']??rec.cogs??null;
     if(cogVal!=null && cogVal!==0){
       d.fa[mi]=+cogVal.toFixed(2);
@@ -13753,7 +13758,7 @@ function _pnlAutoSyncKPI(records){
       dirty=true;
     }
 
-    // Labor (Payroll = account 3000)
+    // Labor = "Total for 3000 Payroll" / "Total for 1000 Sales"
     const labVal=cm['3000']??rec.payroll??null;
     if(labVal!=null && labVal!==0){
       d.la[mi]=+labVal.toFixed(2);
@@ -13761,7 +13766,7 @@ function _pnlAutoSyncKPI(records){
       dirty=true;
     }
 
-    // D&C (3101 Disposables + 3102 Cleaning)
+    // D&C = (3101 Disposables + 3102 Shrinkage) / "Total for 1000 Sales"
     if(rec.computedDcAmt!=null && rec.computedDcAmt!==0){
       d.da[mi]=rec.computedDcAmt;
       if(ns>0) d.dp[mi]=+(rec.computedDcAmt/ns).toFixed(4);
