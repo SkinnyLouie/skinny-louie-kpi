@@ -5578,7 +5578,17 @@ function _renderAdmScopeRow(scope){
 function _admSetScope(scope){
   if(!_admCtx.userId) return;
   _admCtx.scope = scope;
+  // When switching scope, discard store selections that no longer apply.
+  // ALL Cities → no store restriction needed, clear the set.
+  // FL / NY    → keep only stores that belong to the new scope.
+  if(scope === 'ALL'){
+    _admCtx.locations = new Set();
+  } else {
+    const validForScope = new Set(LOC_MAP[scope] || []);
+    _admCtx.locations = new Set([..._admCtx.locations].filter(l => validForScope.has(l)));
+  }
   _renderAdmScopeRow(scope);
+  _renderAdmLocGrid(_admCtx.locations);
   _admSetActionMsg('');
 }
 
@@ -5832,24 +5842,36 @@ function _adminClearAll(){
 function _renderAdmLocGrid(locs){
   const container = document.getElementById('adm-loc-section');
   if(!container) return;
+
+  // Loading state
   if(locs === null){
     container.innerHTML = '<div class="adm-loc-note" style="color:#94a3b8;">Loading…</div>';
     return;
   }
-  // Empty set = no store restrictions (scope controls access)
-  let html = '<div class="adm-loc-note">Restrict this user to specific stores. Leave all unchecked to grant access to all stores within their location scope.</div>';
-  for(const [state, storeLocs] of Object.entries(LOC_MAP)){
-    html += `<div class="adm-loc-state-hdr">${state === 'FL' ? '🌴 Florida' : '🗽 New York'}</div>`;
-    html += '<div class="adm-loc-grid">';
-    for(const loc of storeLocs){
-      const on = locs.has(loc);
-      html += `<div class="adm-loc-item${on?' on':''}" onclick="_admToggleLocation('${loc}')">
-        <div class="adm-loc-check${on?' on':''}">${on?'✓':''}</div>
-        <span class="adm-loc-name">${loc}</span>
-      </div>`;
-    }
-    html += '</div>';
+
+  const scope = _admCtx.scope || 'ALL';
+
+  // All Cities selected → no store restriction needed; hide checklist entirely.
+  if(scope === 'ALL'){
+    container.innerHTML = '<div class="adm-loc-note">All Cities selected — this user has access to all stores within their permissions. No store-level restriction needed.</div>';
+    return;
   }
+
+  // FL or NY: show only the stores that belong to the selected scope.
+  const scopeLabel  = scope === 'FL' ? '🌴 Florida' : '🗽 New York';
+  const scopedStores = LOC_MAP[scope] || [];
+
+  let html = `<div class="adm-loc-note">Optionally restrict to specific ${scope === 'FL' ? 'Florida' : 'New York'} stores. Leave all unchecked to grant access to all stores in this scope.</div>`;
+  html += `<div class="adm-loc-state-hdr">${scopeLabel}</div>`;
+  html += '<div class="adm-loc-grid">';
+  for(const loc of scopedStores){
+    const on = locs.has(loc);
+    html += `<div class="adm-loc-item${on?' on':''}" onclick="_admToggleLocation('${loc}')">
+      <div class="adm-loc-check${on?' on':''}">${on?'✓':''}</div>
+      <span class="adm-loc-name">${loc}</span>
+    </div>`;
+  }
+  html += '</div>';
   container.innerHTML = html;
 }
 
