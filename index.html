@@ -2218,6 +2218,10 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .pnl-sec-toggle:hover { opacity:.85; }
 .pnl-sec-arrow { display:inline-block; font-size:9px; margin-right:6px; transition:transform .15s ease; }
 .pnl-sec-arrow.open { transform:rotate(90deg); }
+.pnl-grp-toggle { cursor:pointer; user-select:none; }
+.pnl-grp-toggle:hover { opacity:.85; }
+.pnl-grp-arrow { display:inline-block; font-size:8px; margin-right:5px; transition:transform .15s ease; color:#8b7e6a; }
+.pnl-grp-arrow.open { transform:rotate(90deg); }
 .pnl-tbl-ind    { padding-left:38px !important; }
 .pnl-tbl-neg    { color:#b91c1c; }
 /* ── Shared utility classes (replaces repeated inline styles in P&L and Sales) */
@@ -13399,11 +13403,28 @@ function pxSetPnLView(v){ PX.pnlView=v; renderPnLPage(); }
 let _pnlAllExpanded = true; // default: expanded (show all)
 
 function pnlToggleSection(secIdx){
+  // Toggle all detail rows in this section (groups + items + subitems + subtotals)
   const rows = document.querySelectorAll(`tr[data-pnl-sec="${secIdx}"]`);
   if(!rows.length) return;
   const isHidden = rows[0].classList.contains('pnl-collapsed');
   rows.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
+  // Also toggle group-children (items/subitems) that belong to groups in this section
+  const grpChildren = document.querySelectorAll(`tr[data-pnl-grp^="${secIdx}-"]`);
+  grpChildren.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
+  // Sync all group arrows inside this section
+  const grpArrows = document.querySelectorAll(`[id^="pnl-grp-arrow-${secIdx}-"]`);
+  grpArrows.forEach(a => a.classList.toggle('open', isHidden));
   const arrow = document.querySelector(`#pnl-arrow-${secIdx}`);
+  if(arrow) arrow.classList.toggle('open', isHidden);
+}
+
+function pnlToggleGroup(grpKey, event){
+  if(event) event.stopPropagation(); // don't bubble to section toggle
+  const rows = document.querySelectorAll(`tr[data-pnl-grp="${grpKey}"]`);
+  if(!rows.length) return;
+  const isHidden = rows[0].classList.contains('pnl-collapsed');
+  rows.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
+  const arrow = document.querySelector(`#pnl-grp-arrow-${grpKey}`);
   if(arrow) arrow.classList.toggle('open', isHidden);
 }
 
@@ -13411,7 +13432,7 @@ function pnlExpandCollapseAll(){
   _pnlAllExpanded = !_pnlAllExpanded;
   const allDetail = document.querySelectorAll('tr.pnl-detail-row');
   allDetail.forEach(r => r.classList.toggle('pnl-collapsed', !_pnlAllExpanded));
-  const allArrows = document.querySelectorAll('.pnl-sec-arrow');
+  const allArrows = document.querySelectorAll('.pnl-sec-arrow, .pnl-grp-arrow');
   allArrows.forEach(a => a.classList.toggle('open', _pnlAllExpanded));
   const btn = document.getElementById('pnl-expand-btn');
   if(btn) btn.textContent = _pnlAllExpanded ? '▼ Collapse All' : '▶ Expand All';
@@ -14386,20 +14407,27 @@ function renderPnLDashboard(rec, locRecs){
       const INDENT_PX=[16,32,44,56];
       const KPI_CODES=['1000','2000','3000','3101','3102'];
 
-      // Assign section indices: section/total/subtotal/highlight rows are always visible;
-      // group/item/subitem rows are collapsible detail rows under the nearest preceding section.
+      // Assign section + group indices for two-level expand/collapse.
+      // Level 1 (section): section/total/highlight are always visible.
+      // Level 2 (group): group/subtotal rows are visible when section is expanded;
+      //                   item/subitem rows collapse under their parent group.
       let secIdx = -1;
-      const ALWAYS_VISIBLE = new Set(['section','total','highlight']);
+      let grpIdx = -1;
+      const SEC_ALWAYS = new Set(['section','total','highlight']);
+      const GRP_CHILDREN = new Set(['item','subitem']);
 
       const rows = rec.lineItems.map(li=>{
         const tp = li.type || 'item';
-        if(tp==='section') secIdx++;
-        const isDetail = !ALWAYS_VISIBLE.has(tp);
+        if(tp==='section'){ secIdx++; grpIdx=-1; }
+        if(tp==='group') grpIdx++;
+        const isDetail = !SEC_ALWAYS.has(tp);   // hidden when section collapsed
+        const isGrpChild = GRP_CHILDREN.has(tp); // also hidden when group collapsed
         const bg   = BGSTY[tp]   || BGSTY.item;
         const font = FONTSTY[tp] || FONTSTY.item;
         const bord = BORDERSTY[tp] || BORDERSTY.item;
         const indentPx = INDENT_PX[Math.min(li.indent||0, 3)];
         const isHeader = tp==='section';
+        const isGroup = tp==='group';
         const isHighlight = tp==='highlight';
         const code = li.code || '';
         const codeTag = code && !isHeader && !isHighlight
@@ -14412,13 +14440,33 @@ function renderPnLDashboard(rec, locRecs){
         const pctFmt = (li.value!=null && rec.netSales>0 && !isHeader && li.value!==0)
           ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
 
+        // Section header — toggles all children in this section
         if(isHeader){
           const arrow = `<span class="pnl-sec-arrow open" id="pnl-arrow-${secIdx}">&#9654;</span>`;
           return `<tr class="pnl-sec-toggle" onclick="pnlToggleSection(${secIdx})"><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${arrow}${li.label}</td></tr>`;
         }
-        const detailAttr = isDetail ? ` class="pnl-detail-row" data-pnl-sec="${secIdx}"` : '';
+
+        // Group header (e.g. 3000 Payroll, 3100 Supplies) — toggles item/subitem children
+        if(isGroup){
+          const gArrow = `<span class="pnl-grp-arrow open" id="pnl-grp-arrow-${secIdx}-${grpIdx}">&#9654;</span>`;
+          const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
+          return `<tr class="pnl-detail-row pnl-grp-toggle" data-pnl-sec="${secIdx}" onclick="pnlToggleGroup('${secIdx}-${grpIdx}', event)">
+            <td style="${cellBase}padding-left:${indentPx}px;">${gArrow}${li.label}${codeTag}${kpiTag}</td>
+            <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
+            <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
+          </tr>`;
+        }
+
+        // Item / subitem — collapsible under both section AND group
+        const classes = [];
+        if(isDetail) classes.push('pnl-detail-row');
+        if(isGrpChild) classes.push('pnl-detail-row');
+        const attrs = [];
+        if(isDetail) attrs.push(`data-pnl-sec="${secIdx}"`);
+        if(isGrpChild && grpIdx>=0) attrs.push(`data-pnl-grp="${secIdx}-${grpIdx}"`);
+        const trOpen = classes.length ? `<tr class="${[...new Set(classes)].join(' ')}" ${attrs.join(' ')}>` : '<tr>';
         const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-        return `<tr${detailAttr}>
+        return `${trOpen}
           <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
