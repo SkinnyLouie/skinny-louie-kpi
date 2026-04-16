@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v48.02 -->
+<!-- BUILD: 2026-04-16-v48.03 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -9899,6 +9899,151 @@ function renderMixDashboard(rec, locRecs, allRecs){
       </div>`;
   })();
 
+  // ── ALL-tab: Burger Modifier overview panel with vs-prev-month delta
+  const burgerModOverviewHTML = (()=>{
+    const mods = rec.modifiers || {};
+    const sQty = mods.single || 0;
+    const dQty = mods.double || 0;
+    const tQty = mods.triple || 0;
+    const totalModQty = sQty + dQty + tQty;
+    if(totalModQty <= 0) return '';
+    const prevMods = prevRec ? (prevRec.modifiers || {}) : null;
+    const prevS = prevMods ? (prevMods.single||0) : 0;
+    const prevD = prevMods ? (prevMods.double||0) : 0;
+    const prevT = prevMods ? (prevMods.triple||0) : 0;
+    const prevTotal = prevS + prevD + prevT;
+    const makeDelta = (currQty, prevQty) => {
+      if(!prevMods || prevTotal <= 0) return '';
+      const currPct = totalModQty > 0 ? currQty/totalModQty*100 : 0;
+      const prevPct = prevTotal > 0 ? prevQty/prevTotal*100 : 0;
+      const d = currPct - prevPct;
+      if(Math.abs(d) < 0.05) return `<div style="color:var(--muted);font-size:10px;margin-top:3px;">— vs ${MSHORT[prevRec.month]}</div>`;
+      const col = d > 0 ? '#15803d' : '#b91c1c';
+      const arrow = d > 0 ? '▲' : '▼';
+      return `<div style="color:${col};font-size:11px;font-weight:700;margin-top:3px;">${arrow} ${d>=0?'+':''}${d.toFixed(1)}% vs ${MSHORT[prevRec.month]}</div>`;
+    };
+    const makeCard = (label, qty, prevQty, cls) => {
+      const pct = totalModQty > 0 ? (qty/totalModQty*100).toFixed(1) : '0.0';
+      return `<div class="mx-mod-card ${cls}" style="flex:1;min-width:0;">
+        <div class="mx-mod-name">${label}</div>
+        <div class="mx-mod-pct">${pct}%</div>
+        <div class="mx-mod-qty">${Math.round(qty).toLocaleString('en-US')} sold</div>
+        ${makeDelta(qty, prevQty)}
+      </div>`;
+    };
+    return `<div class="mx-mod-panel">
+      <div class="mx-mod-title">🍔 Burger Modifier Split · ${Math.round(totalModQty).toLocaleString('en-US')} total burgers</div>
+      <div class="mx-mod-cards">
+        ${makeCard('Single', sQty, prevS, 'mod-single')}
+        ${makeCard('Double', dQty, prevD, 'mod-doble')}
+        ${makeCard('Triple', tQty, prevT, 'mod-triple')}
+      </div>
+      ${!prevMods?'<div style="font-size:10px;color:var(--muted);margin-top:8px;">Upload a previous month to see trend arrows.</div>':''}
+    </div>`;
+  })();
+
+  // ── ALL-tab: Subcategory breakdown grid (one card per category)
+  const subcatBreakdownHTML = (()=>{
+    if(categories.length === 0) return '';
+    const prevCats = prevRec ? (prevRec.categories || []) : null;
+    const prevTotalNet = prevRec ? (prevRec.netSales || 0) : 0;
+    const fmtAmt = v=>'$'+Math.round(v).toLocaleString('en-US');
+    const catCards = categories.map(cat => {
+      const catPct = totalNet > 0 ? (cat.net/totalNet*100) : 0;
+      const prevCat = prevCats ? prevCats.find(c=>c.name===cat.name) : null;
+      const prevCatPct = (prevCat && prevTotalNet > 0) ? (prevCat.net/prevTotalNet*100) : null;
+      let deltaHTML = '';
+      if(prevCatPct != null){
+        const d = catPct - prevCatPct;
+        if(Math.abs(d) >= 0.05){
+          const col = d > 0 ? '#15803d' : '#b91c1c';
+          const arrow = d > 0 ? '▲' : '▼';
+          deltaHTML = `<div style="color:${col};font-size:11px;font-weight:700;margin-top:3px;">${arrow} ${d>=0?'+':''}${d.toFixed(1)}% vs ${MSHORT[prevRec.month]}</div>`;
+        } else {
+          deltaHTML = `<div style="color:var(--muted);font-size:10px;margin-top:3px;">— vs ${MSHORT[prevRec.month]}</div>`;
+        }
+      }
+      const catKey = cat.name.toUpperCase();
+      const mapKey = Object.keys(MENU_TO_ITEM_CAT).find(k=>k===catKey);
+      const validCatNames = mapKey ? MENU_TO_ITEM_CAT[mapKey] : [cat.name];
+      const catItems = rec.items.filter(it=>(mapKey ? validCatNames.includes(it.cat) : it.cat.toUpperCase()===catKey) && it.net>0);
+      const top3 = [...catItems].sort((a,b)=>b.net-a.net).slice(0,3);
+      const top3HTML = top3.map(it=>{
+        const iPct = cat.net>0 ? (it.net/cat.net*100).toFixed(0) : '0';
+        return `<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name} <span style="color:var(--text);font-weight:600;">${iPct}%</span></div>`;
+      }).join('');
+      return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${cat.name}</div>
+        <div style="font-size:20px;font-weight:800;font-family:'Oswald',sans-serif;">${catPct.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--muted);">${fmtAmt(cat.net)}</div>
+        ${deltaHTML}
+        ${top3HTML?`<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">${top3HTML}</div>`:''}
+      </div>`;
+    });
+    return `<div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Category Breakdown</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">${catCards.join('')}</div>
+    </div>`;
+  })();
+
+  // ── ALL-tab: Top 10 items by revenue with % of total mix and vs-prev trend
+  const topItemsHTML = (()=>{
+    const validItems = rec.items.filter(it=>it.net>0&&it.qty>0);
+    if(validItems.length < 3) return '';
+    const sorted = [...validItems].sort((a,b)=>b.net-a.net);
+    const top10 = sorted.slice(0, 10);
+    const maxNet = top10[0] ? top10[0].net : 1;
+    const fmtAmt = v=>'$'+Math.round(v).toLocaleString('en-US');
+    const prevItems = prevRec ? prevRec.items : null;
+    const prevTotalNet = prevRec ? (prevRec.netSales || 1) : 1;
+    const thSt = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 10px;';
+    const rows = top10.map((item, idx) => {
+      const mixPct = totalNet > 0 ? (item.net/totalNet*100) : 0;
+      const barW = Math.min(Math.round(item.net/maxNet*100), 100);
+      let trendHTML = '<span style="color:var(--muted);font-size:10px;">—</span>';
+      if(prevItems){
+        const prev = prevItems.find(i=>i.name===item.name);
+        if(prev && prev.net > 0){
+          const prevMixPct = prevTotalNet > 0 ? prev.net/prevTotalNet*100 : 0;
+          const d = mixPct - prevMixPct;
+          if(Math.abs(d) >= 0.05){
+            const col = d > 0 ? '#15803d' : '#b91c1c';
+            const arrow = d > 0 ? '▲' : '▼';
+            trendHTML = `<span style="color:${col};font-weight:700;font-size:11px;">${arrow} ${Math.abs(d).toFixed(1)}%</span>`;
+          }
+        }
+      }
+      const abc = abcMap[item.name] || 'C';
+      const abcBadge = `<span class="abc-badge abc-${abc.toLowerCase()}">${abc}</span>`;
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);width:24px;">${idx+1}</td>
+        <td style="padding:7px 10px;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}${abcBadge}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:700;">${fmtAmt(item.net)}</td>
+        <td style="padding:7px 10px;text-align:right;">
+          <div class="mx-pct-bar-wrap">
+            <div class="mx-pct-bar" style="width:80px;"><div class="mx-pct-fill" style="width:${barW}%"></div></div>
+            <span class="mx-pct-txt">${mixPct.toFixed(1)}%</span>
+          </div>
+        </td>
+        <td style="padding:7px 10px;text-align:center;">${trendHTML}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mx-tb5-panel">
+      <div class="mx-tb5-title">🏆 Top 10 Items by Revenue</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${thSt}text-align:left;">#</th>
+          <th style="${thSt}text-align:left;">Item</th>
+          <th style="${thSt}text-align:right;">Revenue</th>
+          <th style="${thSt}text-align:right;">% of Mix</th>
+          <th style="${thSt}text-align:center;">vs Prev</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${!prevItems?'<div style="font-size:10px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">Upload a previous month to see trend arrows.</div>':''}
+    </div>`;
+  })();
+
   // Category tabs — names only (no tab switching bug)
   const catNames = categories.map(c=>c.name);
   const tabsHTML = `
@@ -10196,10 +10341,12 @@ function renderMixDashboard(rec, locRecs, allRecs){
       ${shiftAlertHTML}
       ${monthPillsHTML}
       ${MX.activeTab!=='__xstore__'?cardsHTML:''}
-      ${MX.activeTab!=='__xstore__'?top5bottom5HTML:''}
+      ${MX.activeTab==='ALL'?burgerModOverviewHTML:''}
+      ${MX.activeTab==='ALL'?subcatBreakdownHTML:''}
+      ${MX.activeTab==='ALL'?topItemsHTML:''}
       ${tabsHTML}
       ${xstoreHTML}
-      ${sectionsHTML}
+      ${MX.activeTab!=='ALL'?sectionsHTML:''}
     </div>`;
 
   // Init donut chart (only for category tabs, not performance)
