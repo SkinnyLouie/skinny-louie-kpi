@@ -1418,6 +1418,7 @@ function setUS(pg, key, val){
 }
 
 function uplFile(input, pg){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const f = input.files[0];
   if(!f) return;
   US[pg].file = f;
@@ -1427,6 +1428,7 @@ function uplFile(input, pg){
 function uplDrop(e, pg){
   e.preventDefault();
   document.getElementById('upl-drop-'+pg).classList.remove('drag');
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const f = e.dataTransfer.files[0];
   if(!f) return;
   US[pg].file = f;
@@ -1441,6 +1443,7 @@ function showChosen(pg, name, size){
 }
 
 function doImport(pg){
+  if(_slRole !== 'admin'){ alert('Only admins can import data.'); return; }
   if(pg==='mix'){ doImportMix(); return; }
   if(pg==='sales'){ doImportSales(); return; }
   if(pg==='pnl'){ doImportPnl(); return; }
@@ -1463,6 +1466,7 @@ function doImport(pg){
 }
 
 function delUpload(pg, localIdx){
+  if(_slRole !== 'admin'){ alert('Only admins can delete documents.'); return; }
   const all = getUploads();
   const pgUploads = all.filter(x=>x.page===pg);
   const item = pgUploads[localIdx];
@@ -1512,6 +1516,7 @@ function delUpload(pg, localIdx){
 }
 
 function pnlClearAll(){
+  if(_slRole !== 'admin'){ alert('Only admins can clear data.'); return; }
   const recs = getPnLRecords();
   const uploads = getUploads().filter(x=>x.page==='pnl');
   if(!recs.length && !uploads.length){ alert('No P&L data to clear.'); return; }
@@ -2627,6 +2632,15 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .deal-st-waiting { background:#fef9c3;color:#854d0e; }
 .deal-st-hold { background:#fee2e2;color:#991b1b; }
 .deal-st-info { background:#f3e8ff;color:#6b21a8; }
+/* ── Card photo ── */
+.deal-card-photo { width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0; }
+.deal-card-photo-empty { width:44px;height:44px;border-radius:50%;background:#f1f5f9;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0; }
+/* ── Card PDF link ── */
+.deal-card-pdf { font-size:12px;color:#475569;display:flex;align-items:center;gap:4px;padding-top:8px;border-top:1px solid #f1f5f9; }
+/* ── City badge ── */
+.deal-city-chip { font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap; }
+.deal-city-fl { background:#ecfdf5;color:#065f46;border:1px solid #6ee7b7; }
+.deal-city-ny { background:#eff6ff;color:#1e40af;border:1px solid #93c5fd; }
 
 /* ══ INVENTORY PAGE ══════════════════════════════════ */
 #pg-inv { display:none; min-height:calc(100vh - 62px); background:var(--bg); }
@@ -3867,6 +3881,7 @@ localStorage.setItem = function(key, value){
 };
 
 async function _forceSyncToCloud(showAlert){
+  if(_slRole !== 'admin'){ if(showAlert) alert('Only admins can sync data manually.'); return; }
   if(!_supa || !_slUser){ if(showAlert) alert('You must be logged in to sync.'); return; }
   const btn = document.getElementById('force-sync-btn');
   if(btn){ btn.textContent = '☁ Syncing…'; btn.disabled = true; }
@@ -4109,9 +4124,9 @@ function _applyRoleUI(){
   document.querySelectorAll('.edit-only').forEach(el => {
     el.style.display = canEdit ? '' : 'none';
   });
-  // Show Sync Data button only for admin/manager
+  // Show Sync Data button only for admin
   const syncBtn = document.getElementById('force-sync-btn');
-  if(syncBtn) syncBtn.style.display = canEdit ? 'flex' : 'none';
+  if(syncBtn) syncBtn.style.display = (_slRole === 'admin') ? 'flex' : 'none';
   // Admin entry points: navbar button + small footer button (both admin-only)
   // The large admin-home-card div is now an empty placeholder — visibility managed below.
   // Apply module-level permissions to home grid cards
@@ -5158,6 +5173,7 @@ function invLoadLastCount(){
 }
 
 function invClearCount(){
+  if(_slRole !== 'admin'){ alert('Only admins can clear data.'); return; }
   var items = invGetItems();
   items.forEach(function(item){
     var el = document.getElementById('inv-qty-'+item.id);
@@ -5301,6 +5317,7 @@ function invToggleHD(id){
 }
 
 function invDeleteCount(id){
+  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   slConfirm('Delete this inventory count? This cannot be undone.', function(){
     invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
     invRenderHistory();
@@ -5595,6 +5612,7 @@ function invDownloadTemplate(city){
 function invDownloadMasterTemplate(){ invDownloadTemplate('FL'); }
 
 function invUploadMaster(city, input){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   var file = input.files[0];
   if(!file) return;
   var c = city.toLowerCase();
@@ -5659,6 +5677,7 @@ function invUploadMaster(city, input){
 }
 
 function invDeletePrices(city){
+  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   var label = city==='FL' ? 'Florida' : 'New York';
   slConfirm('Delete all '+label+' price data? The product list will be kept.', function(){
     var prices = invGetPrices();
@@ -7523,7 +7542,7 @@ function addAlertRule(){
   renderAlertRulesList();
   renderAlerts();
 }
-function deleteAlertRule(i){const r=getAlertRules();r.splice(i,1);saveAlertRules(r);renderAlertRulesList();renderAlerts();}
+function deleteAlertRule(i){if(_slRole!=='admin'){alert('Only admins can delete alert rules.');return;}const r=getAlertRules();r.splice(i,1);saveAlertRules(r);renderAlertRulesList();renderAlerts();}
 function toggleAlertRule(i,v){const r=getAlertRules();r[i].active=v;saveAlertRules(r);renderAlerts();}
 
 function evaluateAlertRules(){
@@ -8573,6 +8592,7 @@ function updTotal(){
 }
 function closeDataModal(){ document.getElementById('ov-data').classList.remove('open'); }
 function delMonth(){
+  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   const yr=document.getElementById('m-year').value;
   const mi=+document.getElementById('m-month').value;
   const lc=getModalLoc();
@@ -8948,6 +8968,7 @@ function savePMixRecords(arr){ _slSaveRecords('mix', arr); }
 
 // ── Load Product Mix directly from toast_mix_fetch.py JSON output
 function loadMixJson(input){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const file = input.files[0];
   if(!file) return;
   const status = document.getElementById('mix-json-status');
@@ -10820,6 +10841,7 @@ function mxSelectRecord(state, loc, year, month){
 }
 
 function mxShowUpload(){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uploadView    = document.getElementById('mix-upload-view');
   const dashboardView = document.getElementById('mix-dashboard-view');
   const locBar        = document.getElementById('mix-loc-bar');
@@ -10841,6 +10863,7 @@ function getSalesDailyRecords(){
 
 // ── Load directly from toast_fetch.py JSON output (no console needed)
 function loadToastJson(input){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const file=input.files[0];
   if(!file) return;
   const status=document.getElementById('toast-json-status');
@@ -11495,6 +11518,7 @@ function renderSalesLocBar(filteredRecs){
 }
 
 function sxShowUpload(){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uv=document.getElementById('sales-upload-view'),dv=document.getElementById('sales-dashboard-view'),bar=document.getElementById('sales-loc-bar');
   if(uv) uv.style.display='block';
   if(dv) dv.style.display='none';
@@ -13954,6 +13978,7 @@ function pxSetState(st){ PX.state=st; PX.loc=null; PX.month=null; PX.cmpMode=fal
 function pxSetLoc(l){ PX.loc=l; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; renderPnLPage(); renderNavRight(); }
 function pxSetMonth(m){ PX.month=m; renderPnLPage(); }
 function pxShowUpload(){
+  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uv=document.getElementById('pnl-upload-view'),dv=document.getElementById('pnl-dashboard-view'),bar=document.getElementById('pnl-loc-bar');
   if(uv) uv.style.display='block';
   if(dv) dv.style.display='none';
@@ -15539,12 +15564,15 @@ const DL_STATUS_CLASS = { LEASE:'deal-st-lease', LOI:'deal-st-loi', WAITING:'dea
 const DL_HOLDINGS  = ['DEVELOPMENT','INTERNATIONAL'];
 const DL_HOLD_LABEL = { DEVELOPMENT:'Development', INTERNATIONAL:'International' };
 const DL_HOLD_CLASS = { DEVELOPMENT:'deal-holding-dev', INTERNATIONAL:'deal-holding-intl' };
+const DL_CITIES = ['FL','NY'];
+const DL_CITY_LABEL = { FL:'Florida', NY:'New York' };
+const DL_CITY_ICON  = { FL:'🌴', NY:'🗽' };
 const DL_PROGRESS_COLORS = {
   0:'#e5e7eb', 10:'#fca5a5', 20:'#fdba74', 30:'#fde68a', 40:'#fde047',
   50:'#bef264', 60:'#86efac', 70:'#6ee7b7', 80:'#5eead4', 90:'#67e8f9', 100:'#34d399'
 };
 
-let DL = { filterStatus:'ALL', filterHolding:'ALL', filterProgress:'ALL', search:'' };
+let DL = { filterStatus:'ALL', filterHolding:'ALL', filterProgress:'ALL', filterCity:'ALL', search:'' };
 
 function dlProgressColor(pct){
   const keys = Object.keys(DL_PROGRESS_COLORS).map(Number).sort((a,b)=>a-b);
@@ -15595,6 +15623,11 @@ function renderDealFilters(){
     return `<button class="deal-fpill${on}" onclick="dlSetFilter('${field}','${val}')">${label}</button>`;
   };
   let h = `<div class="deal-filter-bar">`;
+  // City pills
+  h += `<div class="deal-filter-group"><span class="deal-filter-label">City</span><div class="deal-filter-pills">`;
+  h += mkPill('ALL','All Cities','filterCity');
+  DL_CITIES.forEach(c => { h += mkPill(c, DL_CITY_ICON[c]+' '+DL_CITY_LABEL[c], 'filterCity'); });
+  h += `</div></div>`;
   // Status pills
   h += `<div class="deal-filter-group"><span class="deal-filter-label">Status</span><div class="deal-filter-pills">`;
   h += mkPill('ALL','All','filterStatus');
@@ -15637,8 +15670,12 @@ function renderDealSummary(){
   DL_STATUSES.forEach(s => byStat[s] = 0);
   recs.forEach(r => { if(byStat[r.status] !== undefined) byStat[r.status]++; });
   const avgProg = total ? Math.round(recs.reduce((a,r) => a + (r.progress||0), 0) / total) : 0;
+  const flCount = recs.filter(r=>r.city==='FL').length;
+  const nyCount = recs.filter(r=>r.city==='NY').length;
   let h = `<div class="deal-summary-bar">`;
   h += `<span class="deal-kpi-chip"><strong>${total}</strong>&nbsp;Total Deals</span>`;
+  if(flCount) h += `<span class="deal-kpi-chip">🌴 FL:&nbsp;<strong>${flCount}</strong></span>`;
+  if(nyCount) h += `<span class="deal-kpi-chip">🗽 NY:&nbsp;<strong>${nyCount}</strong></span>`;
   DL_STATUSES.forEach(s => {
     if(byStat[s]) h += `<span class="deal-kpi-chip"><span class="deal-stat-badge ${DL_STATUS_CLASS[s]}" style="padding:2px 8px;font-size:10px;">${DL_STATUS_LABEL[s]}</span>&nbsp;${byStat[s]}</span>`;
   });
@@ -15649,6 +15686,7 @@ function renderDealSummary(){
 
 function dlFilteredRecords(){
   let recs = getDealRecords();
+  if(DL.filterCity !== 'ALL') recs = recs.filter(r => r.city === DL.filterCity);
   if(DL.filterStatus !== 'ALL') recs = recs.filter(r => r.status === DL.filterStatus);
   if(DL.filterHolding !== 'ALL') recs = recs.filter(r => r.holding === DL.filterHolding);
   if(DL.filterProgress === 'LOW') recs = recs.filter(r => (r.progress||0) <= 30);
@@ -15661,10 +15699,10 @@ function dlFilteredRecords(){
       (r.area||'').toLowerCase().includes(q) ||
       (r.address||'').toLowerCase().includes(q) ||
       (r.broker||'').toLowerCase().includes(q) ||
-      (r.comment||'').toLowerCase().includes(q)
+      (r.comment||'').toLowerCase().includes(q) ||
+      (r.city||'').toLowerCase().includes(q)
     );
   }
-  // Sort: active statuses first, then by progress desc
   const statOrder = { LEASE:0, LOI:1, WAITING:2, INFO:3, HOLD:4 };
   recs.sort((a,b) => (statOrder[a.status]||9) - (statOrder[b.status]||9) || (b.progress||0) - (a.progress||0));
   return recs;
@@ -15684,34 +15722,46 @@ function renderDealCards(){
   pane.innerHTML = h;
 }
 
+function _dlEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
 function dlCard(r){
-  const pct = r.progress || 0;
+  const pct = Math.max(0, Math.min(100, parseInt(r.progress)||0));
   const pColor = dlProgressColor(pct);
   const statClass = DL_STATUS_CLASS[r.status] || 'deal-st-info';
-  const statLabel = DL_STATUS_LABEL[r.status] || r.status;
+  const statLabel = DL_STATUS_LABEL[r.status] || _dlEsc(r.status);
   const holdClass = DL_HOLD_CLASS[r.holding] || '';
-  const holdLabel = DL_HOLD_LABEL[r.holding] || r.holding || '';
+  const holdLabel = DL_HOLD_LABEL[r.holding] || _dlEsc(r.holding) || '';
+  const safeId = _dlEsc(r.id);
+  const cityIcon = DL_CITY_ICON[r.city] || '🌎';
+  const cityLabel = DL_CITY_LABEL[r.city] || r.city || '';
 
   // Map preview
   let mapHtml = '';
   if(r.address && r.address.trim()){
-    const encoded = encodeURIComponent(r.address.trim());
     mapHtml = `<div class="deal-map-preview"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-82,25,-80,27&layer=mapnik&marker=0,0" loading="lazy" title="Map" style="pointer-events:none;"></iframe>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(241,245,249,.85);font-size:11px;font-weight:600;color:#475569;padding:8px;text-align:center;">📍 ${r.address.replace(/</g,'&lt;').slice(0,80)}</div></div>`;
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(241,245,249,.85);font-size:11px;font-weight:600;color:#475569;padding:8px;text-align:center;">📍 ${_dlEsc(r.address).slice(0,80)}</div></div>`;
   }
 
   let h = `<div class="deal-card">`;
   h += mapHtml;
   h += `<div class="deal-card-body">`;
-  // Top: location + status badge
+  // Top: photo + location + status badge
   h += `<div class="deal-card-top">`;
-  h += `<div class="deal-card-title">${(r.location||'Untitled').replace(/</g,'&lt;')}</div>`;
+  if(r.photo){
+    h += `<img src="${r.photo}" class="deal-card-photo" alt="Deal photo">`;
+  } else {
+    h += `<div class="deal-card-photo-empty">${cityIcon}</div>`;
+  }
+  h += `<div style="flex:1;min-width:0;">`;
+  h += `<div class="deal-card-title">${_dlEsc(r.location||'Untitled')}</div>`;
+  if(cityLabel) h += `<div style="font-size:11px;color:#6b7280;margin-top:1px;">${cityIcon} ${_dlEsc(cityLabel)}</div>`;
+  h += `</div>`;
   h += `<span class="deal-stat-badge ${statClass}">${statLabel}</span>`;
   h += `</div>`;
   // Meta chips
   h += `<div class="deal-card-meta">`;
-  if(r.area) h += `<span class="deal-meta-chip">📌 ${r.area.replace(/</g,'&lt;')}</span>`;
-  if(r.broker) h += `<span class="deal-meta-chip">🤝 ${r.broker.replace(/</g,'&lt;')}</span>`;
+  if(r.area) h += `<span class="deal-meta-chip">📌 ${_dlEsc(r.area)}</span>`;
+  if(r.broker) h += `<span class="deal-meta-chip">🤝 ${_dlEsc(r.broker)}</span>`;
   if(holdLabel) h += `<span class="deal-meta-chip ${holdClass}" style="font-weight:700;">${holdLabel}</span>`;
   h += `</div>`;
   // Progress bar
@@ -15720,21 +15770,60 @@ function dlCard(r){
   h += `<div class="deal-progress-track"><div class="deal-progress-fill" style="width:${pct}%;background:${pColor};"></div></div>`;
   h += `</div>`;
   // Comment
-  if(r.comment) h += `<div class="deal-card-comment">${r.comment.replace(/</g,'&lt;')}</div>`;
+  if(r.comment) h += `<div class="deal-card-comment">${_dlEsc(r.comment)}</div>`;
+  // PDF attachment
+  if(r.pdfName){
+    h += `<div class="deal-card-pdf"><span style="font-size:14px;">📄</span> <a href="#" onclick="dlViewPdf('${safeId}');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">${_dlEsc(r.pdfName)}</a></div>`;
+  }
   h += `</div>`; // end card-body
   // Footer
   h += `<div class="deal-card-footer">`;
-  h += `<button class="deal-action-btn blue primary" onclick="dlOpenEdit('${r.id}')">✏️ Edit</button>`;
-  h += `<button class="deal-action-btn gray" onclick="dlDeleteDeal('${r.id}')">🗑</button>`;
+  h += `<button class="deal-action-btn blue primary" onclick="dlOpenEdit('${safeId}')">✏️ Edit</button>`;
+  h += `<button class="deal-action-btn gray" onclick="dlDeleteDeal('${safeId}')">🗑</button>`;
   h += `</div>`;
   h += `</div>`; // end card
   return h;
 }
 
-// ── Create / Edit Modal ────────────────────────────
-function dlOpenCreate(){
-  dlShowModal(null);
+// ── View PDF ───────────────────────────────────────
+function dlViewPdf(id){
+  const r = getDealRecords().find(x => x.id === id);
+  if(!r || !r.pdfData){ alert('No PDF attached.'); return; }
+  const w = window.open('','_blank');
+  if(!w){ alert('Popup blocked — please allow popups.'); return; }
+  w.document.write(`<html><head><title>${_dlEsc(r.pdfName||'Document')}</title></head><body style="margin:0;"><iframe src="${r.pdfData}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`);
+  w.document.close();
 }
+
+// ── Photo resize helper (max 120x120, returns base64) ──
+function _dlResizeImage(file, maxW, maxH){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        let w = img.width, h = img.height;
+        if(w > maxW || h > maxH){
+          const ratio = Math.min(maxW/w, maxH/h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Create / Edit Modal ────────────────────────────
+function dlOpenCreate(){ dlShowModal(null); }
 function dlOpenEdit(id){
   const r = getDealRecords().find(x => x.id === id);
   if(!r){ alert('Deal not found'); return; }
@@ -15750,21 +15839,25 @@ function dlShowModal(existing){
   const statusOpts = DL_STATUSES.map(s =>
     `<option value="${s}" ${r.status===s?'selected':''}>${DL_STATUS_LABEL[s]}</option>`
   ).join('');
-  const holdOpts = `<option value="">— Select —</option>` + DL_HOLDINGS.map(h =>
-    `<option value="${h}" ${r.holding===h?'selected':''}>${DL_HOLD_LABEL[h]}</option>`
+  const holdOpts = `<option value="">— Select —</option>` + DL_HOLDINGS.map(hh =>
+    `<option value="${hh}" ${r.holding===hh?'selected':''}>${DL_HOLD_LABEL[hh]}</option>`
+  ).join('');
+  const cityOpts = `<option value="">— Select —</option>` + DL_CITIES.map(c =>
+    `<option value="${c}" ${r.city===c?'selected':''}>${DL_CITY_ICON[c]} ${DL_CITY_LABEL[c]}</option>`
   ).join('');
 
   let h = `<div class="deal-modal-backdrop" onclick="dlCloseModal()"></div>`;
   h += `<div class="deal-modal-box">`;
   h += `<div class="deal-modal-hdr"><span>${title}</span><button class="deal-modal-close" onclick="dlCloseModal()">×</button></div>`;
   h += `<div class="deal-modal-body">`;
-  // Row 1: Area + Location
+  // Row 1: Area + Location + City
   h += `<div class="dl-input-row">`;
-  h += `<div class="deal-form-row"><label>Area</label><input class="dl-input" id="dl-f-area" value="${(r.area||'').replace(/"/g,'&quot;')}" placeholder="e.g. South Florida"></div>`;
-  h += `<div class="deal-form-row"><label>Location</label><input class="dl-input" id="dl-f-location" value="${(r.location||'').replace(/"/g,'&quot;')}" placeholder="e.g. Coral Springs"></div>`;
+  h += `<div class="deal-form-row"><label>Area</label><input class="dl-input" id="dl-f-area" value="${_dlEsc(r.area||'')}" placeholder="e.g. South Florida"></div>`;
+  h += `<div class="deal-form-row"><label>Location</label><input class="dl-input" id="dl-f-location" value="${_dlEsc(r.location||'')}" placeholder="e.g. Coral Springs"></div>`;
+  h += `<div class="deal-form-row" style="max-width:160px;"><label>City</label><select class="dl-input" id="dl-f-city">${cityOpts}</select></div>`;
   h += `</div>`;
   // Row 2: Address
-  h += `<div class="deal-form-row"><label>Address</label><input class="dl-input" id="dl-f-address" value="${(r.address||'').replace(/"/g,'&quot;')}" placeholder="Full street address for map preview"></div>`;
+  h += `<div class="deal-form-row"><label>Address</label><input class="dl-input" id="dl-f-address" value="${_dlEsc(r.address||'')}" placeholder="Full street address for map preview"></div>`;
   // Row 3: Status + Progress
   h += `<div class="dl-input-row">`;
   h += `<div class="deal-form-row"><label>Status</label><select class="dl-input" id="dl-f-status">${statusOpts}</select></div>`;
@@ -15772,15 +15865,34 @@ function dlShowModal(existing){
   h += `</div>`;
   // Row 4: Broker + Holding
   h += `<div class="dl-input-row">`;
-  h += `<div class="deal-form-row"><label>Broker</label><input class="dl-input" id="dl-f-broker" value="${(r.broker||'').replace(/"/g,'&quot;')}" placeholder="Broker name"></div>`;
+  h += `<div class="deal-form-row"><label>Broker</label><input class="dl-input" id="dl-f-broker" value="${_dlEsc(r.broker||'')}" placeholder="Broker name"></div>`;
   h += `<div class="deal-form-row"><label>Holding</label><select class="dl-input" id="dl-f-holding">${holdOpts}</select></div>`;
   h += `</div>`;
   // Row 5: Comment
-  h += `<div class="deal-form-row"><label>Comment</label><textarea class="dl-input" id="dl-f-comment" rows="3" placeholder="Notes about this deal...">${(r.comment||'').replace(/</g,'&lt;')}</textarea></div>`;
+  h += `<div class="deal-form-row"><label>Comment</label><textarea class="dl-input" id="dl-f-comment" rows="3" placeholder="Notes about this deal...">${_dlEsc(r.comment||'')}</textarea></div>`;
+  // Row 6: Profile Photo
+  h += `<div class="deal-form-row"><label>Profile Photo</label>`;
+  h += `<div style="display:flex;align-items:center;gap:12px;">`;
+  if(r.photo) h += `<img src="${r.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;">`;
+  else h += `<div style="width:48px;height:48px;border-radius:50%;background:#f1f5f9;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:18px;color:#94a3b8;">📷</div>`;
+  h += `<input type="file" id="dl-f-photo" accept="image/*" class="dl-input" style="flex:1;">`;
+  if(r.photo) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-photo-clear').value='1';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
+  h += `<input type="hidden" id="dl-f-photo-clear" value="0">`;
+  h += `</div></div>`;
+  // Row 7: PDF Document
+  h += `<div class="deal-form-row"><label>PDF Document</label>`;
+  h += `<div style="display:flex;align-items:center;gap:12px;">`;
+  if(r.pdfName) h += `<span style="font-size:12px;color:#1e3a5f;font-weight:600;">📄 ${_dlEsc(r.pdfName)}</span>`;
+  h += `<input type="file" id="dl-f-pdf" accept=".pdf" class="dl-input" style="flex:1;">`;
+  if(r.pdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.style.display='none';">✕</button>`;
+  h += `<input type="hidden" id="dl-f-pdf-clear" value="0">`;
+  h += `</div>`;
+  h += `<div style="font-size:10px;color:#94a3b8;margin-top:3px;">Max 5 MB. Stored locally for quick access.</div>`;
+  h += `</div>`;
   h += `</div>`; // end body
   h += `<div class="deal-modal-ftr">`;
   h += `<button class="deal-action-btn gray" onclick="dlCloseModal()">Cancel</button>`;
-  h += `<button class="deal-action-btn blue" onclick="dlSaveDeal('${isEdit?r.id:''}')">${isEdit?'Save Changes':'Create Deal'}</button>`;
+  h += `<button class="deal-action-btn blue" id="dl-save-btn" onclick="dlSaveDeal('${isEdit?_dlEsc(r.id):''}')">${isEdit?'Save Changes':'Create Deal'}</button>`;
   h += `</div>`;
   h += `</div>`; // end box
   modal.innerHTML = h;
@@ -15792,9 +15904,10 @@ function dlCloseModal(){
   if(modal){ modal.style.display='none'; modal.innerHTML=''; }
 }
 
-function dlSaveDeal(editId){
+async function dlSaveDeal(editId){
   const area     = (document.getElementById('dl-f-area')?.value||'').trim();
   const location = (document.getElementById('dl-f-location')?.value||'').trim();
+  const city     = document.getElementById('dl-f-city')?.value || '';
   const address  = (document.getElementById('dl-f-address')?.value||'').trim();
   const status   = document.getElementById('dl-f-status')?.value || 'WAITING';
   const progress = Math.max(0, Math.min(100, parseInt(document.getElementById('dl-f-progress')?.value)||0));
@@ -15804,14 +15917,41 @@ function dlSaveDeal(editId){
 
   if(!location){ alert('Location is required.'); return; }
 
+  // Disable save button while processing files
+  const saveBtn = document.getElementById('dl-save-btn');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  // Process photo
+  let photo = editId ? (getDealRecords().find(x=>x.id===editId)?.photo||null) : null;
+  const photoClear = document.getElementById('dl-f-photo-clear')?.value === '1';
+  if(photoClear) photo = null;
+  const photoInput = document.getElementById('dl-f-photo');
+  if(photoInput && photoInput.files && photoInput.files[0]){
+    try{ photo = await _dlResizeImage(photoInput.files[0], 120, 120); }
+    catch(e){ console.error('[Deals] photo resize error:', e); }
+  }
+
+  // Process PDF
+  let pdfData = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfData||null) : null;
+  let pdfName = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfName||null) : null;
+  const pdfClear = document.getElementById('dl-f-pdf-clear')?.value === '1';
+  if(pdfClear){ pdfData = null; pdfName = null; }
+  const pdfInput = document.getElementById('dl-f-pdf');
+  if(pdfInput && pdfInput.files && pdfInput.files[0]){
+    const file = pdfInput.files[0];
+    if(file.size > 5*1024*1024){ alert('PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
+    pdfName = file.name;
+    pdfData = await new Promise((res,rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
+  }
+
   const recs = getDealRecords();
   if(editId){
     const idx = recs.findIndex(r => r.id === editId);
     if(idx === -1){ alert('Deal not found'); return; }
-    recs[idx] = { ...recs[idx], area, location, address, status, progress, broker, holding, comment, updatedAt: new Date().toISOString() };
+    recs[idx] = { ...recs[idx], area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, updatedAt: new Date().toISOString() };
   } else {
     recs.push({
-      id: dlGenId(), area, location, address, status, progress, broker, holding, comment,
+      id: dlGenId(), area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     });
   }
@@ -15821,6 +15961,7 @@ function dlSaveDeal(editId){
 }
 
 function dlDeleteDeal(id){
+  if(_slRole !== 'admin'){ alert('Only admins can delete deals.'); return; }
   if(!confirm('Delete this deal?')) return;
   const recs = getDealRecords().filter(r => r.id !== id);
   saveDealRecords(recs);
@@ -15831,51 +15972,43 @@ function dlDeleteDeal(id){
 function dlSeedIfEmpty(){
   if(getDealRecords().length > 0) return;
   const seed = [
-    {area:"MIAMI",location:"MIDTOWN MIAMI",status:"LEASE",progress:80,comment:"Signed — buildout starting Q3",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"BRICKELL CITY CENTRE",status:"LOI",progress:60,comment:"LOI submitted, waiting landlord counter",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"WYNWOOD",status:"WAITING",progress:40,comment:"Waiting on zoning approval",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"COCONUT GROVE",status:"LOI",progress:50,comment:"LOI in review",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"CORAL GABLES",status:"INFO",progress:10,comment:"Early research phase",broker:"",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"DORAL",status:"HOLD",progress:20,comment:"On hold — market conditions",broker:"COLLIERS",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"SOUTH BEACH",status:"WAITING",progress:30,comment:"Permit pending",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"AVENTURA",status:"LOI",progress:55,comment:"LOI sent — follow up next week",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"HIALEAH",status:"INFO",progress:5,comment:"Demographic study underway",broker:"",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"FORT LAUDERDALE - LAS OLAS",status:"LEASE",progress:75,comment:"Lease signed, TI negotiation",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"HOLLYWOOD",status:"WAITING",progress:35,comment:"Waiting on landlord feedback",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"PLANTATION",status:"HOLD",progress:15,comment:"Paused for Q4 review",broker:"",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"PEMBROKE PINES",status:"LOI",progress:45,comment:"LOI negotiation in progress",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"CORAL SPRINGS",status:"INFO",progress:10,comment:"Site visit scheduled",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"WEST PALM BEACH",status:"LEASE",progress:70,comment:"Lease near final — attorney review",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"BOCA RATON",status:"LOI",progress:50,comment:"LOI submitted",broker:"COLLIERS",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"DELRAY BEACH",status:"WAITING",progress:25,comment:"Waiting on site plan approval",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"JUPITER",status:"INFO",progress:5,comment:"Exploring locations",broker:"",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"BOYNTON BEACH",status:"HOLD",progress:10,comment:"On hold pending budget allocation",broker:"",holding:"DEVELOPMENT"},
-    {area:"NEW YORK",location:"MANHATTAN - MIDTOWN",status:"LOI",progress:60,comment:"LOI counter received, reviewing terms",broker:"CBRE",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"MANHATTAN - SOHO",status:"WAITING",progress:40,comment:"Waiting on co-tenancy clause",broker:"JLL",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"BROOKLYN - WILLIAMSBURG",status:"LOI",progress:55,comment:"LOI in negotiation",broker:"CUSHMAN",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"BROOKLYN - DUMBO",status:"INFO",progress:15,comment:"Site assessment in progress",broker:"NEWMARK",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"QUEENS - ASTORIA",status:"HOLD",progress:20,comment:"On hold — rent too high",broker:"MARCUS & MILLICHAP",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"QUEENS - LIC",status:"WAITING",progress:30,comment:"Waiting on lease draft",broker:"COLLIERS",holding:"INTERNATIONAL"},
-    {area:"TEXAS",location:"AUSTIN - SOUTH CONGRESS",status:"LOI",progress:50,comment:"LOI sent to landlord",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"AUSTIN - DOMAIN",status:"INFO",progress:10,comment:"Market analysis underway",broker:"",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"DALLAS - DEEP ELLUM",status:"WAITING",progress:35,comment:"Waiting on tenant package review",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"HOUSTON - MONTROSE",status:"HOLD",progress:15,comment:"On hold — timing",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"SAN ANTONIO - PEARL",status:"LOI",progress:45,comment:"LOI terms under review",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"INTERNATIONAL",location:"BOGOTA - ZONA T",status:"INFO",progress:5,comment:"Exploring international expansion",broker:"LOCAL BROKER TBD",holding:"INTERNATIONAL"},
+    {area:"MIAMI",location:"MIDTOWN MIAMI",city:"FL",status:"LEASE",progress:80,comment:"Signed — buildout starting Q3",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"BRICKELL CITY CENTRE",city:"FL",status:"LOI",progress:60,comment:"LOI submitted, waiting landlord counter",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"WYNWOOD",city:"FL",status:"WAITING",progress:40,comment:"Waiting on zoning approval",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"COCONUT GROVE",city:"FL",status:"LOI",progress:50,comment:"LOI in review",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"CORAL GABLES",city:"FL",status:"INFO",progress:10,comment:"Early research phase",broker:"",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"DORAL",city:"FL",status:"HOLD",progress:20,comment:"On hold — market conditions",broker:"COLLIERS",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"SOUTH BEACH",city:"FL",status:"WAITING",progress:30,comment:"Permit pending",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"AVENTURA",city:"FL",status:"LOI",progress:55,comment:"LOI sent — follow up next week",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"MIAMI",location:"HIALEAH",city:"FL",status:"INFO",progress:5,comment:"Demographic study underway",broker:"",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"FORT LAUDERDALE - LAS OLAS",city:"FL",status:"LEASE",progress:75,comment:"Lease signed, TI negotiation",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"HOLLYWOOD",city:"FL",status:"WAITING",progress:35,comment:"Waiting on landlord feedback",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"PLANTATION",city:"FL",status:"HOLD",progress:15,comment:"Paused for Q4 review",broker:"",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"PEMBROKE PINES",city:"FL",status:"LOI",progress:45,comment:"LOI negotiation in progress",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"BROWARD",location:"CORAL SPRINGS",city:"FL",status:"INFO",progress:10,comment:"Site visit scheduled",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"WEST PALM BEACH",city:"FL",status:"LEASE",progress:70,comment:"Lease near final — attorney review",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"BOCA RATON",city:"FL",status:"LOI",progress:50,comment:"LOI submitted",broker:"COLLIERS",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"DELRAY BEACH",city:"FL",status:"WAITING",progress:25,comment:"Waiting on site plan approval",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"JUPITER",city:"FL",status:"INFO",progress:5,comment:"Exploring locations",broker:"",holding:"DEVELOPMENT"},
+    {area:"PALM BEACH",location:"BOYNTON BEACH",city:"FL",status:"HOLD",progress:10,comment:"On hold pending budget allocation",broker:"",holding:"DEVELOPMENT"},
+    {area:"NEW YORK",location:"MANHATTAN - MIDTOWN",city:"NY",status:"LOI",progress:60,comment:"LOI counter received, reviewing terms",broker:"CBRE",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"MANHATTAN - SOHO",city:"NY",status:"WAITING",progress:40,comment:"Waiting on co-tenancy clause",broker:"JLL",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"BROOKLYN - WILLIAMSBURG",city:"NY",status:"LOI",progress:55,comment:"LOI in negotiation",broker:"CUSHMAN",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"BROOKLYN - DUMBO",city:"NY",status:"INFO",progress:15,comment:"Site assessment in progress",broker:"NEWMARK",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"QUEENS - ASTORIA",city:"NY",status:"HOLD",progress:20,comment:"On hold — rent too high",broker:"MARCUS & MILLICHAP",holding:"INTERNATIONAL"},
+    {area:"NEW YORK",location:"QUEENS - LIC",city:"NY",status:"WAITING",progress:30,comment:"Waiting on lease draft",broker:"COLLIERS",holding:"INTERNATIONAL"},
+    {area:"TEXAS",location:"AUSTIN - SOUTH CONGRESS",city:"",status:"LOI",progress:50,comment:"LOI sent to landlord",broker:"CBRE",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"AUSTIN - DOMAIN",city:"",status:"INFO",progress:10,comment:"Market analysis underway",broker:"",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"DALLAS - DEEP ELLUM",city:"",status:"WAITING",progress:35,comment:"Waiting on tenant package review",broker:"JLL",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"HOUSTON - MONTROSE",city:"",status:"HOLD",progress:15,comment:"On hold — timing",broker:"CUSHMAN",holding:"DEVELOPMENT"},
+    {area:"TEXAS",location:"SAN ANTONIO - PEARL",city:"",status:"LOI",progress:45,comment:"LOI terms under review",broker:"NEWMARK",holding:"DEVELOPMENT"},
+    {area:"INTERNATIONAL",location:"BOGOTA - ZONA T",city:"",status:"INFO",progress:5,comment:"Exploring international expansion",broker:"LOCAL BROKER TBD",holding:"INTERNATIONAL"},
   ];
   const now = new Date().toISOString();
   const records = seed.map((s,i) => ({
-    id: dlGenId() + i,
-    area: s.area,
-    location: s.location,
-    address: '',
-    status: s.status,
-    progress: s.progress,
-    comment: s.comment,
-    broker: s.broker,
-    holding: s.holding,
-    createdAt: now,
-    updatedAt: now,
+    id: dlGenId() + i, area: s.area, location: s.location, city: s.city, address: '',
+    status: s.status, progress: s.progress, comment: s.comment, broker: s.broker, holding: s.holding,
+    photo: null, pdfData: null, pdfName: null, createdAt: now, updatedAt: now,
   }));
   saveDealRecords(records);
   console.log('[Deals] Seeded', records.length, 'deals');
@@ -15883,6 +16016,23 @@ function dlSeedIfEmpty(){
 
 // Auto-seed on first load
 try{ dlSeedIfEmpty(); }catch(e){ console.error('[Deals] seed error:', e); }
+
+// ── Migrate: backfill city field on existing records without it ──
+(function _dlMigrateCity(){
+  const AREA_TO_CITY = {
+    'MIAMI':'FL','BROWARD':'FL','PALM BEACH':'FL',
+    'NEW YORK':'NY','BROOKLYN':'NY','QUEENS':'NY','MANHATTAN':'NY',
+  };
+  const recs = getDealRecords();
+  let changed = false;
+  recs.forEach(r => {
+    if(!r.city && r.area){
+      const key = r.area.toUpperCase();
+      if(AREA_TO_CITY[key]){ r.city = AREA_TO_CITY[key]; changed = true; }
+    }
+  });
+  if(changed){ saveDealRecords(recs); console.log('[Deals] Migrated city field for existing records'); }
+})();
 
 // ══════════════════════════════════════════════════
 //  STORE MAINTENANCE TRACKER
