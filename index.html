@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.04 -->
+<!-- BUILD: 2026-04-16-v50.00 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -107,7 +107,8 @@ function _slGetRecords(pg){
     if(!raw) return [];
     // Normalise every record on the way out — guards against any stale
     // data written before normalisation was enforced.
-    return JSON.parse(raw).map(_slNormalizeRecord);
+    // v50.00: page id is threaded so integrity flags are stamped on read.
+    return JSON.parse(raw).map(function(r){ return _slNormalizeRecord(r, pg); });
   } catch(e){
     console.error('[SL] _slGetRecords('+pg+') parse error:', e);
     return [];
@@ -121,7 +122,8 @@ function _slSaveRecords(pg, arr){
       console.error('[SL] _slSaveRecords('+pg+'): expected array, got', typeof arr);
       return;
     }
-    const clean = _slDedupRecords(arr.map(_slNormalizeRecord));
+    // v50.00: threading pg through normalise stamps _complete on every write.
+    const clean = _slDedupRecords(arr.map(function(r){ return _slNormalizeRecord(r, pg); }));
     localStorage.setItem(_SL_KEY[pg], JSON.stringify(clean));
   }
   catch(e){ console.error('[SL] _slSaveRecords('+pg+') error:', e); }
@@ -130,7 +132,12 @@ function _slSaveRecords(pg, arr){
 // ── 3. Field normalisation ───────────────────────────────────────────────────
 // Returns a shallow copy of `rec` with year→String, month→Number, state→uppercase.
 // Safe to call multiple times (idempotent).
-function _slNormalizeRecord(rec){
+// v50.00: also backfills _complete / _incompleteFields so every record read
+// through _slGetRecords carries its integrity flag even if it was persisted
+// before the integrity layer existed. The page argument is optional — callers
+// that know the module pass it for accurate cross-field checks; callers that
+// don't (generic normalisers) leave integrity flags untouched if absent.
+function _slNormalizeRecord(rec, pg){
   if(!rec || typeof rec !== 'object') return rec;
   const out = Object.assign({}, rec);
   // Identity field normalisation — applied in a fixed order, each step idempotent.
@@ -148,6 +155,14 @@ function _slNormalizeRecord(rec){
   // month: always a Number 0–11 (January=0 … December=11)
   if(out.month !== undefined && out.month !== null)
     out.month = Number(out.month);
+  // Integrity backfill — if the caller identified the page, stamp the
+  // record. Otherwise preserve any pre-existing flag (do not overwrite with
+  // a potentially wrong value).
+  if(pg){
+    const v = _slValidateRecord(pg, out);
+    out._complete = v.ok;
+    out._incompleteFields = v.ok ? [] : v.missing.slice();
+  }
   return out;
 }
 
@@ -186,6 +201,10 @@ function _slFilterRecords(recs, opts){
 
 // ── 8. Field validation ──────────────────────────────────────────────────────
 // Returns {ok:Boolean, missing:String[]} listing any required fields absent.
+// As of v50.00 the function also threads through _slCrossFieldCheck so cross-
+// field rules (voidOrders consistency, mix totals, required P&L accounts)
+// contribute to the returned missing[] list. Callers that only need the flat
+// list of missing fields keep working unchanged.
 function _slValidateRecord(pg, rec){
   const REQUIRED = {
     sales: ['state','loc','year','month','netSales'],
@@ -194,7 +213,237 @@ function _slValidateRecord(pg, rec){
   };
   const required = (REQUIRED[pg] || ['state','loc','year','month']);
   const missing  = required.filter(function(k){ return rec[k] === undefined || rec[k] === null || rec[k] === ''; });
+  // Cross-field rules (module-specific)
+  const xMissing = _slCrossFieldCheck(pg, rec);
+  xMissing.forEach(function(f){ if(missing.indexOf(f) < 0) missing.push(f); });
   return { ok: missing.length === 0, missing: missing };
+}
+
+// ── 8b. Cross-field integrity rules (v50.00 integrity layer) ─────────────────
+// Catches silent-zero bugs and schema inconsistencies that type-level checks
+// miss. Each validator returns an array of field names that fail cross-field
+// integrity; an empty array means "record is coherent at the cross-field level".
+// Null / undefined values are treated as "not asserted" — only active
+// contradictions produce a fail. These rules are intentionally conservative:
+// they never reject a record outright, they surface it via the _complete flag
+// so the system can keep the raw data visible but block it from aggregates.
+function _slXFieldSales(rec){
+  const missing = [];
+  const vo = Number(rec.voidOrders);
+  // voidOrders > 0 implies voidAmount and voidItems must be non-zero numbers.
+  // JSON sources sometimes initialise these to 0; Excel parser nulls them out
+  // via _jsonVoid/parser equivalents. Any remaining 0/null pairings with
+  // voidOrders > 0 are mathematically impossible — mark the record incomplete.
+  if(isFinite(vo) && vo > 0){
+    const va = rec.voidAmount, vi = rec.voidItems;
+    if(va === null || va === undefined || Number(va) === 0) missing.push('voidAmount');
+    if(vi === null || vi === undefined || Number(vi) === 0) missing.push('voidItems');
+  }
+  return missing;
+}
+function _slXFieldMix(rec){
+  const missing = [];
+  const hasItems      = Array.isArray(rec.items) && rec.items.length > 0;
+  const hasCategories = Array.isArray(rec.categories) && rec.categories.length > 0;
+  // Rule 1: if items exist, categories must exist (items without a category tree
+  // cannot be rolled up in the Mix dashboard).
+  if(hasItems && !hasCategories) missing.push('categories');
+  // Rule 2: if revenue is asserted, totalNet must be present (totals drive
+  // every comparison view).
+  const hasRevenue = (rec.totalNet != null && Number(rec.totalNet) !== 0) ||
+                     (Array.isArray(rec.items) && rec.items.some(function(it){ return Number(it.net) > 0; }));
+  if(hasRevenue && (rec.totalNet === null || rec.totalNet === undefined)) missing.push('totalNet');
+  // Rule 3: if modifiers object exists, single/double/triple must be
+  // consistent (all three should be present and numeric; partial modifier
+  // data is meaningless for burger-mix analysis).
+  if(rec.modifiers && typeof rec.modifiers === 'object'){
+    const m = rec.modifiers;
+    const keys = ['single','double','triple'];
+    const anyPresent = keys.some(function(k){ return m[k] !== null && m[k] !== undefined; });
+    const allPresent = keys.every(function(k){ return m[k] !== null && m[k] !== undefined && isFinite(Number(m[k])); });
+    if(anyPresent && !allPresent) missing.push('modifiers.single_double_triple');
+  }
+  return missing;
+}
+// Required account codes for a P&L record to be aggregate-eligible.
+//   1000 = Income / Sales   2000 = Cost of Goods Sold
+//   3101 = Labor            3102 = Benefits / Related Payroll
+const _SL_REQUIRED_PNL_ACCOUNTS = ['1000','2000','3101','3102'];
+function _slXFieldPnL(rec){
+  const missing = [];
+  // Accept either a lineItems map ({"1000": {...}}) or an accounts array
+  // ([{code,value},...]). No account structure at all only fails if the
+  // record also lacks the top-level required metric fields — which the base
+  // validator already catches — so we're silent in that case.
+  let presentCodes = null;
+  if(rec.lineItems && typeof rec.lineItems === 'object'){
+    presentCodes = Object.keys(rec.lineItems).map(String);
+  } else if(Array.isArray(rec.accounts)){
+    presentCodes = rec.accounts.map(function(a){ return String((a && (a.code || a.account)) || ''); });
+  } else if(Array.isArray(rec.lines)){
+    presentCodes = rec.lines.map(function(a){ return String((a && (a.code || a.account)) || ''); });
+  }
+  if(presentCodes){
+    _SL_REQUIRED_PNL_ACCOUNTS.forEach(function(code){
+      if(presentCodes.indexOf(code) < 0) missing.push('account_'+code);
+    });
+  }
+  return missing;
+}
+function _slCrossFieldCheck(pg, rec){
+  if(!rec || typeof rec !== 'object') return [];
+  if(pg === 'sales') return _slXFieldSales(rec);
+  if(pg === 'mix')   return _slXFieldMix(rec);
+  if(pg === 'pnl')   return _slXFieldPnL(rec);
+  return [];
+}
+
+// ── 8c. Integrity flag helpers (v50.00) ──────────────────────────────────────
+// _slStampIntegrity mutates (and returns) the record with _complete and
+// _incompleteFields set based on the combined required-field + cross-field
+// check. Use at every ingestion boundary so every persisted record carries
+// the flag. Safe to call multiple times.
+function _slStampIntegrity(pg, rec){
+  if(!rec || typeof rec !== 'object') return rec;
+  const v = _slValidateRecord(pg, rec);
+  rec._complete = v.ok;
+  rec._incompleteFields = v.ok ? [] : v.missing.slice();
+  return rec;
+}
+// _slFilterComplete returns only records whose _complete flag is not false.
+// Records predating v50.00 (no flag) are treated as complete so historical
+// dashboards do not suddenly go empty on first load. Aggregation functions
+// that need to "block incomplete from aggregates" should call this first.
+function _slFilterComplete(recs){
+  if(!Array.isArray(recs)) return [];
+  return recs.filter(function(r){ return r && r._complete !== false; });
+}
+// _slIsComplete — predicate for a single record. Same semantics as above.
+function _slIsComplete(r){ return !!r && r._complete !== false; }
+
+// ── 8d. Failed-import ledger (v50.00) ────────────────────────────────────────
+// Records the last N failed imports per module, keyed as:
+//   localStorage['sl_last_failed_import'] = { sales:[…], mix:[…], pnl:[…] }
+// Each entry: { fileName, at, error, sampleKeys:[...] }. Capped at 10 per
+// module so it can't grow unbounded. Surfaced by the Data Integrity Panel.
+const _SL_FAIL_LEDGER_KEY = 'sl_last_failed_import';
+const _SL_FAIL_LEDGER_MAX = 10;
+function _slRecordFailedImport(pg, fileName, errMsg, rejectedBatch){
+  try{
+    const raw = localStorage.getItem(_SL_FAIL_LEDGER_KEY);
+    const ledger = raw ? (JSON.parse(raw) || {}) : {};
+    const list = Array.isArray(ledger[pg]) ? ledger[pg] : [];
+    const sampleKeys = Array.isArray(rejectedBatch)
+      ? rejectedBatch.slice(0, 5).map(function(r){
+          try{ return _slRecordKey(r); }catch(_){ return ''; }
+        }).filter(Boolean)
+      : [];
+    list.unshift({
+      fileName: String(fileName || ''),
+      at: new Date().toISOString(),
+      error: String(errMsg || '').slice(0, 500),
+      sampleKeys: sampleKeys,
+      batchSize: Array.isArray(rejectedBatch) ? rejectedBatch.length : 0
+    });
+    ledger[pg] = list.slice(0, _SL_FAIL_LEDGER_MAX);
+    localStorage.setItem(_SL_FAIL_LEDGER_KEY, JSON.stringify(ledger));
+  }catch(e){
+    try{ console.warn('[SL] failed to record import failure:', e && e.message); }catch(_){}
+  }
+}
+function _slGetFailedImports(){
+  try{
+    const raw = localStorage.getItem(_SL_FAIL_LEDGER_KEY);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  }catch(_){ return {}; }
+}
+function _slClearFailedImports(pg){
+  try{
+    if(!pg){ localStorage.removeItem(_SL_FAIL_LEDGER_KEY); return; }
+    const raw = localStorage.getItem(_SL_FAIL_LEDGER_KEY);
+    const ledger = raw ? (JSON.parse(raw) || {}) : {};
+    delete ledger[pg];
+    localStorage.setItem(_SL_FAIL_LEDGER_KEY, JSON.stringify(ledger));
+  }catch(_){}
+}
+
+// ── 8e. Load-time integrity self-check (v50.00) ──────────────────────────────
+// Runs once on boot. Exercises three things:
+//   (1) shared-layer shape checks — _slGetRecords, _slValidateRecord,
+//       _slValidateBatch, _slNormalizeRecord, _slRecordKey all callable.
+//   (2) required-field & cross-field rules fire for each module on a crafted
+//       incomplete sample (asserts the validator actually rejects bad data).
+//   (3) sweeps every persisted record and tallies _complete/_incompleteFields,
+//       so the Data Integrity Panel has counts even before any new ingestion.
+// Result is stashed at window._SL_INTEGRITY_RESULT and also mirrored in
+// localStorage['sl_last_integrity_check'] for cross-tab visibility.
+const _SL_INTEGRITY_KEY = 'sl_last_integrity_check';
+function _slRunIntegrityCheck(){
+  const result = {
+    at: new Date().toISOString(),
+    build: (typeof _SL_BUILD !== 'undefined') ? _SL_BUILD : 'v50.00',
+    shape: { ok:true, missing:[] },
+    rules: { ok:true, failures:[] },
+    records: {}, // { sales:{total, incomplete, missingFields:{}}, mix:{…}, pnl:{…} }
+    ok: true
+  };
+  // (1) shape
+  const needed = ['_slGetRecords','_slSaveRecords','_slNormalizeRecord','_slValidateRecord','_slValidateBatch','_slRecordKey','_slFilterComplete'];
+  needed.forEach(function(fn){
+    if(typeof window[fn] !== 'function' && typeof eval('typeof '+fn) !== 'function'){ // belt + suspenders
+      result.shape.ok = false;
+      result.shape.missing.push(fn);
+    }
+  });
+  // (2) rules — craft minimal incomplete records per module, expect !ok
+  const samples = {
+    sales: { state:'FL', loc:'__TEST__', year:'2099', month:0, voidOrders:3, voidAmount:0, voidItems:0 },
+    mix:   { state:'FL', loc:'__TEST__', year:'2099', month:0, items:[{name:'x', qty:1, net:1, cat:''}], totalNet:0 },
+    pnl:   { state:'FL', loc:'__TEST__', year:'2099', month:0, lineItems:{'1000':{value:1}} } // missing 2000/3101/3102
+  };
+  ['sales','mix','pnl'].forEach(function(pg){
+    try{
+      const v = _slValidateRecord(pg, samples[pg]);
+      if(v.ok){ result.rules.ok = false; result.rules.failures.push(pg + ': expected invalid, got ok'); }
+    }catch(e){
+      result.rules.ok = false;
+      result.rules.failures.push(pg + ': threw ' + (e && e.message || e));
+    }
+  });
+  // (3) sweep persisted stores
+  ['sales','mix','pnl'].forEach(function(pg){
+    try{
+      const recs = _slGetRecords(pg) || [];
+      const missingFields = {};
+      let incomplete = 0;
+      recs.forEach(function(r){
+        if(r && r._complete === false){
+          incomplete++;
+          (r._incompleteFields || []).forEach(function(f){
+            missingFields[f] = (missingFields[f] || 0) + 1;
+          });
+        }
+      });
+      result.records[pg] = { total: recs.length, incomplete: incomplete, missingFields: missingFields };
+    }catch(e){
+      result.records[pg] = { total: 0, incomplete: 0, missingFields: {}, error: String(e && e.message || e) };
+    }
+  });
+  result.ok = result.shape.ok && result.rules.ok;
+  try{ window._SL_INTEGRITY_RESULT = result; }catch(_){}
+  try{ localStorage.setItem(_SL_INTEGRITY_KEY, JSON.stringify(result)); }catch(_){}
+  try{
+    if(!result.ok) console.warn('[SL] integrity check found issues:', result);
+    else console.log('[SL] integrity check passed.', result.records);
+  }catch(_){}
+  return result;
+}
+function _slGetIntegrityResult(){
+  if(typeof window !== 'undefined' && window._SL_INTEGRITY_RESULT) return window._SL_INTEGRITY_RESULT;
+  try{
+    const raw = localStorage.getItem(_SL_INTEGRITY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(_){ return null; }
 }
 
 // ── 9. Upsert ────────────────────────────────────────────────────────────────
@@ -287,7 +536,7 @@ function _slMigrateAll(silent){
       _slBackupData(pg, 'pre-migration');
 
       // Normalise all records — this fixes type mismatches, whitespace, casing
-      const normalised = rawRecs.map(_slNormalizeRecord);
+      const normalised = rawRecs.map(function(r){ return _slNormalizeRecord(r, pg); });
 
       // Separate valid identity (all 4 identity fields present & parseable)
       // from records whose identity is unrecoverable (nothing we can do with them)
@@ -653,25 +902,36 @@ function _slValidateRecordDeep(pg, rec){
 }
 
 // ── Layer 3: Batch validation — checks across the full set of parsed records.
-// Returns { ok, errors: [{severity:'error'|'warn', msg}] }
+// Returns { ok, errors: [{severity:'error'|'warn', msg}], incomplete: [{key, missing[]}] }
+// v50.00: also runs per-record cross-field integrity checks and records
+// incomplete records in the result. Callers that reject on error still
+// reject; callers that want to surface incomplete-but-accepted records
+// (Toast JSON paths, Excel paths) can inspect result.incomplete.
 function _slValidateBatch(pg, records){
   var errs = [];
+  var incomplete = [];
   if(!records || !records.length){
     errs.push({severity:'error', msg:'No records were parsed from this file. Verify the file format matches the expected template and that the required sheets exist.'});
-    return {ok:false, errors:errs};
+    return {ok:false, errors:errs, incomplete:incomplete};
   }
   // Detect in-batch duplicates (same period appears twice in one file)
   var seen = new Map();
+  var MS = typeof MONTHS_SHORT !== 'undefined' ? MONTHS_SHORT : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   records.forEach(function(r, i){
     var key = _slRecordKey(r);
     if(seen.has(key)){
-      var MS = typeof MONTHS_SHORT !== 'undefined' ? MONTHS_SHORT : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       errs.push({severity:'warn', msg:'Duplicate period in file: '+(r.loc||'?')+' · '+(MS[r.month]||r.month)+' '+(r.year||'?')+' appears more than once. Only the last occurrence will be saved.'});
     } else {
       seen.set(key, i);
     }
+    // Cross-field integrity check — non-blocking, surfaced as a warning + tracked for the Integrity Panel.
+    var v = _slValidateRecord(pg, r);
+    if(!v.ok){
+      incomplete.push({key:key, loc:r.loc, year:r.year, month:r.month, missing:v.missing.slice()});
+      errs.push({severity:'warn', msg:'Incomplete record: '+(r.loc||'?')+' · '+(MS[r.month]||r.month)+' '+(r.year||'?')+' missing ['+v.missing.join(', ')+']. Record saved but excluded from aggregates until fixed.'});
+    }
   });
-  return {ok: !errs.some(function(e){ return e.severity==='error'; }), errors: errs};
+  return {ok: !errs.some(function(e){ return e.severity==='error'; }), errors: errs, incomplete:incomplete};
 }
 
 // Called after parse, before save. Shows new vs overwrite diff, validation
@@ -8830,6 +9090,7 @@ function getPMixRecords(){ return _slGetRecords('mix'); }
 function savePMixRecords(arr){ _slSaveRecords('mix', arr); }
 
 // ── Load Product Mix directly from toast_mix_fetch.py JSON output
+// v50.00: routed through shared validation pipeline (_slNormalizeRecord + _slValidateBatch)
 function loadMixJson(input){
   const file = input.files[0];
   if(!file) return;
@@ -8840,7 +9101,11 @@ function loadMixJson(input){
     try{
       const data = JSON.parse(e.target.result);
       const startStr = data.period && data.period.start ? data.period.start : '';
-      if(!startStr || !data.locations){ throw new Error('Not a valid Toast Mix file — expected {period:{start}, locations:[…]}'); }
+      if(!startStr || !data.locations){
+        const msg = 'Not a valid Toast Mix file — expected {period:{start}, locations:[…]}';
+        if(typeof _slRecordFailedImport==='function') _slRecordFailedImport('mix', file.name, msg, null);
+        throw new Error(msg);
+      }
       const d = new Date(startStr + 'T12:00:00');
       const year  = String(d.getFullYear());
       const month = d.getMonth(); // 0-indexed
@@ -8881,6 +9146,7 @@ function loadMixJson(input){
           ? +loc.totalQty
           : categories.reduce((s,c)=>s+c.qty, 0) || items.reduce((s,it)=>s+it.qty, 0);
 
+        // v50.00: stamp integrity flags via shared normaliser
         const record = _slNormalizeRecord({
           page      : 'mix',
           state     : loc.state     || 'FL',
@@ -8891,17 +9157,42 @@ function loadMixJson(input){
           totalQty, totalNet,
           categories, items,
           ...(modifiers ? { modifiers } : {})
-        });
+        }, 'mix');
         records.push(record);
       }
 
-      if(!records.length){ throw new Error('No location data found in file'); }
+      if(!records.length){
+        const msg = 'No location data found in file';
+        if(typeof _slRecordFailedImport==='function') _slRecordFailedImport('mix', file.name, msg, null);
+        throw new Error(msg);
+      }
+
+      // v50.00: batch validation — block on hard errors, warn on incomplete records
+      const v = (typeof _slValidateBatch==='function') ? _slValidateBatch('mix', records) : {ok:true, errors:[], incomplete:[]};
+      if(!v.ok){
+        const errMsg = 'Validation failed: ' + (v.errors||[]).slice(0,3).map(e=>e.msg||String(e)).join('; ');
+        if(typeof _slRecordFailedImport==='function') _slRecordFailedImport('mix', file.name, errMsg, records);
+        throw new Error(errMsg);
+      }
 
       // Merge: replace existing records for same year+month+loc, keep everything else
       const existing = getPMixRecords().filter(r =>
         !(String(r.year)===year && r.month===month && records.some(n=>n.loc===r.loc))
       );
       _slSaveRecords('mix', existing.concat(records));
+
+      // Persist warnings (incomplete records) for Data Integrity Panel
+      try{
+        const warnKey = 'sl_last_import_warnings';
+        const prev = JSON.parse(localStorage.getItem(warnKey) || '{}') || {};
+        prev.mix = {
+          fileName: fname,
+          at: new Date().toISOString(),
+          incomplete: (v.incomplete||[]).map(x => ({key:x.key, missing:x.missing})),
+          total: records.length
+        };
+        localStorage.setItem(warnKey, JSON.stringify(prev));
+      }catch(_){}
 
       // Update upload log
       let uploads = getUploads();
@@ -8912,7 +9203,9 @@ function loadMixJson(input){
       });
       saveUploads(uploads);
 
-      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${records.length} location${records.length!==1?'s':''} — reloading…`; }
+      const incCount = (v.incomplete||[]).length;
+      const incSuffix = incCount ? ` ⚠ ${incCount} incomplete` : '';
+      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${records.length} location${records.length!==1?'s':''}${incSuffix} — reloading…`; }
       // Navigate to the mix page for the first loaded location
       const first = records[0];
       setTimeout(()=>{
@@ -10723,6 +11016,12 @@ function getSalesDailyRecords(){
 }
 
 // ── Load directly from toast_fetch.py JSON output (no console needed)
+// v50.00: routes through the shared validation pipeline.
+//   1. Parse → build raw records
+//   2. Normalise each (_slNormalizeRecord) — stamps _complete + _incompleteFields
+//   3. _slValidateBatch — batch-level dedup + cross-field integrity warnings
+//   4. Persist via _slSaveRecords (which re-normalises + dedups)
+//   5. On hard error: persist sl_last_failed_import for the Integrity Panel
 function loadToastJson(input){
   const file=input.files[0];
   if(!file) return;
@@ -10756,7 +11055,7 @@ function loadToastJson(input){
       for(const loc of data.locations){
         if(!loc.netSales) continue;
         const _vf = _jsonVoid(loc);
-        monthly.push({
+        const raw = {
           page:'sales', state:loc.state, loc:loc.location,
           year, month, fileName:fname, importedAt:fetched,
           grossSales:loc.netSales,
@@ -10768,14 +11067,36 @@ function loadToastJson(input){
           itemDiscounts:[], checkDiscounts:(loc.discounts||[]).map(d=>({name:d.name,count:d.count,orders:d.count,amount:+(d.amount||0).toFixed(2)})),
           voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct,
           voidIncomplete:_vf.voidIncomplete
-        });
+        };
+        // Step 1: shared normalisation + integrity stamping.
+        const rec = _slNormalizeRecord(raw, 'sales');
+        monthly.push(rec);
         for(const day of (loc.daily||[])){
           const dd=new Date(day.date+'T12:00:00');
           daily.push({state:loc.state,loc:loc.location,year:String(dd.getFullYear()),month:dd.getMonth(),day:dd.getDate(),date:day.date,netSales:day.netSales,totalOrders:day.totalOrders,avgCheck:day.avgCheck});
         }
       }
 
-      // Merge monthly — route through _slSaveRecords for normalisation + dedup
+      // Step 2: shared batch validation — dedup detection + cross-field checks.
+      const batch = _slValidateBatch('sales', monthly);
+      if(!batch.ok){
+        const errMsg = (batch.errors.find(function(x){ return x.severity==='error'; })||{}).msg || 'Batch validation failed';
+        _slRecordFailedImport('sales', file.name, errMsg, batch);
+        throw new Error(errMsg);
+      }
+      // Non-blocking warnings & incomplete records are logged to console so the
+      // Data Integrity Panel can inspect them via sl_last_import_warnings.
+      if(batch.errors.length || batch.incomplete.length){
+        try{
+          localStorage.setItem('sl_last_import_warnings', JSON.stringify({
+            module:'sales', fileName:file.name, at:new Date().toISOString(),
+            warnings:batch.errors, incomplete:batch.incomplete
+          }));
+        } catch(_e){}
+        console.warn('[SL v50 import] sales — '+batch.errors.length+' warning(s), '+batch.incomplete.length+' incomplete record(s):', batch);
+      }
+
+      // Step 3: persist via _slSaveRecords — handles second-pass normalise + dedup.
       let ex=getSalesRecords().filter(r=>!(String(r.year)===year&&r.month===month&&monthly.some(n=>n.loc===r.loc)));
       _slSaveRecords('sales', ex.concat(monthly));
       // Merge daily — date-level upsert: preserve auto-synced days not in this JSON
@@ -10794,9 +11115,11 @@ function loadToastJson(input){
       });
       saveUploads(uploads);
 
-      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${monthly.length} locations · ${daily.length} daily records — reloading…`; }
+      const suffix = batch.incomplete.length ? ` · ⚠ ${batch.incomplete.length} incomplete` : '';
+      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${monthly.length} locations · ${daily.length} daily records${suffix} — reloading…`; }
       setTimeout(()=>{ SX.state=monthly[0].state; SX.loc=monthly[0].loc; SX.year=year; SX.month=month; SX.activeTab='overview'; navigate('sales'); renderSalesPage(); renderNavRight(); },900);
     } catch(err){
+      _slRecordFailedImport('sales', file.name||'(unknown)', err.message||String(err), null);
       if(status){ status.style.color='#b91c1c'; status.textContent='❌ Error: '+err.message; }
     }
   };
@@ -16709,6 +17032,113 @@ function buildDebugPanelHTML(){
       </table>
     </div>`;
 
+  // ── v50.00: Data Integrity Panel ──
+  // Counts incomplete records per module, surfaces the last failed imports,
+  // and tallies which fields are most commonly missing.
+  function _dbgIntegritySection(){
+    // Live counts (don't trust stashed result — it may be stale)
+    function tally(recs){
+      let incomplete = 0;
+      const mf = {};
+      (recs||[]).forEach(function(r){
+        if(r && r._complete === false){
+          incomplete++;
+          (r._incompleteFields || []).forEach(function(f){ mf[f] = (mf[f]||0) + 1; });
+        }
+      });
+      return { total: (recs||[]).length, incomplete: incomplete, missingFields: mf };
+    }
+    const modTally = {
+      sales: tally(salesRecs),
+      mix:   tally(mixRecs),
+      pnl:   tally(pnlRecs)
+    };
+    const totalIncomplete = modTally.sales.incomplete + modTally.mix.incomplete + modTally.pnl.incomplete;
+    const dot = totalIncomplete === 0
+      ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>'
+      : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>';
+
+    function fieldList(mf){
+      const entries = Object.keys(mf).map(function(k){ return [k, mf[k]]; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0, 5);
+      if(!entries.length) return '<span style="color:#64748b;font-style:italic;">—</span>';
+      return entries.map(function(e){
+        return '<span style="display:inline-block;background:#334155;color:#fbbf24;padding:1px 6px;border-radius:3px;font-size:10px;margin:1px 2px 1px 0;">'+e[0]+' <span style="color:#94a3b8;">×'+e[1]+'</span></span>';
+      }).join('');
+    }
+
+    function modRow(label, icon, t){
+      const pct = t.total ? ((t.incomplete/t.total)*100).toFixed(0) : '0';
+      const color = t.incomplete === 0 ? '#22c55e' : (t.incomplete/Math.max(1,t.total) > 0.1 ? '#ef4444' : '#f59e0b');
+      return `<tr>
+        <td style="padding:3px 10px 3px 0;color:#cbd5e1;white-space:nowrap;">${icon} ${label}</td>
+        <td style="padding:3px 10px 3px 0;color:#94a3b8;text-align:right;">${t.incomplete}<span style="color:#475569;"> / </span>${t.total}</td>
+        <td style="padding:3px 10px 3px 0;color:${color};text-align:right;font-weight:600;">${pct}%</td>
+        <td style="padding:3px 0;line-height:1.5;">${fieldList(t.missingFields)}</td>
+      </tr>`;
+    }
+
+    // Last failed imports
+    const failed = (typeof _slGetFailedImports === 'function') ? _slGetFailedImports() : {};
+    function failedRows(pg){
+      const list = Array.isArray(failed[pg]) ? failed[pg].slice(0,3) : [];
+      if(!list.length) return '<tr><td colspan="3" style="color:#64748b;font-style:italic;padding:2px 6px;font-size:10px;">no failed imports</td></tr>';
+      return list.map(function(x){
+        return `<tr>
+          <td style="padding:2px 8px 2px 6px;color:#94a3b8;font-size:10px;white-space:nowrap;">${_dbgFmtDate(x.at)}</td>
+          <td style="padding:2px 8px 2px 0;color:#e2e8f0;font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(x.fileName||'').replace(/"/g,'&quot;')}">${x.fileName||'—'}</td>
+          <td style="padding:2px 0;color:#fca5a5;font-size:10px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(x.error||'').replace(/"/g,'&quot;')}">${x.error||''}</td>
+        </tr>`;
+      }).join('');
+    }
+    const failedBlock = ['sales','mix','pnl'].map(function(pg){
+      const rows = failedRows(pg);
+      const label = pg==='pnl' ? 'P&L' : (pg==='sales' ? 'Sales' : 'Mix');
+      return `<div style="margin-top:8px;">
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">${label} · failed imports</div>
+        <table style="width:100%;border-collapse:collapse;">${rows}</table>
+      </div>`;
+    }).join('');
+
+    // Self-check result summary (last boot)
+    const ires = (typeof _slGetIntegrityResult === 'function') ? _slGetIntegrityResult() : null;
+    const selfCheckLine = ires
+      ? (ires.ok
+          ? `<span style="color:#22c55e;">✓ self-check passed</span> <span style="color:#64748b;">(${_dbgFmtDate(ires.at)})</span>`
+          : `<span style="color:#ef4444;">✗ self-check failed</span> <span style="color:#64748b;">${(ires.shape&&ires.shape.missing||[]).concat((ires.rules&&ires.rules.failures)||[]).slice(0,3).join('; ')}</span>`)
+      : '<span style="color:#64748b;font-style:italic;">self-check not run</span>';
+
+    return `
+    <div style="background:#1e293b;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;">
+        ${dot}🛡 Data Integrity
+        <span style="margin-left:auto;font-size:10px;font-weight:500;color:#94a3b8;">${totalIncomplete} incomplete total</span>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">${selfCheckLine}
+        <button onclick="try{_slRunIntegrityCheck();slAlert('Integrity check re-run — see console.','info');if(typeof _dbgRefresh==='function')_dbgRefresh();}catch(e){slAlert('Re-run failed: '+(e&&e.message||e),'error');}" style="margin-left:8px;background:#334155;color:#e2e8f0;border:none;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;">↻ Re-run</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead>
+          <tr style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.05em;">
+            <th style="text-align:left;padding:2px 10px 4px 0;font-weight:600;">Module</th>
+            <th style="text-align:right;padding:2px 10px 4px 0;font-weight:600;">Inc/Total</th>
+            <th style="text-align:right;padding:2px 10px 4px 0;font-weight:600;">%</th>
+            <th style="text-align:left;padding:2px 0 4px 0;font-weight:600;">Top missing fields</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${modRow('Sales','💵', modTally.sales)}
+          ${modRow('Mix','🍽',   modTally.mix)}
+          ${modRow('P&L','📊',    modTally.pnl)}
+        </tbody>
+      </table>
+      ${failedBlock}
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button onclick="if(confirm('Clear all failed-import entries?')){_slClearFailedImports();if(typeof _dbgRefresh==='function')_dbgRefresh();}" style="background:#334155;color:#e2e8f0;border:none;border-radius:3px;padding:3px 10px;font-size:10px;cursor:pointer;">🗑 Clear failed</button>
+        <button onclick="try{const j=JSON.stringify({integrity:_slGetIntegrityResult&&_slGetIntegrityResult(),failed:_slGetFailedImports&&_slGetFailedImports(),warnings:JSON.parse(localStorage.getItem('sl_last_import_warnings')||'{}')},null,2);navigator.clipboard.writeText(j);slAlert('Integrity snapshot copied.','info');}catch(e){slAlert('Copy failed: '+(e&&e.message||e),'error');}" style="background:#334155;color:#e2e8f0;border:none;border-radius:3px;padding:3px 10px;font-size:10px;cursor:pointer;">📋 Copy integrity snapshot</button>
+      </div>
+    </div>`;
+  }
+
   // ── Footer ──
   const footer = `
     <div style="background:#1e293b;border-radius:8px;padding:10px 14px;font-size:11px;color:#64748b;">
@@ -16728,6 +17158,7 @@ function buildDebugPanelHTML(){
   return moduleCard('P&L Dashboard','📊', logCount('pnl'), pnlRecs.length, pnlRendered, 'pnl', pnlLocs, pnlExtra)
        + moduleCard('Sales Summary','💵', logCount('sales'), salesRecs.length, salesRendered, 'sales', salesLocs, '')
        + moduleCard('Product Mix','🍽', logCount('mix'), mixRecs.length, mixRendered, 'mix', mixLocs, '')
+       + _dbgIntegritySection()
        + filterRows
        + footer;
 }
@@ -17291,6 +17722,10 @@ document.addEventListener('keydown', function(e){
 // ══════════════════════════════════════════════════
 load();
 migrate();
+// v50.00: run integrity self-check once on boot. Non-blocking — logs to
+// console and stashes result for the Data Integrity Panel. Wrapped in
+// try/catch so a bad sample never breaks app boot.
+try{ if(typeof _slRunIntegrityCheck === 'function') _slRunIntegrityCheck(); }catch(e){ try{ console.warn('[SL] integrity check failed to run:', e); }catch(_){} }
 // render() is called by _initApp() after Supabase auth
 </script>
 
