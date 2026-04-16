@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.02 -->
+<!-- BUILD: 2026-04-16-v49.03 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -10849,31 +10849,77 @@ function parseSalesFile(file, state, loc, year, month){
         const detected = detectLocFromRows(rows, state, loc);
         state = detected.state; loc = detected.loc;
 
+        // ── Robust row finder ────────────────────────────────────────────────────
+        // Checks columns 0 AND 1 (Toast sometimes indents section headers one
+        // column to the right in newer export formats).
+        // Uses CONTAINS matching so minor label variations still resolve
+        // (e.g. "Revenue Center Summary" still matches alias "revenue center").
+        const _rowContains = (cell, needle) =>
+          cell != null && String(cell).trim().toLowerCase().includes(needle);
+
+        const findRowAny = (...aliases) => {
+          for(let ri=0; ri<rows.length; ri++){
+            const r=rows[ri];
+            if(!r) continue;
+            for(const alias of aliases){
+              const a=alias.toLowerCase();
+              if(_rowContains(r[0],a) || _rowContains(r[1],a)) return ri;
+            }
+          }
+          return -1;
+        };
+
+        // Legacy exact-match helper kept for net-sales summary (its rows are
+        // value rows, not labelled sections, so contains-match would over-fire)
         const findRow = lbl => rows.findIndex(r=>r&&r[0]&&String(r[0]).trim().toLowerCase()===lbl.toLowerCase());
 
-        // Net sales summary
-        // _pNum: parse a cell to a number; returns null (not 0) when the cell is
-        // absent, empty, or non-numeric. This separates "genuinely zero" from
-        // "field was not found in the file" — they must never look the same.
+        // ── _pNum: cell → number | null ──────────────────────────────────────
+        // Returns null (not 0) when the cell is absent, empty, or non-numeric.
+        // Null = "field was not in the file"; 0 = "genuinely zero". Never conflate.
         const _pNum = cell => {
           if(cell==null||cell==='') return null;
           const n=Number(cell);
           return isNaN(n) ? null : n;
         };
+
+        // Net sales summary — uses exact findRow; value rows sit at fixed offsets
         const nssIdx = findRow('Net sales summary');
         const grossSales = nssIdx>=0 && rows[nssIdx+1] ? _pNum(rows[nssIdx+1][1]) : null;
         const discounts  = nssIdx>=0 && rows[nssIdx+2] ? _pNum(rows[nssIdx+2][1]) : null;
         const refunds    = nssIdx>=0 && rows[nssIdx+3] ? _pNum(rows[nssIdx+3][1]) : null;
         const netSales   = nssIdx>=0 && rows[nssIdx+4] ? _pNum(rows[nssIdx+4][1]) : null;
 
-        // Generic table parser: header label → skip 2 rows → data until 'Total' or 2+ consecutive blank rows
-        // Tolerates a single blank row within a section (some months have internal spacing gaps)
-        const parseTable = (headerLabel) => {
-          const hdrIdx = findRow(headerLabel);
+        // ── Generic table parser ──────────────────────────────────────────────
+        // Finds the section header via findRowAny (aliases + contains + col 0/1),
+        // then auto-detects the data-start row: scans forward skipping any
+        // column-header rows (rows where ALL of cols 1-4 are non-numeric text or
+        // null). Collects data until "Total" row or 2+ consecutive blank rows.
+        // This replaces the old hardcoded hdrIdx+2 skip that broke when Toast
+        // exports include only one header row instead of two.
+        const parseTable = (...aliases) => {
+          const hdrIdx = findRowAny(...aliases);
           if(hdrIdx===-1) return [];
+
+          // Find the first data row after the header.
+          // A "data row" has at least one numeric value in cols 1-5.
+          // Rows with only text/null in those cols are column-header rows — skip them.
+          // Scan at most 4 rows forward before giving up.
+          let dataStart = hdrIdx+1;
+          for(let si=hdrIdx+1; si<=hdrIdx+4 && si<rows.length; si++){
+            const sr=rows[si];
+            if(!sr) continue;
+            const hasNum=[1,2,3,4,5].some(ci=>{
+              if(sr[ci]==null) return false;
+              const n=Number(sr[ci]);
+              return !isNaN(n) && String(sr[ci]).trim()!=='';
+            });
+            if(hasNum){ dataStart=si; break; }
+            // All non-numeric: this is a column-header row; keep scanning
+          }
+
           const items=[];
           let blankRun=0;
-          for(let i=hdrIdx+2; i<rows.length; i++){
+          for(let i=dataStart; i<rows.length; i++){
             const r=rows[i];
             const c0 = r&&r[0]!=null ? String(r[0]).trim() : '';
             const hasData = r && (r[1]!=null || r[2]!=null || r[3]!=null);
@@ -10885,47 +10931,51 @@ function parseSalesFile(file, state, loc, year, month){
           return items;
         };
 
-        const categories = parseTable('Sales category summary').map(r=>({
+        // ── Section tables — aliases handle label variations across Toast versions
+        const categories = parseTable('Sales category summary','sales category','category summary').map(r=>({
           name: String(r[0]).trim(), items: Number(r[1])||0,
           netSales: Number(r[2])||0, discount: Number(r[3])||0
         }));
 
-        const channels = parseTable('Revenue center summary').map(r=>({
+        const channels = parseTable('Revenue center summary','revenue center','dining channel','channel summary').map(r=>({
           name: String(r[0]).trim(), items: Number(r[1])||0,
           netSales: Number(r[2])||0, discount: Number(r[3])||0
         }));
 
-        const dayparts = parseTable('Service Daypart summary').map(r=>({
+        const dayparts = parseTable('Service Daypart summary','service daypart','daypart summary','day part','sales by daypart').map(r=>({
           name: String(r[0]).trim(), orders: Number(r[1])||0,
           netSales: Number(r[2])||0, discount: Number(r[3])||0
         }));
 
-        const itemDiscounts = parseTable('Menu Item Discounts').map(r=>({
+        const itemDiscounts = parseTable('Menu Item Discounts','menu item discount','item discount').map(r=>({
           name: String(r[0]).trim(), count: Number(r[1])||0,
           orders: Number(r[2])||0, amount: Number(r[3])||0
         }));
 
-        const checkDiscounts = parseTable('Check Discounts').map(r=>({
+        const checkDiscounts = parseTable('Check Discounts','check discount','discount summary').map(r=>({
           name: String(r[0]).trim(), count: Number(r[1])||0,
           orders: Number(r[2])||0, amount: Number(r[3])||0
         }));
 
         // Void summary — keyword scan within the Void section, validated against netSales
         // Init to null: null = "not found in file"; 0 = "genuinely zero"
-        const vSectionIdx = findRow('Void summary');
+        const vSectionIdx = findRowAny('Void summary','voids','void detail','voided');
         let voidAmount=null, voidOrders=null, voidItems=null, voidPct=null;
         if(vSectionIdx>=0){
-          // Scan up to 15 rows after the section header; stop at double-blank
+          // Scan up to 25 rows after the section header; stop at 3 consecutive blanks.
+          // Checks cols 0-5 for the label (in case Toast indents the row) and
+          // cols 1-5 for the numeric value (Toast shifts values right in some formats).
           let blanks=0;
-          for(let vi=vSectionIdx+1; vi<Math.min(vSectionIdx+15, rows.length); vi++){
+          for(let vi=vSectionIdx+1; vi<Math.min(vSectionIdx+25, rows.length); vi++){
             const vr=rows[vi]; if(!vr) continue;
-            const lbl=(vr[0]!=null?String(vr[0]).trim().toLowerCase():'');
-            if(!lbl){ blanks++; if(blanks>=2) break; continue; }
+            // Find label in any of cols 0-1
+            const lbl=([0,1].map(ci=>vr[ci]!=null?String(vr[ci]).trim().toLowerCase():'').find(s=>s!=='')||'');
+            if(!lbl){ blanks++; if(blanks>=3) break; continue; }
             blanks=0;
-            // Scan columns 1, 2, 3 — Toast sometimes shifts values right
+            // Scan columns 1-5 for numeric value — Toast sometimes shifts values right
             let raw=null;
-            for(let ci=1; ci<=3; ci++){
-              if(vr[ci]!=null){ const n=Number(vr[ci]); if(!isNaN(n)){ raw=n; break; } }
+            for(let ci=1; ci<=5; ci++){
+              if(vr[ci]!=null){ const n=Number(vr[ci]); if(!isNaN(n) && String(vr[ci]).trim()!==''){ raw=n; break; } }
             }
             if(raw===null) continue;
             if(lbl.includes('amount') && !lbl.includes('%') && !lbl.includes('pct')){
