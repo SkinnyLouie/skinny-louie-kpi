@@ -1514,14 +1514,14 @@ function delUpload(pg, localIdx){
 function pnlClearAll(){
   const recs = getPnLRecords();
   const uploads = getUploads().filter(x=>x.page==='pnl');
-  if(!recs.length && !uploads.length){ alert('No P&L data to clear.'); return; }
+  if(!recs.length && !uploads.length){ _slAlert('No P&L data to clear.', 'info'); return; }
   if(!confirm(`Delete ALL P&L data?\n\n  ${recs.length} record(s)\n  ${uploads.length} upload log entries\n\nA backup will be saved before clearing.\nAre you sure?`)) return;
   pnlBackupData('pre-clear-all');
   savePnLRecords([]);
   saveUploads(getUploads().filter(x=>x.page!=='pnl'));
   if(typeof PX!=='undefined') PX.month=null;
   renderUpload('pnl');
-  alert('All P&L data cleared. Backup saved — use Restore if needed.');
+  _slAlert({ title:'P&L Cleared', message:'All P&L data cleared.\nBackup saved — use Restore if needed.', type:'success' });
 }
 
 function delDataRecord(pg, state, loc, year, month){
@@ -3796,7 +3796,7 @@ function slAlert(msg, type){
   var el = document.getElementById('sl-alert-modal');
   var iconEl = document.getElementById('sl-alert-icon');
   var msgEl  = document.getElementById('sl-alert-msg');
-  if(!el){ alert(msg); return; }
+  if(!el){ _slAlert(msg, 'info'); return; }
   if(iconEl) iconEl.textContent = icons[type||'info']||'';
   if(msgEl)  msgEl.textContent  = msg;
   el.style.display = 'flex';
@@ -3908,7 +3908,7 @@ localStorage.setItem = function(key, value){
 };
 
 async function _forceSyncToCloud(showAlert){
-  if(!_supa || !_slUser){ if(showAlert) alert('You must be logged in to sync.'); return; }
+  if(!_supa || !_slUser){ if(showAlert) _slAlert({ title:'Not Logged In', message:'You must be logged in to sync data.', type:'warning' }); return; }
   const btn = document.getElementById('force-sync-btn');
   if(btn){ btn.textContent = '☁ Syncing…'; btn.disabled = true; }
   let synced = 0, failed = 0, lastError = '';
@@ -3926,8 +3926,8 @@ async function _forceSyncToCloud(showAlert){
   }
   if(btn){ btn.textContent = '☁ Sync Data'; btn.disabled = false; }
   if(showAlert){
-    if(failed === 0) alert('✅ Data synced to cloud successfully! All users will now see the data.');
-    else alert('⚠️ Synced ' + synced + ' keys. ' + failed + ' failed.\n\nError: ' + lastError);
+    if(failed === 0) _slAlert({ title:'Sync Complete', message:'Data synced to cloud successfully!\nAll users will now see the data.', type:'success' });
+    else _slAlert({ title:'Sync Warning', message:'Synced ' + synced + ' keys. ' + failed + ' failed.\n\n' + lastError, type:'warning' });
   }
   _showSyncBadge();
 }
@@ -6319,9 +6319,9 @@ async function _adminDeleteUser(userId, displayName){
     console.error('[Admin] _adminDeleteUser error:', e);
     const msg = e.message||String(e);
     if(msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('permission')){
-      alert('User deletion requires a service_role key (server-side only).\n\nFor now, go to Supabase dashboard → Authentication → Users to remove this user.');
+      _slAlert({ title:'Cannot Delete User', message:'User deletion requires a service_role key (server-side only).\n\nGo to Supabase dashboard → Authentication → Users to remove this user.', type:'warning' });
     } else {
-      alert('Failed to delete user: ' + msg);
+      _slAlert({ title:'Delete Failed', message:'Failed to delete user: ' + msg, type:'error' });
     }
   }
 }
@@ -16374,7 +16374,7 @@ async function mnSubmitCreate(){
   // ── Deep validation ───────────────────────────────────────
   const v = mnValidateCreate({ title, state, loc, date, prio, cat });
   if(!v.ok){
-    alert('Please fix the following:\n\n• ' + v.errors.join('\n• '));
+    _slAlert({ title:'Validation Error', message:'Please fix the following:\n\n• ' + v.errors.join('\n• '), type:'warning' });
     return;
   }
 
@@ -16413,7 +16413,7 @@ async function mnSubmitCreate(){
     reopenedByUserId:null, reopenedByName:null
   });
   if(!rec){
-    alert('Failed to create work order — record failed validation. Please check all fields.');
+    _slAlert({ title:'Validation Error', message:'Failed to create work order — record failed validation.\nPlease check all fields.', type:'error' });
     if(btn){ btn.textContent='Create Work Order →'; btn.disabled=false; }
     return;
   }
@@ -17845,7 +17845,7 @@ function nsViewPdf(type){
   var idx = NS.editIdx;
   if(idx == null || !NS.deals[idx]) return;
   var dataUrl = type === 'project' ? NS.deals[idx].projectPdf : NS.deals[idx].renderPdf;
-  if(!dataUrl){ alert('No PDF available.'); return; }
+  if(!dataUrl){ _slAlert('No PDF available.', 'info'); return; }
   try {
     var parts = dataUrl.split(',');
     var mime = parts[0].match(/:(.*?);/)[1];
@@ -17868,7 +17868,7 @@ var _nsTempPdfs = { project: null, render: null };
 function nsHandlePdf(input, type){
   var file = input.files[0];
   if(!file) return;
-  if(file.size > 10 * 1024 * 1024){ alert('PDF too large (max 10MB)'); return; }
+  if(file.size > 10 * 1024 * 1024){ _slAlert('PDF too large (max 10MB)', 'warning'); return; }
   var reader = new FileReader();
   reader.onload = function(e){
     _nsTempPdfs[type] = e.target.result;
@@ -17892,7 +17892,7 @@ function nsSaveDeal(){
     projectPdf: _nsTempPdfs.project || (NS.editIdx != null ? NS.deals[NS.editIdx]?.projectPdf : null),
     renderPdf: _nsTempPdfs.render || (NS.editIdx != null ? NS.deals[NS.editIdx]?.renderPdf : null)
   };
-  if(!deal.name){ alert('Store Name is required.'); return; }
+  if(!deal.name){ _slAlert('Store Name is required.', 'warning'); return; }
   if(NS.editIdx != null){
     NS.deals[NS.editIdx] = deal;
   } else {
@@ -18297,7 +18297,7 @@ function eaCreateAssess(){
   var quarter = document.getElementById('ea-new-quarter').value;
   var auditor = document.getElementById('ea-new-auditor').value.trim();
   var city = document.getElementById('ea-new-city').value;
-  if(!store || !month){ alert('Store and Month are required.'); return; }
+  if(!store || !month){ _slAlert('Store and Month are required.', 'warning'); return; }
   // Build blank scores array — one entry per item
   var scores = {};
   _EA_SECTIONS.forEach(function(sec, si){
@@ -18336,7 +18336,7 @@ function eaOpenSaved(id){
 function eaOpenForm(id){
   var all = _eaLoad();
   var a = all.find(function(x){ return x.id === id; });
-  if(!a){ alert('Assessment not found.'); return; }
+  if(!a){ _slAlert('Assessment not found.', 'error'); return; }
   _eaCurrent = a;
   document.getElementById('ea-view-list').style.display='none';
   document.getElementById('ea-view-form').style.display='';
@@ -18884,7 +18884,7 @@ function storesOpenEdit(id){
   if(_slRole !== 'admin') return;
   var all = _stLoad();
   var store = all.find(function(s){ return s.id === id; });
-  if(!store){ alert('Store not found.'); return; }
+  if(!store){ _slAlert('Store not found.', 'error'); return; }
   _stShowModal(store);
 }
 
@@ -18948,7 +18948,7 @@ async function storesSave(editId){
   var status = document.getElementById('st-f-status').value;
   var notes = document.getElementById('st-f-notes').value.trim();
   var targetDate = document.getElementById('st-f-date').value;
-  if(!name || !address){ alert('Store Name and Address are required.'); return; }
+  if(!name || !address){ _slAlert('Store Name and Address are required.', 'warning'); return; }
   // Show geocoding status
   var geoEl = document.getElementById('st-geocode-status');
   geoEl.style.display = 'block';
@@ -19160,6 +19160,48 @@ function _slConfirm(opts){
 }
 function _slConfirmClose(){
   var el = document.getElementById('sl-confirm-overlay');
+  if(el) el.remove();
+}
+
+// ── Styled alert modal (replaces browser alert()) ──
+// opts: { icon, title, message, type:'success'|'error'|'warning'|'info', buttonText }
+// Or shorthand: _slAlert(message) or _slAlert(message, type)
+function _slAlert(optsOrMsg, typeHint){
+  var opts = typeof optsOrMsg === 'string' ? { message: optsOrMsg } : (optsOrMsg || {});
+  var type = opts.type || typeHint || 'info';
+  var colors = {
+    success: { accent:'#15803d', bg:'#f0fdf4', icon:'\u2705' },
+    error:   { accent:'#b91c1c', bg:'#fef2f2', icon:'\u274C' },
+    warning: { accent:'#d97706', bg:'#fffbeb', icon:'\u26A0\uFE0F' },
+    info:    { accent:'#1e3a5f', bg:'#eff6ff', icon:'\u2139\uFE0F' }
+  };
+  var c = colors[type] || colors.info;
+  var icon = opts.icon || c.icon;
+  var title = opts.title || (type==='success'?'Success':type==='error'?'Error':type==='warning'?'Warning':'Info');
+  var message = opts.message || '';
+  var btnText = opts.buttonText || 'OK';
+
+  // Remove existing
+  var existing = document.getElementById('sl-alert-overlay');
+  if(existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'sl-alert-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;animation:slFadeIn .15s ease;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px 32px 24px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
+  box.innerHTML = '<div style="font-size:36px;margin-bottom:12px;">' + icon + '</div>'
+    + '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:' + c.accent + ';margin-bottom:8px;">' + title + '</div>'
+    + '<div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:24px;white-space:pre-line;">' + message + '</div>'
+    + '<button id="sl-alert-ok" style="padding:10px 36px;border-radius:10px;border:none;background:' + c.accent + ';color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .15s;">' + btnText + '</button>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _slAlertClose(); });
+  document.getElementById('sl-alert-ok').addEventListener('click', function(){ _slAlertClose(); });
+  document.getElementById('sl-alert-ok').focus();
+}
+function _slAlertClose(){
+  var el = document.getElementById('sl-alert-overlay');
   if(el) el.remove();
 }
 
@@ -19459,8 +19501,8 @@ function hrSaveNew(){
   var mod = HR.module;
   var name = (document.getElementById('hr-f-name').value||'').trim();
   var store = (document.getElementById('hr-f-store').value||'').trim();
-  if(!name){ alert('Employee name is required.'); return; }
-  if(!store){ alert('Please select a store.'); return; }
+  if(!name){ _slAlert('Employee name is required.', 'warning'); return; }
+  if(!store){ _slAlert('Please select a store.', 'warning'); return; }
 
   var rec = {
     id: _hrId(),
@@ -19477,16 +19519,16 @@ function hrSaveNew(){
   if(mod === 'news'){
     var statusType = (document.getElementById('hr-f-statustype').value||'').trim();
     var date = (document.getElementById('hr-f-date').value||'').trim();
-    if(!statusType){ alert('Please select a status type.'); return; }
-    if(!date){ alert('Please select a date.'); return; }
+    if(!statusType){ _slAlert('Please select a status type.', 'warning'); return; }
+    if(!date){ _slAlert('Please select a date.', 'warning'); return; }
     rec.status_type = statusType;
     rec.date = date;
     rec.notes = (document.getElementById('hr-f-notes').value||'').trim();
   } else {
     var lastDay = (document.getElementById('hr-f-lastday').value||'').trim();
     var manager = (document.getElementById('hr-f-manager').value||'').trim();
-    if(!lastDay){ alert('Last Day Of Work is required.'); return; }
-    if(!manager){ alert('Manager Name is required.'); return; }
+    if(!lastDay){ _slAlert('Last Day Of Work is required.', 'warning'); return; }
+    if(!manager){ _slAlert('Manager Name is required.', 'warning'); return; }
     rec.last_day = lastDay;
     rec.manager_name = manager;
     rec.sevenshifts_terminated = document.getElementById('hr-f-7shifts').value === 'yes';
