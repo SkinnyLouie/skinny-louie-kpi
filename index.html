@@ -1418,7 +1418,6 @@ function setUS(pg, key, val){
 }
 
 function uplFile(input, pg){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const f = input.files[0];
   if(!f) return;
   US[pg].file = f;
@@ -1428,7 +1427,6 @@ function uplFile(input, pg){
 function uplDrop(e, pg){
   e.preventDefault();
   document.getElementById('upl-drop-'+pg).classList.remove('drag');
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const f = e.dataTransfer.files[0];
   if(!f) return;
   US[pg].file = f;
@@ -1443,7 +1441,6 @@ function showChosen(pg, name, size){
 }
 
 function doImport(pg){
-  if(_slRole !== 'admin'){ alert('Only admins can import data.'); return; }
   if(pg==='mix'){ doImportMix(); return; }
   if(pg==='sales'){ doImportSales(); return; }
   if(pg==='pnl'){ doImportPnl(); return; }
@@ -1466,7 +1463,6 @@ function doImport(pg){
 }
 
 function delUpload(pg, localIdx){
-  if(_slRole !== 'admin'){ alert('Only admins can delete documents.'); return; }
   const all = getUploads();
   const pgUploads = all.filter(x=>x.page===pg);
   const item = pgUploads[localIdx];
@@ -1516,7 +1512,6 @@ function delUpload(pg, localIdx){
 }
 
 function pnlClearAll(){
-  if(_slRole !== 'admin'){ alert('Only admins can clear data.'); return; }
   const recs = getPnLRecords();
   const uploads = getUploads().filter(x=>x.page==='pnl');
   if(!recs.length && !uploads.length){ alert('No P&L data to clear.'); return; }
@@ -2216,17 +2211,6 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pnl-tbl-row-ss td { border-top:1px dashed #e8e2d8; padding:7px 20px 7px 0; font-size:12px; color:#475569; background:#fdfcfa; }
 .pnl-tbl-row-b  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; background:#f0ede7; }
 .pnl-tbl-row-t  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; }
-/* P&L expand / collapse */
-tr.pnl-detail-row { transition: opacity .15s ease; }
-tr.pnl-detail-row.pnl-collapsed { display:none !important; }
-.pnl-sec-toggle { cursor:pointer; user-select:none; }
-.pnl-sec-toggle:hover { opacity:.85; }
-.pnl-sec-arrow { display:inline-block; font-size:9px; margin-right:6px; transition:transform .15s ease; }
-.pnl-sec-arrow.open { transform:rotate(90deg); }
-.pnl-grp-toggle { cursor:pointer; user-select:none; }
-.pnl-grp-toggle:hover { opacity:.85; }
-.pnl-grp-arrow { display:inline-block; font-size:8px; margin-right:5px; transition:transform .15s ease; color:#8b7e6a; }
-.pnl-grp-arrow.open { transform:rotate(90deg); }
 .pnl-tbl-ind    { padding-left:38px !important; }
 .pnl-tbl-neg    { color:#b91c1c; }
 /* ── Shared utility classes (replaces repeated inline styles in P&L and Sales) */
@@ -2331,10 +2315,6 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .hcard.c9::before{ background:linear-gradient(90deg,#1a6b6b,#2a9d8f); }
 .hcard.c9:hover  { border-color:#1a6b6b; transform:translateY(-5px); box-shadow:0 16px 40px rgba(26,107,107,.2); }
 .hcard.c9 .hcard-tag { color:#1a6b6b; }
-.hcard.c10       { cursor:default; opacity:.82; }
-.hcard.c10::before{ background:linear-gradient(90deg,#1e3a5f,#3b82f6); }
-.hcard.c10:hover { transform:none; box-shadow:none; border-color:var(--brd); }
-.hcard.c10 .hcard-tag { color:#1e3a5f; }
 .dm-rpt-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dm-rpt-chip { background:rgba(126,32,35,.1); border:1px solid rgba(126,32,35,.2); border-radius:99px; padding:4px 12px; font-size:11px; font-weight:600; color:#7e2023; }
 .ask-input-wrap { display:flex; gap:8px; margin-top:12px; }
@@ -2563,161 +2543,6 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .maint-stats-overall { color:#166534;font-weight:600; }
 .maint-stats-sep { color:#86efac; }
 .maint-stats-store { color:#374151;background:#fff;border:1px solid #bbf7d0;border-radius:99px;padding:2px 10px;font-size:11px;white-space:nowrap; }
-/* ══ NEW DEAL STATUS ═════════════════════════════════ */
-#pg-deals { display:none; min-height:calc(100vh - 62px); background:#faf9f7; }
-.deal-topbar { display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.deal-topbar-title { font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px; }
-/* ── Filter bar ── */
-.deal-filter-bar { display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.deal-filter-group { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
-.deal-filter-label { font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap; }
-.deal-filter-pills { display:flex;gap:5px;flex-wrap:wrap; }
-.deal-fpill { font-size:11px;font-weight:600;padding:5px 14px;border-radius:99px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s; }
-.deal-fpill:hover { border-color:#94a3b8; }
-.deal-fpill.on { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
-/* ── KPI summary bar ── */
-.deal-summary-bar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.deal-kpi-chip { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;color:#374151;white-space:nowrap;letter-spacing:.01em; }
-/* ── Search bar ── */
-.deal-search { padding:7px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:220px;transition:border .15s; }
-.deal-search:focus { outline:none;border-color:#7e2023; }
-/* ── Cards grid ── */
-.deal-cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:20px;padding:24px 0; }
-/* ── Card shell ── */
-.deal-card { background:#fff;border-radius:14px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e8e2d8;display:flex;flex-direction:column;transition:box-shadow .2s,transform .15s;overflow:hidden; }
-.deal-card:hover { box-shadow:0 6px 22px rgba(0,0,0,.11);transform:translateY(-1px); }
-/* ── Card body ── */
-.deal-card-body { padding:16px 18px 14px;display:flex;flex-direction:column;gap:11px;flex:1; }
-.deal-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }
-.deal-card-title { font-size:15px;font-weight:700;color:#1e293b;line-height:1.4;flex:1;word-break:break-word; }
-.deal-stat-badge { font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em; }
-.deal-card-meta { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
-.deal-meta-chip { display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1px solid #e8e2d8;border-radius:6px;padding:2px 8px;font-size:11px;color:#475569;font-weight:500;white-space:nowrap; }
-/* ── Progress bar ── */
-.deal-progress-wrap { display:flex;flex-direction:column;gap:3px; }
-.deal-progress-labels { display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em; }
-.deal-progress-track { background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden; }
-.deal-progress-fill { height:100%;border-radius:6px;transition:width .4s ease; }
-/* ── Card comment ── */
-.deal-card-comment { font-size:12px;color:#374151;line-height:1.6;padding-top:10px;border-top:1px solid #f1f5f9; }
-/* ── Card footer (actions) ── */
-.deal-card-footer { padding:12px 18px;border-top:1px solid #f1f5f9;display:flex;gap:8px;flex-wrap:wrap;background:#fafaf9; }
-.deal-action-btn { font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:1.5px solid #d1d5db;background:transparent;cursor:pointer;color:#374151;transition:all .15s;white-space:nowrap;letter-spacing:.01em; }
-.deal-action-btn:hover { filter:brightness(.93); }
-.deal-action-btn.primary { flex:1;text-align:center; }
-.deal-action-btn.blue { background:#1e3a5f;border-color:#1e3a5f;color:#fff; }
-.deal-action-btn.red { background:#7e2023;border-color:#7e2023;color:#fff; }
-.deal-action-btn.gray { background:#f1f5f9;border-color:#e2e8f0;color:#475569; }
-/* ── Map preview ── */
-.deal-map-preview { width:100%;height:140px;border-radius:0;border-bottom:1px solid #e8e2d8;background:#e5e7eb;overflow:hidden;position:relative; }
-.deal-map-preview iframe { width:100%;height:100%;border:none; }
-.deal-map-placeholder { width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:600; }
-/* ── Empty state ── */
-.deal-empty { padding:64px 40px;text-align:center;color:#9ca3af;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:14px; }
-/* ── Modals ── */
-.deal-modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px); }
-.deal-modal-box { position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:90%;max-width:580px;max-height:90vh;overflow-y:auto;z-index:1; }
-.deal-modal-hdr { display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:16px;color:#1e293b;font-family:'Oswald',sans-serif;letter-spacing:.03em; }
-.deal-modal-body { padding:20px;display:flex;flex-direction:column;gap:14px; }
-.deal-modal-ftr { padding:16px 20px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end; }
-.deal-modal-close { background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1; }
-.deal-form-row { display:flex;flex-direction:column;gap:5px; }
-.deal-form-row label { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.04em; }
-.dl-input { padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:100%;box-sizing:border-box;transition:border .15s; }
-.dl-input:focus { outline:none;border-color:#7e2023; }
-.dl-input-row { display:flex;gap:10px; }
-.dl-input-row > .deal-form-row { flex:1; }
-/* ── Holding badges ── */
-.deal-holding-dev { background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd; }
-.deal-holding-intl { background:#fce7f3;color:#be185d;border:1px solid #f9a8d4; }
-/* ── Status colors ── */
-.deal-st-lease { background:#dcfce7;color:#166534; }
-.deal-st-loi { background:#dbeafe;color:#1e40af; }
-.deal-st-waiting { background:#fef9c3;color:#854d0e; }
-.deal-st-hold { background:#fee2e2;color:#991b1b; }
-.deal-st-info { background:#f3e8ff;color:#6b21a8; }
-/* ── Card photo ── */
-.deal-card-photo { width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0; }
-.deal-card-photo-empty { width:44px;height:44px;border-radius:50%;background:#f1f5f9;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0; }
-/* ── Card PDF link ── */
-.deal-card-pdf { font-size:12px;color:#475569;display:flex;align-items:center;gap:4px;padding-top:8px;border-top:1px solid #f1f5f9; }
-/* ── City badge ── */
-.deal-city-chip { font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap; }
-.deal-city-fl { background:#ecfdf5;color:#065f46;border:1px solid #6ee7b7; }
-.deal-city-ny { background:#eff6ff;color:#1e40af;border:1px solid #93c5fd; }
-
-/* ══ HR DASHBOARD ═══════════════════════════════════ */
-#pg-hr { display:none; min-height:calc(100vh - 62px); background:#faf9f7; }
-.hr-topbar { display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.hr-topbar-title { font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px; }
-/* ── Landing cards ── */
-.hr-landing { max-width:800px;margin:60px auto;padding:0 24px; }
-.hr-landing-title { font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:#1e3a5f;margin-bottom:8px;letter-spacing:.02em; }
-.hr-landing-sub { font-size:14px;color:#6b7280;margin-bottom:36px; }
-.hr-landing-grid { display:grid;grid-template-columns:1fr 1fr;gap:24px; }
-.hr-land-card { background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #e8e2d8;cursor:pointer;transition:box-shadow .2s,transform .15s;text-align:center; }
-.hr-land-card:hover { box-shadow:0 8px 28px rgba(0,0,0,.12);transform:translateY(-2px); }
-.hr-land-icon { font-size:48px;margin-bottom:12px; }
-.hr-land-label { font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#1e293b;margin-bottom:6px;letter-spacing:.02em; }
-.hr-land-desc { font-size:13px;color:#6b7280;line-height:1.5; }
-.hr-land-badge { display:inline-flex;align-items:center;gap:4px;margin-top:12px;font-size:12px;font-weight:700;padding:4px 14px;border-radius:99px; }
-/* ── Tabs ── */
-.hr-tabs { display:flex;gap:0;border-bottom:none; }
-.hr-tab-btn { font-size:12px;font-weight:700;padding:14px 20px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s;letter-spacing:.02em; }
-.hr-tab-btn.active { color:#1e293b; }
-.hr-tab-pending.active { color:#92400e;border-bottom-color:#d97706; }
-.hr-tab-completed.active { color:#166534;border-bottom-color:#16a34a; }
-.hr-tab-history.active { color:#1e3a5f;border-bottom-color:#1e3a5f; }
-/* ── Table ── */
-.hr-table { width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e8e2d8; }
-.hr-table th { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;padding:12px 14px;text-align:left;background:#fafaf9;border-bottom:1px solid #e8e2d8;white-space:nowrap; }
-.hr-table td { padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b;vertical-align:middle; }
-.hr-table tr:last-child td { border-bottom:none; }
-.hr-table tr:hover td { background:#fafaf9; }
-.hr-row-pending { border-left:4px solid #d97706; }
-.hr-row-completed { border-left:4px solid #16a34a; }
-/* ── Status pills ── */
-.hr-pill-pending { background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
-.hr-pill-completed { background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
-.hr-pill-yes { background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px; }
-.hr-pill-no { background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px; }
-/* ── Action buttons ── */
-.hr-check-btn { width:32px;height:32px;border-radius:50%;border:2px solid #d1d5db;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;color:#94a3b8; }
-.hr-check-btn:hover { border-color:#16a34a;color:#16a34a;background:#f0fdf4; }
-.hr-check-done { border-color:#16a34a;background:#16a34a;color:#fff;cursor:default; }
-/* ── Create button ── */
-.hr-create-btn { font-size:13px;font-weight:700;padding:9px 18px;border-radius:9px;border:none;background:#1e3a5f;color:#fff;cursor:pointer;transition:all .15s;white-space:nowrap; }
-.hr-create-btn:hover { background:#2d5a8e; }
-/* ── Modal (reuses deal modal pattern) ── */
-.hr-modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px); }
-.hr-modal-box { position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:90%;max-width:540px;max-height:90vh;overflow-y:auto;z-index:1; }
-.hr-modal-hdr { display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:16px;color:#1e293b;font-family:'Oswald',sans-serif;letter-spacing:.03em; }
-.hr-modal-body { padding:20px;display:flex;flex-direction:column;gap:14px; }
-.hr-modal-ftr { padding:16px 20px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end; }
-.hr-modal-close { background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1; }
-.hr-form-row { display:flex;flex-direction:column;gap:5px; }
-.hr-form-row label { font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.04em; }
-.hr-input { padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;width:100%;box-sizing:border-box;transition:border .15s; }
-.hr-input:focus { outline:none;border-color:#7e2023; }
-.hr-input-row { display:flex;gap:10px; }
-.hr-input-row > .hr-form-row { flex:1; }
-/* ── Summary bar ── */
-.hr-summary-bar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
-.hr-kpi-chip { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;color:#374151;white-space:nowrap; }
-/* ── Processed metadata ── */
-.hr-processed-info { font-size:11px;color:#6b7280;display:flex;align-items:center;gap:4px; }
-.hr-processed-info strong { color:#374151; }
-/* ── Empty state ── */
-.hr-empty { padding:48px 24px;text-align:center;color:#9ca3af;font-size:14px; }
-/* ── Type badges ── */
-.hr-type-fired { background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
-.hr-type-quit { background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
-@media(max-width:640px){
-  .hr-landing-grid { grid-template-columns:1fr; }
-  .hr-table { font-size:12px; }
-  .hr-table th, .hr-table td { padding:8px 10px; }
-}
-
 /* ══ INVENTORY PAGE ══════════════════════════════════ */
 #pg-inv { display:none; min-height:calc(100vh - 62px); background:var(--bg); }
 .inv-topbar { background:var(--surf); border-bottom:1px solid var(--brd); padding:0 24px; display:flex; align-items:center; gap:16px; min-height:56px; flex-wrap:wrap; }
@@ -3004,30 +2829,6 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .adm-toggle input:checked + .adm-toggle-slider::before{transform:translateX(16px);}
 /* Action bar */
 .adm-action-bar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:#fff;border-top:1px solid #e8e2d8;position:sticky;bottom:0;}
-/* ── Admin Tabs ── */
-.adm-tabs{display:flex;gap:0;border-bottom:1px solid #e8e2d8;background:#fff;flex-shrink:0;padding:0 24px;}
-.adm-tab-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:14px 20px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s;letter-spacing:.06em;text-transform:uppercase;}
-.adm-tab-btn:hover{color:#64748b;}
-.adm-tab-btn.active{color:#7e2023;border-bottom-color:#7e2023;}
-/* ── Activity Logs ── */
-.act-log-wrap{flex:1;overflow-y:auto;padding:24px 28px;}
-.act-log-filters{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
-.act-log-filters select,.act-log-filters input{font-size:12px;padding:8px 12px;border:1.5px solid #e8e2d8;border-radius:8px;background:#fff;color:#1e293b;font-weight:600;}
-.act-log-filters select:focus,.act-log-filters input:focus{border-color:#7e2023;outline:none;}
-.act-stats{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
-.act-stat-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;min-width:140px;flex:1;}
-.act-stat-val{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;color:#1e293b;letter-spacing:.02em;}
-.act-stat-label{font-size:11px;font-weight:700;color:#94a3b8;margin-top:2px;letter-spacing:.04em;text-transform:uppercase;}
-.act-log-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e8e2d8;}
-.act-log-table th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;padding:12px 14px;text-align:left;background:#fafaf9;border-bottom:1px solid #e8e2d8;white-space:nowrap;}
-.act-log-table td{padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b;vertical-align:middle;}
-.act-log-table tr:last-child td{border-bottom:none;}
-.act-log-table tr:hover td{background:#fafaf9;}
-.act-dur-badge{display:inline-block;background:#f0fdf4;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
-.act-dur-badge.short{background:#fef3c7;color:#92400e;}
-.act-dur-badge.long{background:#dbeafe;color:#1e40af;}
-.act-online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:6px;vertical-align:middle;animation:act-pulse 2s infinite;}
-@keyframes act-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
 /* ── My Stores · Portfolio Intelligence ─────────── */
 #pg-portfolio{display:none;background:#faf9f7;min-height:calc(100vh - 62px);}
@@ -3100,21 +2901,18 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .pf-cell-crown{font-size:8px;font-weight:900;color:#166534;margin-left:2px;vertical-align:super;}
 .pf-cell-nadir {font-size:8px;font-weight:900;color:#991b1b;margin-left:2px;vertical-align:super;}
 .pf-tr-hover:hover td{background:#faf5ef !important;}
-.pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:32px;}
-.pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:14px;padding:0;overflow:hidden;transition:box-shadow .15s;}
-.pf-kpi-tgt-item:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
-.pf-kpi-tgt-store-hdr{background:linear-gradient(135deg,#1e3a5f 0%,#2d4a6f 100%);padding:14px 16px 12px;display:flex;align-items:center;gap:10px;}
-.pf-kpi-tgt-store-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;}
-.pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#fff;letter-spacing:.03em;}
-.pf-kpi-tgt-body{padding:12px 16px 14px;}
-.pf-insight-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
-.pf-insight-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
-.pf-insight-pill.red{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
-.pf-insight-pill.green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
-.pf-insight-pill.amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
-.pf-insight-pill.blue{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;}
-.pf-insight-pill.trophy{background:linear-gradient(135deg,#fef9c3,#fef3c7);color:#854d0e;border:1px solid #fcd34d;font-size:11px;}
-.pf-insight-pill.warn{background:linear-gradient(135deg,#fff1f2,#fee2e2);color:#991b1b;border:1px solid #fca5a5;font-size:11px;}
+.pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:32px;}
+.pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:14px 16px;overflow:hidden;}
+.pf-kpi-tgt-store-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e8e2d8;}
+.pf-kpi-tgt-store-icon{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#1e3a5f,#2d5a8f);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;flex-shrink:0;}
+.pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;}
+.pf-kpi-tgt-body{display:flex;flex-direction:column;gap:2px;}
+.pf-insight-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.pf-insight-pill{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;letter-spacing:.02em;}
+.pf-insight-pill.good{background:#dcfce7;color:#15803d;border:1px solid #86efac;}
+.pf-insight-pill.bad{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.pf-insight-pill.best{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+.pf-insight-pill.worst{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
 .pf-kpi-tgt-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;}
 .pf-kpi-tgt-label{color:#64748b;}
 .pf-kpi-tgt-val{font-weight:700;font-size:13px;}
@@ -3311,6 +3109,7 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
       <div class="hcard-title">P&amp;L Dashboard</div>
       <div class="hcard-desc">Profit &amp; loss review by location. Upload your P&amp;L reports to track margins and profitability.</div>
       <div class="hcard-tag">Import Data</div>
+      
       <div id="pnl-lock-overlay" style="display:none;position:absolute;inset:0;border-radius:inherit;background:rgba(15,15,15,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:16px;">
         <span style="font-size:28px;">🔒</span>
         <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.05em;text-transform:uppercase;">Restricted Access</span>
@@ -3330,30 +3129,8 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
        <div class="hcard-desc">Track stock levels, usage, and waste by location. Count items, upload prices, and compare month-over-month.</div>
        <div class="hcard-tag">Active · All Locations</div>
      </div>
-    <div id="hcard-deals" class="hcard c5" onclick="goDeals()" style="position:relative;cursor:pointer;">
-      <span class="hcard-icon">📍</span>
-      <div class="hcard-title">New Deal Status</div>
-      <div class="hcard-desc">Track real estate expansion pipeline. View LOIs, leases, and deal progress with broker info and map previews.</div>
-      <div class="hcard-tag">Active · Pipeline Tracker</div>
-    </div>
-    <div id="hcard-hr" class="hcard c3" onclick="goHR()" style="position:relative;cursor:pointer;">
-      <span class="hcard-icon">👥</span>
-      <div class="hcard-title">HR Dashboard</div>
-      <div class="hcard-desc">Track weekly staffing changes and manage the termination board. Pending items, completed audits, and full history.</div>
-      <div class="hcard-tag">Active · All Locations</div>
-      <span id="hr-pending-badge" style="display:none;position:absolute;top:12px;right:12px;background:#d97706;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;align-items:center;justify-content:center;min-width:22px;"></span>
-    </div>
 <!-- Admin footer button: small, secondary, admin-only. Shown via _applyPermissionsUI(). -->
     <div id="admin-home-card" style="display:none;grid-column:1/-1;"></div>
-    <div id="hcard-marketing" class="hcard c10" onclick="goMarketing()" style="position:relative;cursor:pointer;">
-      <span class="hcard-icon">📣</span>
-      <div class="hcard-title">Marketing</div>
-      <div class="hcard-desc">Campaign planning, social media scheduling, brand assets, and performance analytics across all locations.</div>
-      <div class="hcard-tag">Coming Soon</div>
-      <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);cursor:pointer;" onclick="goMarketing()">
-        <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#1e3a5f;background:rgba(30,58,95,.10);border:1.5px solid rgba(30,58,95,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
-      </div>
-    </div>
     <div id="hcard-events" class="hcard c8" style="position:relative;">
       <span class="hcard-icon">🎉</span>
       <div class="hcard-title">Event Calculator</div>
@@ -3949,7 +3726,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_deals_v1','sl_hr_v1','sl_activity_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4006,7 +3783,6 @@ localStorage.setItem = function(key, value){
 };
 
 async function _forceSyncToCloud(showAlert){
-  if(_slRole !== 'admin'){ if(showAlert) alert('Only admins can sync data manually.'); return; }
   if(!_supa || !_slUser){ if(showAlert) alert('You must be logged in to sync.'); return; }
   const btn = document.getElementById('force-sync-btn');
   if(btn){ btn.textContent = '☁ Syncing…'; btn.disabled = true; }
@@ -4157,7 +3933,6 @@ async function doLogin(){
 }
 
 async function doLogout(){
-  try{ _actEndSession(); }catch(e){}
   await _supa.auth.signOut();
   _slUser = null; _slDisplayName = null; _slRole = null; _slState = 'all'; _slHasScope = false; _slLocations = null; _slPerms = null;
   // Reset page to home so next login always starts fresh at the home screen
@@ -4230,8 +4005,8 @@ async function _initApp(user){
   // v4: rename stale loc values (Dania→Dania Beach, Nomad→NoMad) — runs after cloud load
   try{ _slRunLocRenameMigration(); } catch(e){ console.error('[SL] v4 migration error:', e); }
   _applyRoleUI();
-  // Start activity tracking session
-  try{ _actStartSession(); }catch(e){ console.error('[SL] Activity tracking error:', e); }
+  _actStartSession();
+  window.addEventListener('beforeunload', _actEndSession);
   render();
 }
 
@@ -4252,13 +4027,13 @@ function _applyRoleUI(){
   document.querySelectorAll('.edit-only').forEach(el => {
     el.style.display = canEdit ? '' : 'none';
   });
-  // Admin-only toolbar buttons (Add/Edit Data, Set Targets, Leaderboard, Alert Rules)
+  // Admin-only elements (visible only to admin role)
   document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = (_slRole === 'admin') ? '' : 'none';
+    el.style.display = _slRole === 'admin' ? '' : 'none';
   });
-  // Show Sync Data button only for admin
+  // Show Sync Data button only for admin/manager
   const syncBtn = document.getElementById('force-sync-btn');
-  if(syncBtn) syncBtn.style.display = (_slRole === 'admin') ? 'flex' : 'none';
+  if(syncBtn) syncBtn.style.display = canEdit ? 'flex' : 'none';
   // Admin entry points: navbar button + small footer button (both admin-only)
   // The large admin-home-card div is now an empty placeholder — visibility managed below.
   // Apply module-level permissions to home grid cards
@@ -4318,9 +4093,6 @@ function _applyPermissionsUI(){
     dm_report:   'hcard-dm_report',
     events:      'hcard-events',
     portfolio:   'hcard-portfolio',
-    deals:       'hcard-deals',
-    hr:          'hcard-hr',
-    marketing:   'hcard-marketing',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -4409,7 +4181,7 @@ const GR_GOAL = 0.00025; // 0.025% of dine-in sales
 
 // Thresholds (lower is better for cost KPIs)
 const THR = { fp:{g:.25,y:.30}, lp:{g:.20,y:.30}, dp:{g:.02,y:.03} };
-const DEFAULT_TGTS = { fp:.25, lp:.20, dp:.02, uber:4.6 };
+const DEFAULT_TGTS = { fp:.25, lp:.20, dp:.02, uber:4.6, gr:15 };
 
 // ══════════════════════════════════════════════════
 //  DATA
@@ -5072,24 +4844,6 @@ function goMaint(){
   render();
 }
 
-function goDeals(){
-  if(!_hasPermission('deals')){ _showAccessDenied('New Deal Status'); return; }
-  S.page='deals';
-  render();
-}
-function goHR(){
-  if(!_hasPermission('hr')){ _showAccessDenied('HR Dashboard'); return; }
-  S.page='hr';
-  HR_SUB = 'landing'; // always land on the HR landing page
-  render();
-}
-
-function goMarketing(){
-  if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
-  S.page='marketing';
-  render();
-}
-
 function invInit(){
   invShowTab('count');
   invInitCount();
@@ -5319,7 +5073,6 @@ function invLoadLastCount(){
 }
 
 function invClearCount(){
-  if(_slRole !== 'admin'){ alert('Only admins can clear data.'); return; }
   var items = invGetItems();
   items.forEach(function(item){
     var el = document.getElementById('inv-qty-'+item.id);
@@ -5463,7 +5216,6 @@ function invToggleHD(id){
 }
 
 function invDeleteCount(id){
-  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   slConfirm('Delete this inventory count? This cannot be undone.', function(){
     invSaveCounts(invGetCounts().filter(function(c){ return c.id!==id; }));
     invRenderHistory();
@@ -5758,7 +5510,6 @@ function invDownloadTemplate(city){
 function invDownloadMasterTemplate(){ invDownloadTemplate('FL'); }
 
 function invUploadMaster(city, input){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   var file = input.files[0];
   if(!file) return;
   var c = city.toLowerCase();
@@ -5823,7 +5574,6 @@ function invUploadMaster(city, input){
 }
 
 function invDeletePrices(city){
-  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   var label = city==='FL' ? 'Florida' : 'New York';
   slConfirm('Delete all '+label+' price data? The product list will be kept.', function(){
     var prices = invGetPrices();
@@ -6000,9 +5750,6 @@ const _ADM_MODULES = [
   { id:'inventory',   label:'Inventory',         icon:'📦', desc:'Stock levels, usage & waste by location' },
   { id:'dm_report',   label:'DM Scorecard',       icon:'📋', desc:'19-KPI PDF report for district managers' },
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
-  { id:'deals',       label:'New Deal Status',    icon:'📍', desc:'Real estate expansion pipeline tracker' },
-  { id:'hr',          label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
-  { id:'marketing',   label:'Marketing',          icon:'📣', desc:'Campaigns, social, brand & analytics' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6089,8 +5836,6 @@ function _admSetScope(scope){
 //     );
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
-  // Restore active tab state
-  admSwitchTab(_admActiveTab || 'users');
   const scroll = document.getElementById('adm-user-scroll');
   if(!scroll) return;
 
@@ -6162,10 +5907,10 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(nameEl)   nameEl.textContent   = displayName;
   if(subEl)    subEl.textContent    = role.charAt(0).toUpperCase()+role.slice(1);
 
-  // Populate full-name inputs (split stored name into first / last)
-  const nameParts = displayName.trim().split(/\s+/);
-  const fnameEl = document.getElementById('adm-edit-fname');
-  const lnameEl = document.getElementById('adm-edit-lname');
+  // Populate first/last name fields
+  var nameParts = displayName.split(' ');
+  var fnameEl = document.getElementById('adm-edit-fname');
+  var lnameEl = document.getElementById('adm-edit-lname');
   if(fnameEl) fnameEl.value = nameParts[0] || '';
   if(lnameEl) lnameEl.value = nameParts.slice(1).join(' ') || '';
 
@@ -6252,19 +5997,6 @@ async function _adminSavePerms(){
   }
   _admSetActionMsg('Saving…');
   try {
-    // Save full name to profiles table
-    const fnameVal = (document.getElementById('adm-edit-fname')?.value || '').trim();
-    const lnameVal = (document.getElementById('adm-edit-lname')?.value || '').trim();
-    const fullName = [fnameVal, lnameVal].filter(Boolean).join(' ');
-    if(fullName){
-      const { error: nameErr } = await _supa
-        .from('profiles')
-        .update({ name: fullName })
-        .eq('id', _admCtx.userId);
-      if(nameErr) throw nameErr;
-      _admCtx.displayName = fullName;
-    }
-
     // Delete existing permissions for this user
     const { error: delErr } = await _supa
       .from('user_permissions')
@@ -6296,21 +6028,18 @@ async function _adminSavePerms(){
       if(locInsErr) throw locInsErr;
     }
 
+    // Save full name to profiles
+    var fname = (document.getElementById('adm-edit-fname')?.value || '').trim();
+    var lname = (document.getElementById('adm-edit-lname')?.value || '').trim();
+    var fullName = (fname + ' ' + lname).trim();
+    if(fullName){
+      var { error: nameErr } = await _supa.from('profiles').update({ name: fullName }).eq('id', _admCtx.userId);
+      if(nameErr) console.warn('[Admin] name update error:', nameErr.message);
+    }
     console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
-    _admSetActionMsg(`✓ Saved for ${_admCtx.displayName}`, 'ok');
-
-    // Update the editor header with new name
-    const avatarEl = document.getElementById('adm-sel-avatar');
-    const nameEl   = document.getElementById('adm-sel-name');
-    if(avatarEl && _admCtx.displayName) avatarEl.textContent = _admCtx.displayName[0].toUpperCase();
-    if(nameEl && _admCtx.displayName)   nameEl.textContent   = _admCtx.displayName;
-
-    // Refresh user list to reflect updated names
-    const savedUserId = _admCtx.userId;
-    await renderAdminPage();
-    // Re-select the user so the editor stays open
-    const row = document.getElementById('adm-uid-' + savedUserId);
-    if(row) row.click();
+    _admSetActionMsg('Saved for ' + (fullName || _admCtx.displayName), 'ok');
+    // Refresh user list to show updated name
+    renderAdminPage().then(function(){ _adminSelectUser(_admCtx.userId, fullName || _admCtx.displayName, _admCtx.role, _admCtx.state); });
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
     _admSetActionMsg('Save failed: ' + (e.message||e), 'err');
@@ -6413,225 +6142,6 @@ function _adminInviteUser(){
   // no-op: invite path is not available via anon key.
   // Left in place for future backend integration via Edge Function.
 }
-
-// ══════════════════════════════════════════════════
-//  ACTIVITY LOGS — Session Tracking & Admin Analytics
-// ══════════════════════════════════════════════════
-let _actSessionId = null;
-let _actHeartbeatTimer = null;
-const _ACT_HEARTBEAT_SEC = 60;
-
-async function _actStartSession(){
-  if(!_slUser || !_supa) return;
-  _actSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  const entry = {
-    id: _actSessionId,
-    user_id: _slUser.id,
-    user_name: _slDisplayName || _slUser.email?.split('@')[0] || 'Unknown',
-    user_role: _slRole || 'unknown',
-    login_at: new Date().toISOString(),
-    last_seen_at: new Date().toISOString(),
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
-  };
-  try {
-    await _supa.from('activity_logs').insert(entry);
-  } catch(e){ console.warn('[Activity] insert error:', e); }
-
-  if(_actHeartbeatTimer) clearInterval(_actHeartbeatTimer);
-  _actHeartbeatTimer = setInterval(_actHeartbeat, _ACT_HEARTBEAT_SEC * 1000);
-  document.addEventListener('visibilitychange', _actVisibility);
-}
-
-async function _actHeartbeat(){
-  if(!_actSessionId || !_slUser || !_supa) return;
-  try {
-    await _supa.from('activity_logs')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', _actSessionId);
-  } catch(e){ /* silent */ }
-}
-
-function _actVisibility(){
-  if(document.visibilityState === 'visible') _actHeartbeat();
-}
-
-function _actEndSession(){
-  _actHeartbeat();
-  if(_actHeartbeatTimer){ clearInterval(_actHeartbeatTimer); _actHeartbeatTimer = null; }
-  document.removeEventListener('visibilitychange', _actVisibility);
-  _actSessionId = null;
-}
-window.addEventListener('beforeunload', () => { try{ _actHeartbeat(); }catch(e){} });
-
-function _actDuration(loginAt, lastSeenAt){
-  const ms = new Date(lastSeenAt) - new Date(loginAt);
-  if(isNaN(ms) || ms < 0) return '—';
-  const totalMin = Math.round(ms / 60000);
-  if(totalMin < 1) return '< 1 min';
-  if(totalMin < 60) return totalMin + ' min';
-  const hrs = Math.floor(totalMin / 60);
-  const mins = totalMin % 60;
-  return hrs + 'h ' + (mins > 0 ? mins + 'm' : '');
-}
-
-function _actDurationClass(loginAt, lastSeenAt){
-  const ms = new Date(lastSeenAt) - new Date(loginAt);
-  const mins = ms / 60000;
-  if(mins < 5) return 'short';
-  if(mins > 60) return 'long';
-  return '';
-}
-
-function _actIsOnline(lastSeenAt){
-  const diff = Date.now() - new Date(lastSeenAt).getTime();
-  return diff < (_ACT_HEARTBEAT_SEC * 2.5 * 1000); // within 2.5 heartbeats = online
-}
-
-// ── Admin Tab Switcher ──
-let _admActiveTab = 'users';
-function admSwitchTab(tab){
-  _admActiveTab = tab;
-  // Toggle tab buttons
-  document.querySelectorAll('.adm-tab-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('adm-tab-' + tab);
-  if(btn) btn.classList.add('active');
-  // Toggle panels
-  const usersPanel = document.getElementById('adm-panel-users');
-  const actPanel   = document.getElementById('adm-panel-activity');
-  if(usersPanel) usersPanel.style.display = tab === 'users' ? 'flex' : 'none';
-  if(actPanel)   actPanel.style.display   = tab === 'activity' ? 'flex' : 'none';
-  if(tab === 'activity') renderActivityLogs();
-}
-
-// ── Activity Logs Renderer ──
-let _actFilterUser = 'ALL';
-let _actFilterDate = '';
-let _actFilterRange = '30'; // days
-
-async function renderActivityLogs(){
-  const wrap = document.getElementById('act-log-wrap');
-  if(!wrap) return;
-
-  wrap.innerHTML = '<div class="adm-loading">Loading activity data…</div>';
-
-  // Fetch from Supabase (RLS ensures only admin sees all rows)
-  let allLog = [];
-  try {
-    const { data, error } = await _supa
-      .from('activity_logs')
-      .select('id, user_id, user_name, user_role, login_at, last_seen_at, device')
-      .order('login_at', { ascending: false })
-      .limit(2000);
-    if(error) throw error;
-    allLog = (data || []).map(r => ({
-      id: r.id,
-      userId: r.user_id,
-      userName: r.user_name,
-      userRole: r.user_role,
-      loginAt: r.login_at,
-      lastSeenAt: r.last_seen_at,
-      device: r.device
-    }));
-  } catch(e){
-    console.error('[Activity] fetch error:', e);
-    wrap.innerHTML = '<div style="text-align:center;padding:60px 0;color:#b91c1c;font-size:13px;">Failed to load activity logs: ' + (e.message||e) + '</div>';
-    return;
-  }
-
-  // Build unique users for dropdown
-  const userMap = {};
-  allLog.forEach(r => { userMap[r.userId] = r.userName; });
-  const userOpts = Object.entries(userMap).sort((a,b) => a[1].localeCompare(b[1]));
-
-  // Apply filters
-  let filtered = [...allLog];
-  if(_actFilterUser !== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
-  if(_actFilterDate){
-    filtered = filtered.filter(r => r.loginAt.startsWith(_actFilterDate));
-  } else if(_actFilterRange !== 'all'){
-    const days = parseInt(_actFilterRange) || 30;
-    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
-    filtered = filtered.filter(r => r.loginAt >= cutoff);
-  }
-
-  // Sort newest first
-  filtered.sort((a,b) => b.loginAt.localeCompare(a.loginAt));
-
-  // Compute stats
-  const totalSessions = filtered.length;
-  const uniqueUsers = new Set(filtered.map(r => r.userId)).size;
-  const onlineNow = allLog.filter(r => _actIsOnline(r.lastSeenAt));
-  const uniqueOnline = [...new Set(onlineNow.map(r => r.userId))];
-  let avgDurMin = 0;
-  if(filtered.length){
-    const totalMs = filtered.reduce((sum, r) => sum + (new Date(r.lastSeenAt) - new Date(r.loginAt)), 0);
-    avgDurMin = Math.round(totalMs / filtered.length / 60000);
-  }
-
-  // Build HTML
-  let html = '';
-
-  // Filters
-  html += '<div class="act-log-filters">';
-  html += '<select onchange="_actFilterUser=this.value;renderActivityLogs()">';
-  html += '<option value="ALL"' + (_actFilterUser==='ALL'?' selected':'') + '>All Users</option>';
-  userOpts.forEach(([uid, name]) => {
-    const esc = name.replace(/</g,'&lt;').replace(/"/g,'&quot;');
-    html += '<option value="'+uid+'"' + (_actFilterUser===uid?' selected':'') + '>' + esc + '</option>';
-  });
-  html += '</select>';
-  html += '<select onchange="_actFilterRange=this.value;_actFilterDate=\'\';renderActivityLogs()">';
-  ['7','14','30','60','90','all'].forEach(v => {
-    const label = v === 'all' ? 'All Time' : 'Last ' + v + ' days';
-    html += '<option value="'+v+'"' + (_actFilterRange===v?' selected':'') + '>' + label + '</option>';
-  });
-  html += '</select>';
-  html += '<input type="date" value="'+(_actFilterDate||'')+'" onchange="_actFilterDate=this.value;renderActivityLogs()" title="Filter by specific date" style="max-width:160px;">';
-  if(_actFilterDate) html += '<button onclick="_actFilterDate=\'\';renderActivityLogs()" style="background:none;border:1px solid #e8e2d8;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;color:#94a3b8;">✕ Clear date</button>';
-  html += '</div>';
-
-  // Stats
-  html += '<div class="act-stats">';
-  html += '<div class="act-stat-card"><div class="act-stat-val">' + uniqueOnline.length + '</div><div class="act-stat-label"><span class="act-online-dot"></span>Online Now</div></div>';
-  html += '<div class="act-stat-card"><div class="act-stat-val">' + totalSessions + '</div><div class="act-stat-label">Sessions</div></div>';
-  html += '<div class="act-stat-card"><div class="act-stat-val">' + uniqueUsers + '</div><div class="act-stat-label">Unique Users</div></div>';
-  html += '<div class="act-stat-card"><div class="act-stat-val">' + (avgDurMin < 60 ? avgDurMin + 'm' : Math.floor(avgDurMin/60) + 'h ' + (avgDurMin%60) + 'm') + '</div><div class="act-stat-label">Avg Duration</div></div>';
-  html += '</div>';
-
-  // Table
-  if(filtered.length === 0){
-    html += '<div style="text-align:center;padding:60px 0;color:#94a3b8;font-size:13px;">No activity records found for the selected filters.</div>';
-  } else {
-    html += '<table class="act-log-table">';
-    html += '<thead><tr><th>User</th><th>Role</th><th>Login Time</th><th>Duration</th><th>Device</th><th>Status</th></tr></thead><tbody>';
-    filtered.forEach(r => {
-      const nameEsc = (r.userName||'Unknown').replace(/</g,'&lt;');
-      const roleEsc = (r.userRole||'—').replace(/</g,'&lt;');
-      const loginDate = new Date(r.loginAt);
-      const dateStr = loginDate.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
-      const timeStr = loginDate.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true});
-      const dur = _actDuration(r.loginAt, r.lastSeenAt);
-      const durClass = _actDurationClass(r.loginAt, r.lastSeenAt);
-      const online = _actIsOnline(r.lastSeenAt);
-      const statusHtml = online
-        ? '<span class="act-online-dot"></span><span style="font-size:12px;font-weight:700;color:#16a34a;">Online</span>'
-        : '<span style="font-size:12px;color:#94a3b8;">Offline</span>';
-      html += '<tr>';
-      html += '<td style="font-weight:600;">' + nameEsc + '</td>';
-      html += '<td><span style="font-size:11px;font-weight:600;color:#64748b;text-transform:capitalize;">' + roleEsc + '</span></td>';
-      html += '<td><div style="font-weight:600;">' + dateStr + '</div><div style="font-size:11px;color:#94a3b8;">' + timeStr + '</div></td>';
-      html += '<td><span class="act-dur-badge ' + durClass + '">' + dur + '</span></td>';
-      html += '<td style="font-size:12px;color:#64748b;">' + (r.device||'—') + '</td>';
-      html += '<td>' + statusHtml + '</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-    if(filtered.length > 50) html += '<div style="text-align:center;padding:16px;font-size:11px;color:#94a3b8;">Showing ' + filtered.length + ' sessions</div>';
-  }
-
-  wrap.innerHTML = html;
-}
-
 function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=_allowedLocs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
@@ -6655,10 +6165,10 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','deals','hr','marketing'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
-  if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); setTimeout(updateDealsBadge, 50); setTimeout(updateHRBadge, 50); }
+  if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
   else if(S.page==='sales'){ try{ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }catch(e){ console.error('renderSalesPage',e); } }
   else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
@@ -6666,8 +6176,6 @@ function render(){
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
   else if(S.page==='admin'){ try{ renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
   else if(S.page==='portfolio'){ try{ renderPortfolioPage(); }catch(e){ console.error('renderPortfolioPage',e); } }
-  else if(S.page==='deals'){ try{ if(typeof renderDealsPage!=='undefined') renderDealsPage(); }catch(e){ console.error('renderDealsPage',e); } }
-  else if(S.page==='hr'){ try{ if(typeof renderHRPage!=='undefined') renderHRPage(); }catch(e){ console.error('renderHRPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -6693,7 +6201,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',deals:'New Deal Status',hr:'HR Dashboard',marketing:'Marketing'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -6863,16 +6371,16 @@ function trendAlert(series, threshold=0.02){
 //  HEALTH SCORE HELPERS
 // ══════════════════════════════════════════════════
 function getHSWeights(loc){
-  if(!loc||loc==='ALL') return {fp:40,lp:30,dp:10,rat:20};
+  if(!loc||loc==='ALL') return {fp:20,lp:30,dp:10,gr:20,uber:20};
   const d=locD(loc);
-  return d?.targets?.hsWeights||{fp:40,lp:30,dp:10,rat:20};
+  return d?.targets?.hsWeights||{fp:20,lp:30,dp:10,gr:20,uber:20};
 }
 function getHSTgt(loc){
   if(!loc||loc==='ALL') return 75;
   const d=locD(loc);
   return d?.targets?.hsTgt??75;
 }
-// Returns {total, comps:{fp,lp,dp,rat each with .score & .w}, w} or null
+// Returns {total, comps:{fp,lp,dp,gr,uber each with .score & .w}, w} or null
 function calcHealthScore(loc){
   const w=getHSWeights(loc==='ALL'?null:loc);
   let fpct,lpct,dpct,uber;
@@ -6896,11 +6404,24 @@ function calcHealthScore(loc){
     if(actual==null) return null;
     return Math.min(100,(actual/target)*100);
   };
+  // Google Reviews component
+  const grComp=(loc2)=>{
+    if(loc2==='ALL'){
+      let tNr=0,tGo=0;
+      for(const l of locs()){const g=locGR(l);if(g){tNr+=g.nr;tGo+=g.go;}}
+      if(tGo<=0) return null;
+      return Math.min(100,(tNr/tGo)*100);
+    }
+    const g=locGR(loc2);
+    if(!g||g.go<=0) return null;
+    return Math.min(100,(g.nr/g.go)*100);
+  };
   const comps={
     fp:{score:costComp(fpct,DEFAULT_TGTS.fp),w:w.fp},
     lp:{score:costComp(lpct,DEFAULT_TGTS.lp),w:w.lp},
     dp:{score:costComp(dpct,DEFAULT_TGTS.dp),w:w.dp},
-    rat:{score:ratingComp(uber),w:w.rat}
+    gr:{score:grComp(loc),w:w.gr||0},
+    uber:{score:ratingComp(uber),w:w.uber||0}
   };
   let wSum=0,wTotal=0;
   for(const c of Object.values(comps)){if(c.score!=null){wSum+=c.score*c.w;wTotal+=c.w;}}
@@ -6911,8 +6432,9 @@ function updateHWTotal(){
   const fp=parseFloat(document.getElementById('hs-w-fp')?.value)||0;
   const lp=parseFloat(document.getElementById('hs-w-lp')?.value)||0;
   const dp=parseFloat(document.getElementById('hs-w-dp')?.value)||0;
-  const rat=parseFloat(document.getElementById('hs-w-rat')?.value)||0;
-  const tot=fp+lp+dp+rat;
+  const gr=parseFloat(document.getElementById('hs-w-gr')?.value)||0;
+  const uber=parseFloat(document.getElementById('hs-w-uber')?.value)||0;
+  const tot=fp+lp+dp+gr+uber;
   const el=document.getElementById('hs-w-total');
   if(el) el.innerHTML=`<span style="color:${tot===100?'#2d7a4f':'#9b292c'};font-weight:700;">Total: ${tot}%${tot===100?' ✓':' — must be 100'}</span>`;
 }
@@ -6945,7 +6467,7 @@ function renderCards(){
     const hsBadgeTxt=t>=hsTgtV?'✓ On Target':'⚠ Below Target';
     const {comps,w}=hsResult;
     const tgtMarker=hsTgtV<100?`<div style="position:absolute;left:${hsTgtV}%;top:-3px;width:2px;height:16px;background:rgba(0,0,0,.25);border-radius:1px;"></div>`:'';
-    const compParts=[['fp','Food Cost','🍽'],['lp','Labor','👷'],['dp','D&C','🧹'],['rat','Ratings','⭐']].map(([k,lbl,ic])=>{
+    const compParts=[['fp','Food Cost','🍽'],['lp','Labor','👷'],['dp','D&C','🧹'],['gr','Google Reviews','📝'],['uber','UberEats Rating','⭐']].map(([k,lbl,ic])=>{
       const c=comps[k];
       if(!c||c.score==null) return '<div style="text-align:center;opacity:.4;"><div class="klbl">'+ic+' '+lbl+'</div><div style="font-size:14px;font-weight:800;color:var(--muted);">—</div><div style="font-size:9px;color:var(--muted);">wt '+w[k]+'%</div></div>';
       const cc=c.score>=75?'#2d7a4f':c.score>=50?'#c4a850':'#9b292c';
@@ -7945,7 +7467,7 @@ function addAlertRule(){
   renderAlertRulesList();
   renderAlerts();
 }
-function deleteAlertRule(i){if(_slRole!=='admin'){alert('Only admins can delete alert rules.');return;}const r=getAlertRules();r.splice(i,1);saveAlertRules(r);renderAlertRulesList();renderAlerts();}
+function deleteAlertRule(i){const r=getAlertRules();r.splice(i,1);saveAlertRules(r);renderAlertRulesList();renderAlerts();}
 function toggleAlertRule(i,v){const r=getAlertRules();r[i].active=v;saveAlertRules(r);renderAlerts();}
 
 function evaluateAlertRules(){
@@ -8976,9 +8498,9 @@ function updTotal(){
   const dv=parseFloat(document.getElementById('m-delivery').value)||0;
   const tot=di+dv;
   document.getElementById('m-total').textContent='$'+tot.toLocaleString('en-US');
-  // Recalculate Food Cost % and D&C % using P&L dollar amounts.
-  // Denominator = "Total for 1000 Sales" (grossSales from P&L), NOT entered total.
-  {
+  // Recalculate Food Cost % and D&C % using P&L dollar amounts + entered net sales
+  // (P&L $ amounts are read-only; % shown here reflects: P&L $ / entered total sales)
+  if(tot>0){
     const yr  = document.getElementById('m-year')?.value;
     const mi  = +document.getElementById('m-month')?.value;
     const lc  = getModalLoc();
@@ -8986,16 +8508,13 @@ function updTotal(){
       const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
       const faAmt  = pnlRec?.codeMap?.['2000'] ?? null;
       const daAmt  = pnlRec?.computedDcAmt ?? null;
-      const gs1000 = pnlRec?._sales1000 ?? pnlRec?.codeMap?.['1000'] ?? pnlRec?.grossSales ?? null;
-      const denom  = gs1000 > 0 ? gs1000 : (tot > 0 ? tot : null);
-      document.getElementById('m-fp').value = faAmt!=null && denom ? (faAmt/denom*100).toFixed(2) : '';
-      document.getElementById('m-dp').value = daAmt!=null && denom ? (daAmt/denom*100).toFixed(2) : '';
+      document.getElementById('m-fp').value = faAmt!=null ? (faAmt/tot*100).toFixed(2) : '';
+      document.getElementById('m-dp').value = daAmt!=null ? (daAmt/tot*100).toFixed(2) : '';
     }
   }
 }
 function closeDataModal(){ document.getElementById('ov-data').classList.remove('open'); }
 function delMonth(){
-  if(_slRole !== 'admin'){ alert('Only admins can delete data.'); return; }
   const yr=document.getElementById('m-year').value;
   const mi=+document.getElementById('m-month').value;
   const lc=getModalLoc();
@@ -9057,23 +8576,23 @@ function saveDataModal(){
 
   // ── Food Cost and D&C come exclusively from P&L import (not editable here)
   // fa and da are written by _pnlAutoSyncKPI on P&L import.
-  // Denominator = "Total for 1000 Sales" (grossSales from P&L), NOT manually entered total.
+  // We only recalculate their % ratios if net sales changed, preserving the P&L dollar amounts.
   const pnlRec = getPnLDerivedKPIs(lc, yr, mi);
   const faFromPnL = pnlRec?.codeMap?.['2000'] ?? null;
   const daFromPnL = pnlRec?.computedDcAmt ?? null;
-  const gs1000 = pnlRec?._sales1000 ?? pnlRec?.codeMap?.['1000'] ?? pnlRec?.grossSales ?? null;
-  const denominator = gs1000 > 0 ? gs1000 : (tot > 0 ? tot : null);
+  // Prefer P&L value; if no P&L yet, leave whatever is currently stored in DB untouched for fa/da
   if(faFromPnL !== null){
     d.fa[mi] = faFromPnL;
-    d.fp[mi] = denominator ? faFromPnL/denominator : null;
-  } else if(denominator && d.fa[mi]!=null){
-    d.fp[mi] = d.fa[mi]/denominator;
+    d.fp[mi] = tot>0 ? faFromPnL/tot : null;
+  } else if(tot>0 && d.fa[mi]!=null){
+    // Net sales changed — recompute % using stored fa amount
+    d.fp[mi] = d.fa[mi]/tot;
   }
   if(daFromPnL !== null){
     d.da[mi] = daFromPnL;
-    d.dp[mi] = denominator ? daFromPnL/denominator : null;
-  } else if(denominator && d.da[mi]!=null){
-    d.dp[mi] = d.da[mi]/denominator;
+    d.dp[mi] = tot>0 ? daFromPnL/tot : null;
+  } else if(tot>0 && d.da[mi]!=null){
+    d.dp[mi] = d.da[mi]/tot;
   }
 
   save(); closeDataModal();
@@ -9129,7 +8648,7 @@ function openTargetsModal(){
   }
   h+=`</tbody></table>`;
   // Health Score Settings section
-  const hsW=d?.targets?.hsWeights||{fp:40,lp:30,dp:10,rat:20};
+  const hsW=d?.targets?.hsWeights||{fp:20,lp:30,dp:10,gr:20,uber:20};
   const hsTgtCur=d?.targets?.hsTgt??75;
   h+=`<div style="margin-top:20px;padding:16px 20px;background:#f2ede4;border-radius:12px;border:1px solid var(--border);">
     <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#1e3a5f;margin-bottom:14px;">🏥 Health Score Settings</div>
@@ -9140,7 +8659,8 @@ function openTargetsModal(){
           <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">🍽 Food Cost</span><input class="tgt-fi" id="hs-w-fp" type="number" min="0" max="100" step="5" value="${hsW.fp}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
           <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">👷 Labor</span><input class="tgt-fi" id="hs-w-lp" type="number" min="0" max="100" step="5" value="${hsW.lp}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
           <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">🧹 D&amp;C</span><input class="tgt-fi" id="hs-w-dp" type="number" min="0" max="100" step="5" value="${hsW.dp}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
-          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">⭐ Ratings</span><input class="tgt-fi" id="hs-w-rat" type="number" min="0" max="100" step="5" value="${hsW.rat}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">📝 Google Reviews</span><input class="tgt-fi" id="hs-w-gr" type="number" min="0" max="100" step="5" value="${hsW.gr||0}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;min-width:82px;">⭐ UberEats Rating</span><input class="tgt-fi" id="hs-w-uber" type="number" min="0" max="100" step="5" value="${hsW.uber||0}" oninput="updateHWTotal()" style="width:58px;"><span style="font-size:11px;color:var(--muted);">%</span></div>
           <div id="hs-w-total" style="font-size:11px;margin-top:2px;"></div>
         </div>
       </div>
@@ -9191,10 +8711,11 @@ function saveTargetsModal(){
   const hsFP=parseFloat(document.getElementById('hs-w-fp')?.value);
   const hsLP=parseFloat(document.getElementById('hs-w-lp')?.value);
   const hsDP=parseFloat(document.getElementById('hs-w-dp')?.value);
-  const hsRAT=parseFloat(document.getElementById('hs-w-rat')?.value);
+  const hsGR=parseFloat(document.getElementById('hs-w-gr')?.value);
+  const hsUBER=parseFloat(document.getElementById('hs-w-uber')?.value);
   const hsTgtV=parseFloat(document.getElementById('hs-tgt')?.value);
-  if(!isNaN(hsFP)&&!isNaN(hsLP)&&!isNaN(hsDP)&&!isNaN(hsRAT)){
-    d.targets.hsWeights={fp:hsFP,lp:hsLP,dp:hsDP,rat:hsRAT};
+  if(!isNaN(hsFP)&&!isNaN(hsLP)&&!isNaN(hsDP)&&!isNaN(hsGR)&&!isNaN(hsUBER)){
+    d.targets.hsWeights={fp:hsFP,lp:hsLP,dp:hsDP,gr:hsGR,uber:hsUBER};
   }
   if(!isNaN(hsTgtV)) d.targets.hsTgt=Math.min(100,Math.max(0,hsTgtV));
   save(); closeTargetsModal(); renderTable();
@@ -9371,7 +8892,6 @@ function savePMixRecords(arr){ _slSaveRecords('mix', arr); }
 
 // ── Load Product Mix directly from toast_mix_fetch.py JSON output
 function loadMixJson(input){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const file = input.files[0];
   if(!file) return;
   const status = document.getElementById('mix-json-status');
@@ -11244,7 +10764,6 @@ function mxSelectRecord(state, loc, year, month){
 }
 
 function mxShowUpload(){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uploadView    = document.getElementById('mix-upload-view');
   const dashboardView = document.getElementById('mix-dashboard-view');
   const locBar        = document.getElementById('mix-loc-bar');
@@ -11266,7 +10785,6 @@ function getSalesDailyRecords(){
 
 // ── Load directly from toast_fetch.py JSON output (no console needed)
 function loadToastJson(input){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); input.value=''; return; }
   const file=input.files[0];
   if(!file) return;
   const status=document.getElementById('toast-json-status');
@@ -11921,7 +11439,6 @@ function renderSalesLocBar(filteredRecs){
 }
 
 function sxShowUpload(){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uv=document.getElementById('sales-upload-view'),dv=document.getElementById('sales-dashboard-view'),bar=document.getElementById('sales-loc-bar');
   if(uv) uv.style.display='block';
   if(dv) dv.style.display='none';
@@ -13918,45 +13435,6 @@ let PX = { state:'FL', loc:null, year:'2026', month:null,
 // ── P&L detail-view toggle (Summary ↔ Full Detail)
 function pxSetPnLView(v){ PX.pnlView=v; renderPnLPage(); }
 
-// ── P&L expand / collapse (Full Detail table)
-let _pnlAllExpanded = true; // default: expanded (show all)
-
-function pnlToggleSection(secIdx){
-  // Toggle all detail rows in this section (groups + items + subitems + subtotals)
-  const rows = document.querySelectorAll(`tr[data-pnl-sec="${secIdx}"]`);
-  if(!rows.length) return;
-  const isHidden = rows[0].classList.contains('pnl-collapsed');
-  rows.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
-  // Also toggle group-children (items/subitems) that belong to groups in this section
-  const grpChildren = document.querySelectorAll(`tr[data-pnl-grp^="${secIdx}-"]`);
-  grpChildren.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
-  // Sync all group arrows inside this section
-  const grpArrows = document.querySelectorAll(`[id^="pnl-grp-arrow-${secIdx}-"]`);
-  grpArrows.forEach(a => a.classList.toggle('open', isHidden));
-  const arrow = document.querySelector(`#pnl-arrow-${secIdx}`);
-  if(arrow) arrow.classList.toggle('open', isHidden);
-}
-
-function pnlToggleGroup(grpKey, event){
-  if(event) event.stopPropagation(); // don't bubble to section toggle
-  const rows = document.querySelectorAll(`tr[data-pnl-grp="${grpKey}"]`);
-  if(!rows.length) return;
-  const isHidden = rows[0].classList.contains('pnl-collapsed');
-  rows.forEach(r => r.classList.toggle('pnl-collapsed', !isHidden));
-  const arrow = document.querySelector(`#pnl-grp-arrow-${grpKey}`);
-  if(arrow) arrow.classList.toggle('open', isHidden);
-}
-
-function pnlExpandCollapseAll(){
-  _pnlAllExpanded = !_pnlAllExpanded;
-  const allDetail = document.querySelectorAll('tr.pnl-detail-row');
-  allDetail.forEach(r => r.classList.toggle('pnl-collapsed', !_pnlAllExpanded));
-  const allArrows = document.querySelectorAll('.pnl-sec-arrow, .pnl-grp-arrow');
-  allArrows.forEach(a => a.classList.toggle('open', _pnlAllExpanded));
-  const btn = document.getElementById('pnl-expand-btn');
-  if(btn) btn.textContent = _pnlAllExpanded ? '▼ Collapse All' : '▶ Expand All';
-}
-
 // ── P&L period view helpers
 function pxSetViewMode(vm){
   PX.viewMode=vm;
@@ -14172,23 +13650,21 @@ function _mapPnLFields(rows, col, rec){
   _setCode('3800', rec.professionalFees);
 
   // ── Computed KPIs from codeMap ────────────────────────────────────────────
-  //    Denominator for all = "Total for 1000 Sales" (grossSales), NOT netSales.
   const cm=rec.codeMap;
-  const sales1000=cm['1000']??rec.grossSales??null;  // Total for 1000 Sales
-  rec._sales1000=sales1000;  // store for _pnlAutoSyncKPI to reuse
-  if(sales1000!=null && sales1000>0){
-    // FOOD COST % = "Total for 2000 Cost of goods sold" / "Total for 1000 Sales"
-    if(cm['2000']!=null) rec.computedCogsPct=+(cm['2000']/sales1000*100).toFixed(2);
-    // D&C % = (3101 Disposables + 3102 Inventory Shrinkage) / "Total for 1000 Sales"
+  const sales=cm['1000']??null;
+  if(sales!=null && sales>0){
+    // COGS % = 2000 / 1000
+    if(cm['2000']!=null) rec.computedCogsPct=+(cm['2000']/sales*100).toFixed(2);
+    // D&C % = (3101 + 3102) / 1000
     const dc3101=cm['3101']??null;
     const dc3102=cm['3102']??null;
     if(dc3101!=null || dc3102!=null){
       const dcAmt=(dc3101??0)+(dc3102??0);
       rec.computedDcAmt=+dcAmt.toFixed(2);
-      rec.computedDcPct=+(dcAmt/sales1000*100).toFixed(2);
+      rec.computedDcPct=+(dcAmt/sales*100).toFixed(2);
     }
-    // Labor % = "Total for 3000 Payroll" / "Total for 1000 Sales"
-    if(cm['3000']!=null) rec.computedLaborPct=+(cm['3000']/sales1000*100).toFixed(2);
+    // Labor % = 3000 / 1000
+    if(cm['3000']!=null) rec.computedLaborPct=+(cm['3000']/sales*100).toFixed(2);
   }
 
   PNL_ALL_KEYS.forEach(k=>{ if(rec[k]==null) rec[k]=0; });
@@ -14263,11 +13739,10 @@ function _pnlAutoSyncKPI(records){
     };
     const d=DB[yr][st][lc];
     const cm=rec.codeMap||{};
-    // Denominator = "Total for 1000 Sales" (grossSales), NOT netSales.
-    const gs=rec._sales1000??cm['1000']??rec.grossSales??null;
-    const ns=gs>0?gs:(()=>{ const s=totalNS(d,mi); return s>0?s:null; })();
+    // Use P&L netSales as the denominator; fall back to existing KPI net sales
+    const ns=rec.netSales>0?rec.netSales:(()=>{ const s=totalNS(d,mi); return s>0?s:null; })();
 
-    // Food Cost = "Total for 2000 Cost of goods sold" / "Total for 1000 Sales"
+    // Food cost (COGS = account 2000)
     const cogVal=cm['2000']??rec.cogs??null;
     if(cogVal!=null && cogVal!==0){
       d.fa[mi]=+cogVal.toFixed(2);
@@ -14275,7 +13750,7 @@ function _pnlAutoSyncKPI(records){
       dirty=true;
     }
 
-    // Labor = "Total for 3000 Payroll" / "Total for 1000 Sales"
+    // Labor (Payroll = account 3000)
     const labVal=cm['3000']??rec.payroll??null;
     if(labVal!=null && labVal!==0){
       d.la[mi]=+labVal.toFixed(2);
@@ -14283,7 +13758,7 @@ function _pnlAutoSyncKPI(records){
       dirty=true;
     }
 
-    // D&C = (3101 Disposables + 3102 Shrinkage) / "Total for 1000 Sales"
+    // D&C (3101 Disposables + 3102 Cleaning)
     if(rec.computedDcAmt!=null && rec.computedDcAmt!==0){
       d.da[mi]=rec.computedDcAmt;
       if(ns>0) d.dp[mi]=+(rec.computedDcAmt/ns).toFixed(4);
@@ -14381,7 +13856,6 @@ function pxSetState(st){ PX.state=st; PX.loc=null; PX.month=null; PX.cmpMode=fal
 function pxSetLoc(l){ PX.loc=l; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; renderPnLPage(); renderNavRight(); }
 function pxSetMonth(m){ PX.month=m; renderPnLPage(); }
 function pxShowUpload(){
-  if(_slRole !== 'admin'){ alert('Only admins can upload documents.'); return; }
   const uv=document.getElementById('pnl-upload-view'),dv=document.getElementById('pnl-dashboard-view'),bar=document.getElementById('pnl-loc-bar');
   if(uv) uv.style.display='block';
   if(dv) dv.style.display='none';
@@ -14930,27 +14404,13 @@ function renderPnLDashboard(rec, locRecs){
       const INDENT_PX=[16,32,44,56];
       const KPI_CODES=['1000','2000','3000','3101','3102'];
 
-      // Assign section + group indices for two-level expand/collapse.
-      // Level 1 (section): section/total/highlight are always visible.
-      // Level 2 (group): group/subtotal rows are visible when section is expanded;
-      //                   item/subitem rows collapse under their parent group.
-      let secIdx = -1;
-      let grpIdx = -1;
-      const SEC_ALWAYS = new Set(['section','total','highlight']);
-      const GRP_CHILDREN = new Set(['item','subitem']);
-
       const rows = rec.lineItems.map(li=>{
         const tp = li.type || 'item';
-        if(tp==='section'){ secIdx++; grpIdx=-1; }
-        if(tp==='group') grpIdx++;
-        const isDetail = !SEC_ALWAYS.has(tp);   // hidden when section collapsed
-        const isGrpChild = GRP_CHILDREN.has(tp); // also hidden when group collapsed
         const bg   = BGSTY[tp]   || BGSTY.item;
         const font = FONTSTY[tp] || FONTSTY.item;
         const bord = BORDERSTY[tp] || BORDERSTY.item;
         const indentPx = INDENT_PX[Math.min(li.indent||0, 3)];
         const isHeader = tp==='section';
-        const isGroup = tp==='group';
         const isHighlight = tp==='highlight';
         const code = li.code || '';
         const codeTag = code && !isHeader && !isHighlight
@@ -14963,33 +14423,11 @@ function renderPnLDashboard(rec, locRecs){
         const pctFmt = (li.value!=null && rec.netSales>0 && !isHeader && li.value!==0)
           ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
 
-        // Section header — toggles all children in this section
         if(isHeader){
-          const arrow = `<span class="pnl-sec-arrow open" id="pnl-arrow-${secIdx}">&#9654;</span>`;
-          return `<tr class="pnl-sec-toggle" onclick="pnlToggleSection(${secIdx})"><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${arrow}${li.label}</td></tr>`;
+          return `<tr><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
         }
-
-        // Group header (e.g. 3000 Payroll, 3100 Supplies) — toggles item/subitem children
-        if(isGroup){
-          const gArrow = `<span class="pnl-grp-arrow open" id="pnl-grp-arrow-${secIdx}-${grpIdx}">&#9654;</span>`;
-          const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-          return `<tr class="pnl-detail-row pnl-grp-toggle" data-pnl-sec="${secIdx}" data-pnl-grp="${secIdx}-${grpIdx}" onclick="pnlToggleGroup('${secIdx}-${grpIdx}', event)">
-            <td style="${cellBase}padding-left:${indentPx}px;">${gArrow}${li.label}${codeTag}${kpiTag}</td>
-            <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
-            <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
-          </tr>`;
-        }
-
-        // Item / subitem — collapsible under both section AND group
-        const classes = [];
-        if(isDetail) classes.push('pnl-detail-row');
-        if(isGrpChild) classes.push('pnl-detail-row');
-        const attrs = [];
-        if(isDetail) attrs.push(`data-pnl-sec="${secIdx}"`);
-        if(isGrpChild && grpIdx>=0) attrs.push(`data-pnl-grp="${secIdx}-${grpIdx}"`);
-        const trOpen = classes.length ? `<tr class="${[...new Set(classes)].join(' ')}" ${attrs.join(' ')}>` : '<tr>';
         const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-        return `${trOpen}
+        return `<tr>
           <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
@@ -14999,12 +14437,9 @@ function renderPnLDashboard(rec, locRecs){
       const totalLines = rec.lineItems.length;
       const valueLines = rec.lineItems.filter(li=>li.value!=null).length;
       return `<div class="pnl-tbl-wrap">
-        <div class="pnl-tbl-hdr" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div class="pnl-tbl-hdr" style="display:flex;justify-content:space-between;align-items:baseline;">
           <span class="pnl-tbl-hdr-title">Profit & Loss · ${rec._label||MFULL[rec.month]+' '+rec.year} · ${rec.loc}</span>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:10px;color:#94a3b8;font-weight:400;">${totalLines} rows · ${valueLines} with values</span>
-            <button id="pnl-expand-btn" onclick="pnlExpandCollapseAll()" style="padding:4px 12px;background:rgba(30,58,95,.08);color:#1e3a5f;border:1.5px solid #1e3a5f;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">▼ Collapse All</button>
-          </div>
+          <span style="font-size:10px;color:#94a3b8;font-weight:400;">${totalLines} rows · ${valueLines} with values · full QuickBooks structure</span>
         </div>
         <table class="pnl-tbl" style="width:100%;border-collapse:collapse;">
           <thead>
@@ -15956,846 +15391,6 @@ function pxToggleCmpFull(){
   } else { PX.cmpMonth=null; }
   renderPnLPage(); renderNavRight();
 }
-
-// ══════════════════════════════════════════════════
-//  HR DASHBOARD — Weekly News & Termination Board
-// ══════════════════════════════════════════════════
-
-let HR_SUB = 'landing'; // 'landing' | 'news' | 'term'
-let HR_TAB = 'pending';  // 'pending' | 'completed' | 'history'
-
-function _hrEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
-// ── Storage ────────────────────────────────────────
-function getHRRecords(){
-  try{ const raw = JSON.parse(localStorage.getItem('sl_hr_v1')||'[]'); return Array.isArray(raw)?raw:[]; }
-  catch(e){ console.error('[HR] parse error:',e); return []; }
-}
-function saveHRRecords(arr){
-  if(!Array.isArray(arr)){ console.error('[HR] expected array'); return; }
-  localStorage.setItem('sl_hr_v1', JSON.stringify(arr));
-}
-function hrGenId(){ return 'hr_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
-
-// ── Allowed stores for current user ────────────────
-function hrAllowedStores(){
-  const stores = [];
-  for(const [state, locs] of Object.entries(LOC_MAP)){
-    for(const loc of locs){
-      if(_isLocAllowed(loc)) stores.push({ state, loc });
-    }
-  }
-  return stores;
-}
-
-// ── Badge ──────────────────────────────────────────
-function updateHRBadge(){
-  const badge = document.getElementById('hr-pending-badge');
-  if(!badge) return;
-  try{
-    const count = getHRRecords().filter(r => r.status === 'pending').length;
-    if(count > 0){ badge.textContent = count; badge.style.display = 'inline-flex'; }
-    else badge.style.display = 'none';
-  }catch(e){ badge.style.display = 'none'; }
-}
-
-// ── Navigation ─────────────────────────────────────
-function hrGoBack(){
-  if(HR_SUB !== 'landing'){ HR_SUB = 'landing'; renderHRPage(); }
-  else goHome();
-}
-function hrGoModule(mod){
-  HR_SUB = mod; HR_TAB = 'pending'; renderHRPage();
-}
-
-// ── Main render ────────────────────────────────────
-function renderHRPage(){
-  const content = document.getElementById('hr-content');
-  const label   = document.getElementById('hr-topbar-label');
-  const actions = document.getElementById('hr-topbar-actions');
-  if(!content) return;
-
-  if(HR_SUB === 'landing'){
-    if(label) label.textContent = '👥 HR DASHBOARD';
-    if(actions) actions.innerHTML = '';
-    content.innerHTML = hrRenderLanding();
-  } else if(HR_SUB === 'news'){
-    if(label) label.textContent = '📰 WEEKLY NEWS';
-    if(actions) actions.innerHTML = `<button class="hr-create-btn" onclick="hrOpenCreate('news')">+ New Entry</button>`;
-    content.innerHTML = hrRenderTabs() + hrRenderSummary('news') + hrRenderTable('news');
-  } else if(HR_SUB === 'term'){
-    if(label) label.textContent = '📋 TERMINATION BOARD';
-    if(actions) actions.innerHTML = `<button class="hr-create-btn" onclick="hrOpenCreate('term')">+ New Entry</button>`;
-    content.innerHTML = hrRenderTabs() + hrRenderSummary('term') + hrRenderTable('term');
-  }
-  updateHRBadge();
-}
-
-// ── Landing page ───────────────────────────────────
-function hrRenderLanding(){
-  const recs = getHRRecords();
-  const newsPending = recs.filter(r=>r.module==='news'&&r.status==='pending').length;
-  const termPending = recs.filter(r=>r.module==='term'&&r.status==='pending').length;
-  return `<div class="hr-landing">
-    <div class="hr-landing-title">HR Dashboard</div>
-    <div class="hr-landing-sub">Manage weekly staffing changes and the termination board. Track pending items, completed audits, and full history.</div>
-    <div class="hr-landing-grid">
-      <div class="hr-land-card" onclick="hrGoModule('news')">
-        <div class="hr-land-icon">📰</div>
-        <div class="hr-land-label">Weekly News</div>
-        <div class="hr-land-desc">Track employee departures — fired or quit — with store, date, and notes.</div>
-        ${newsPending ? `<div class="hr-land-badge" style="background:#fef3c7;color:#92400e;">⏳ ${newsPending} Pending</div>` : `<div class="hr-land-badge" style="background:#dcfce7;color:#166534;">✓ All Clear</div>`}
-      </div>
-      <div class="hr-land-card" onclick="hrGoModule('term')">
-        <div class="hr-land-icon">📋</div>
-        <div class="hr-land-label">Termination Board</div>
-        <div class="hr-land-desc">Manage termination processing — 7Shifts, QuickBooks, last day tracking, and manager sign-off.</div>
-        ${termPending ? `<div class="hr-land-badge" style="background:#fef3c7;color:#92400e;">⏳ ${termPending} Pending</div>` : `<div class="hr-land-badge" style="background:#dcfce7;color:#166534;">✓ All Clear</div>`}
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── Tabs ───────────────────────────────────────────
-function hrRenderTabs(){
-  const tabs = [
-    { key:'pending',   label:'⏳ Pending',   cls:'hr-tab-pending' },
-    { key:'completed', label:'✅ Completed', cls:'hr-tab-completed' },
-    { key:'history',   label:'🗂 History',   cls:'hr-tab-history' },
-  ];
-  return `<div style="display:flex;align-items:center;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
-    <div class="hr-tabs">${tabs.map(t =>
-      `<button class="hr-tab-btn ${t.cls}${HR_TAB===t.key?' active':''}" onclick="hrSetTab('${t.key}')">${t.label}</button>`
-    ).join('')}</div>
-  </div>`;
-}
-function hrSetTab(tab){ HR_TAB = tab; renderHRPage(); }
-
-// ── Summary bar ────────────────────────────────────
-function hrRenderSummary(mod){
-  const recs = getHRRecords().filter(r => r.module === mod);
-  const pending   = recs.filter(r=>r.status==='pending').length;
-  const completed = recs.filter(r=>r.status==='completed').length;
-  const total     = recs.length;
-  let h = `<div class="hr-summary-bar">`;
-  h += `<span class="hr-kpi-chip"><strong>${total}</strong>&nbsp;Total</span>`;
-  h += `<span class="hr-kpi-chip" style="border-color:#fbbf24;background:#fffbeb;">⏳&nbsp;<strong>${pending}</strong>&nbsp;Pending</span>`;
-  h += `<span class="hr-kpi-chip" style="border-color:#86efac;background:#f0fdf4;">✅&nbsp;<strong>${completed}</strong>&nbsp;Completed</span>`;
-  h += `</div>`;
-  return h;
-}
-
-// ── Table rendering ────────────────────────────────
-function hrRenderTable(mod){
-  let recs = getHRRecords().filter(r => r.module === mod);
-  // Filter by tab
-  if(HR_TAB === 'pending') recs = recs.filter(r => r.status === 'pending');
-  else if(HR_TAB === 'completed') recs = recs.filter(r => r.status === 'completed');
-  // History = all records, sorted newest first
-  recs.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-
-  if(!recs.length) return `<div class="hr-empty">No ${HR_TAB} records found.</div>`;
-
-  if(mod === 'news') return hrNewsTable(recs);
-  if(mod === 'term') return hrTermTable(recs);
-  return '';
-}
-
-function hrNewsTable(recs){
-  let h = `<div style="padding:16px 24px;"><table class="hr-table"><thead><tr>`;
-  h += `<th>Employee</th><th>Store</th><th>Type</th><th>Date</th><th>Notes</th>`;
-  h += `<th>Status</th>`;
-  if(HR_TAB !== 'pending') h += `<th>Processed By</th>`;
-  h += `<th style="width:50px;"></th></tr></thead><tbody>`;
-  for(const r of recs){
-    const rowCls = r.status === 'pending' ? 'hr-row-pending' : r.status === 'completed' ? 'hr-row-completed' : '';
-    const typeCls = r.statusType === 'Fired' ? 'hr-type-fired' : 'hr-type-quit';
-    h += `<tr class="${rowCls}">`;
-    h += `<td style="font-weight:600;">${_hrEsc(r.employeeName)}</td>`;
-    h += `<td>${_hrEsc(r.store)}</td>`;
-    h += `<td><span class="${typeCls}">${_hrEsc(r.statusType)}</span></td>`;
-    h += `<td style="white-space:nowrap;">${_hrEsc(r.date)}</td>`;
-    h += `<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_hrEsc(r.notes)}">${_hrEsc(r.notes||'—')}</td>`;
-    h += `<td><span class="hr-pill-${r.status}">${r.status==='pending'?'Pending':'Completed'}</span></td>`;
-    if(HR_TAB !== 'pending'){
-      h += `<td><div class="hr-processed-info">`;
-      if(r.processed_by) h += `<strong>${_hrEsc(r.processed_by)}</strong><br>${r.processed_at ? new Date(r.processed_at).toLocaleDateString() : ''}`;
-      else h += '—';
-      h += `</div></td>`;
-    }
-    h += `<td>`;
-    if(r.status === 'pending') h += `<button class="hr-check-btn" onclick="hrComplete('${_hrEsc(r.id)}')" title="Mark as processed">✓</button>`;
-    else h += `<span class="hr-check-btn hr-check-done">✓</span>`;
-    h += `</td></tr>`;
-  }
-  h += `</tbody></table></div>`;
-  return h;
-}
-
-function hrTermTable(recs){
-  let h = `<div style="padding:16px 24px;"><table class="hr-table"><thead><tr>`;
-  h += `<th>Employee</th><th>Store</th><th>Last Day</th><th>Manager</th><th>7Shifts</th><th>QB</th>`;
-  h += `<th>Status</th>`;
-  if(HR_TAB !== 'pending') h += `<th>Processed By</th>`;
-  h += `<th style="width:50px;"></th></tr></thead><tbody>`;
-  for(const r of recs){
-    const rowCls = r.status === 'pending' ? 'hr-row-pending' : r.status === 'completed' ? 'hr-row-completed' : '';
-    h += `<tr class="${rowCls}">`;
-    h += `<td style="font-weight:600;">${_hrEsc(r.employeeName)}</td>`;
-    h += `<td>${_hrEsc(r.store)}</td>`;
-    h += `<td style="white-space:nowrap;">${_hrEsc(r.lastDay)}</td>`;
-    h += `<td>${_hrEsc(r.managerName)}</td>`;
-    h += `<td><span class="hr-pill-${r.sevenShifts==='Yes'?'yes':'no'}">${r.sevenShifts||'No'}</span></td>`;
-    h += `<td><span class="hr-pill-${r.qbTerminated==='Yes'?'yes':'no'}">${r.qbTerminated||'No'}</span></td>`;
-    h += `<td><span class="hr-pill-${r.status}">${r.status==='pending'?'Pending':'Completed'}</span></td>`;
-    if(HR_TAB !== 'pending'){
-      h += `<td><div class="hr-processed-info">`;
-      if(r.processed_by) h += `<strong>${_hrEsc(r.processed_by)}</strong><br>${r.processed_at ? new Date(r.processed_at).toLocaleDateString() : ''}`;
-      else h += '—';
-      h += `</div></td>`;
-    }
-    h += `<td>`;
-    if(r.status === 'pending') h += `<button class="hr-check-btn" onclick="hrComplete('${_hrEsc(r.id)}')" title="Mark as processed">✓</button>`;
-    else h += `<span class="hr-check-btn hr-check-done">✓</span>`;
-    h += `</td></tr>`;
-  }
-  h += `</tbody></table></div>`;
-  return h;
-}
-
-// ── Complete / audit action ────────────────────────
-function hrComplete(id){
-  const recs = getHRRecords();
-  const idx = recs.findIndex(r => r.id === id);
-  if(idx === -1) return;
-  recs[idx].status = 'completed';
-  recs[idx].processed_by = _slDisplayName || _slUser?.email?.split('@')[0] || 'Unknown';
-  recs[idx].processed_by_id = _slUser?.id || null;
-  recs[idx].processed_at = new Date().toISOString();
-  saveHRRecords(recs);
-  renderHRPage();
-}
-
-// ── Create modal ───────────────────────────────────
-function hrOpenCreate(mod){
-  const modal = document.getElementById('hr-modal');
-  if(!modal) return;
-  const stores = hrAllowedStores();
-  const storeOpts = `<option value="">— Select Store —</option>` + stores.map(s =>
-    `<option value="${s.loc}">${s.loc} (${s.state})</option>`
-  ).join('');
-  const title = mod === 'news' ? 'New Weekly News Entry' : 'New Termination Entry';
-
-  let h = `<div class="hr-modal-backdrop" onclick="hrCloseModal()"></div>`;
-  h += `<div class="hr-modal-box">`;
-  h += `<div class="hr-modal-hdr"><span>${title}</span><button class="hr-modal-close" onclick="hrCloseModal()">×</button></div>`;
-  h += `<div class="hr-modal-body">`;
-  // Common: Employee Name + Store
-  h += `<div class="hr-input-row">`;
-  h += `<div class="hr-form-row"><label>Employee Full Name *</label><input class="hr-input" id="hr-f-name" placeholder="First and last name"></div>`;
-  h += `<div class="hr-form-row"><label>Store *</label><select class="hr-input" id="hr-f-store">${storeOpts}</select></div>`;
-  h += `</div>`;
-
-  if(mod === 'news'){
-    // Status Type + Date
-    h += `<div class="hr-input-row">`;
-    h += `<div class="hr-form-row"><label>Status Type *</label><select class="hr-input" id="hr-f-type"><option value="">— Select —</option><option value="Fired">Fired</option><option value="Quit">Quit</option></select></div>`;
-    h += `<div class="hr-form-row"><label>Date *</label><input class="hr-input" id="hr-f-date" type="date" min="2026-01-01"></div>`;
-    h += `</div>`;
-    // Notes
-    h += `<div class="hr-form-row"><label>Notes</label><textarea class="hr-input" id="hr-f-notes" rows="3" placeholder="Additional context..."></textarea></div>`;
-  } else {
-    // Last Day + Manager
-    h += `<div class="hr-input-row">`;
-    h += `<div class="hr-form-row"><label>Last Day of Work *</label><input class="hr-input" id="hr-f-lastday" type="date" min="2026-01-01"></div>`;
-    h += `<div class="hr-form-row"><label>Manager Name *</label><input class="hr-input" id="hr-f-manager" placeholder="Manager name"></div>`;
-    h += `</div>`;
-    // 7Shifts + QB
-    h += `<div class="hr-input-row">`;
-    h += `<div class="hr-form-row"><label>7Shifts Terminated *</label><select class="hr-input" id="hr-f-7shifts"><option value="No">No</option><option value="Yes">Yes</option></select></div>`;
-    h += `<div class="hr-form-row"><label>QB Terminated *</label><select class="hr-input" id="hr-f-qb"><option value="No">No</option><option value="Yes">Yes</option></select></div>`;
-    h += `</div>`;
-  }
-
-  h += `</div>`; // end body
-  h += `<div class="hr-modal-ftr">`;
-  h += `<button class="hr-create-btn" style="background:#94a3b8;" onclick="hrCloseModal()">Cancel</button>`;
-  h += `<button class="hr-create-btn" onclick="hrSaveNew('${mod}')">Create Entry</button>`;
-  h += `</div>`;
-  h += `</div>`; // end box
-  modal.innerHTML = h;
-  modal.style.display = 'flex';
-}
-
-function hrCloseModal(){
-  const modal = document.getElementById('hr-modal');
-  if(modal){ modal.style.display = 'none'; modal.innerHTML = ''; }
-}
-
-function hrSaveNew(mod){
-  const name  = (document.getElementById('hr-f-name')?.value||'').trim();
-  const store = document.getElementById('hr-f-store')?.value||'';
-
-  if(!name){ alert('Employee name is required.'); return; }
-  if(!store){ alert('Store is required.'); return; }
-
-  const now = new Date().toISOString();
-  const base = {
-    id: hrGenId(),
-    module: mod,
-    employeeName: name,
-    store: store,
-    status: 'pending',
-    created_by: _slDisplayName || _slUser?.email?.split('@')[0] || 'Unknown',
-    created_by_id: _slUser?.id || null,
-    created_at: now,
-    processed_by: null,
-    processed_by_id: null,
-    processed_at: null,
-  };
-
-  if(mod === 'news'){
-    const statusType = document.getElementById('hr-f-type')?.value||'';
-    const date       = document.getElementById('hr-f-date')?.value||'';
-    const notes      = (document.getElementById('hr-f-notes')?.value||'').trim();
-    if(!statusType){ alert('Status Type is required.'); return; }
-    if(!date){ alert('Date is required.'); return; }
-    if(date < '2026-01-01'){ alert('Date must be 2026 or later.'); return; }
-    base.statusType = statusType;
-    base.date = date;
-    base.notes = notes;
-  } else {
-    const lastDay     = document.getElementById('hr-f-lastday')?.value||'';
-    const managerName = (document.getElementById('hr-f-manager')?.value||'').trim();
-    const sevenShifts = document.getElementById('hr-f-7shifts')?.value||'No';
-    const qbTerminated= document.getElementById('hr-f-qb')?.value||'No';
-    if(!lastDay){ alert('Last Day of Work is required.'); return; }
-    if(lastDay < '2026-01-01'){ alert('Date must be 2026 or later.'); return; }
-    if(!managerName){ alert('Manager Name is required.'); return; }
-    base.lastDay = lastDay;
-    base.managerName = managerName;
-    base.sevenShifts = sevenShifts;
-    base.qbTerminated = qbTerminated;
-  }
-
-  const recs = getHRRecords();
-  recs.push(base);
-  saveHRRecords(recs);
-  hrCloseModal();
-  renderHRPage();
-}
-
-// ══════════════════════════════════════════════════
-//  NEW DEAL STATUS PIPELINE
-// ══════════════════════════════════════════════════
-
-const DL_STATUSES = ['LEASE','LOI','WAITING','HOLD','INFO'];
-const DL_STATUS_LABEL = { LEASE:'Lease', LOI:'LOI', WAITING:'Waiting', HOLD:'Hold', INFO:'Info' };
-const DL_STATUS_CLASS = { LEASE:'deal-st-lease', LOI:'deal-st-loi', WAITING:'deal-st-waiting', HOLD:'deal-st-hold', INFO:'deal-st-info' };
-const DL_HOLDINGS  = ['DEVELOPMENT','INTERNATIONAL'];
-const DL_HOLD_LABEL = { DEVELOPMENT:'Development', INTERNATIONAL:'International' };
-const DL_HOLD_CLASS = { DEVELOPMENT:'deal-holding-dev', INTERNATIONAL:'deal-holding-intl' };
-const DL_CITIES = ['FL','NY'];
-const DL_CITY_LABEL = { FL:'Florida', NY:'New York' };
-const DL_CITY_ICON  = { FL:'🌴', NY:'🗽' };
-const DL_PROGRESS_COLORS = {
-  0:'#e5e7eb', 10:'#fca5a5', 20:'#fdba74', 30:'#fde68a', 40:'#fde047',
-  50:'#bef264', 60:'#86efac', 70:'#6ee7b7', 80:'#5eead4', 90:'#67e8f9', 100:'#34d399'
-};
-
-let DL = { filterStatus:'ALL', filterHolding:'ALL', filterProgress:'ALL', filterCity:'ALL', search:'' };
-
-function dlProgressColor(pct){
-  const keys = Object.keys(DL_PROGRESS_COLORS).map(Number).sort((a,b)=>a-b);
-  let best = keys[0];
-  for(const k of keys){ if(pct >= k) best = k; }
-  return DL_PROGRESS_COLORS[best];
-}
-
-// ── Storage ────────────────────────────────────────
-function getDealRecords(){
-  try{
-    const raw = JSON.parse(localStorage.getItem('sl_deals_v1')||'[]');
-    if(!Array.isArray(raw)) return [];
-    return raw;
-  }catch(e){ console.error('[Deals] parse error:', e); return []; }
-}
-function saveDealRecords(arr){
-  if(!Array.isArray(arr)){ console.error('[Deals] expected array'); return; }
-  localStorage.setItem('sl_deals_v1', JSON.stringify(arr));
-}
-function dlGenId(){ return 'dl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
-
-// ── Badge ──────────────────────────────────────────
-function updateDealsBadge(){
-  const badge = document.getElementById('deals-active-badge');
-  if(!badge) return;
-  try{
-    const recs = getDealRecords();
-    const active = recs.filter(r => r.status !== 'HOLD').length;
-    if(active>0){ badge.textContent=active; badge.style.display='inline-flex'; }
-    else badge.style.display='none';
-  }catch(e){ badge.style.display='none'; }
-}
-
-// ── Render page ────────────────────────────────────
-function renderDealsPage(){
-  renderDealFilters();
-  renderDealSummary();
-  renderDealCards();
-  updateDealsBadge();
-}
-
-function renderDealFilters(){
-  const el = document.getElementById('deal-filters');
-  if(!el) return;
-  const mkPill = (val, label, field) => {
-    const on = DL[field] === val ? ' on' : '';
-    return `<button class="deal-fpill${on}" onclick="dlSetFilter('${field}','${val}')">${label}</button>`;
-  };
-  let h = `<div class="deal-filter-bar">`;
-  // City pills
-  h += `<div class="deal-filter-group"><span class="deal-filter-label">City</span><div class="deal-filter-pills">`;
-  h += mkPill('ALL','All Cities','filterCity');
-  DL_CITIES.forEach(c => { h += mkPill(c, DL_CITY_ICON[c]+' '+DL_CITY_LABEL[c], 'filterCity'); });
-  h += `</div></div>`;
-  // Status pills
-  h += `<div class="deal-filter-group"><span class="deal-filter-label">Status</span><div class="deal-filter-pills">`;
-  h += mkPill('ALL','All','filterStatus');
-  DL_STATUSES.forEach(s => { h += mkPill(s, DL_STATUS_LABEL[s], 'filterStatus'); });
-  h += `</div></div>`;
-  // Holding pills
-  h += `<div class="deal-filter-group"><span class="deal-filter-label">Holding</span><div class="deal-filter-pills">`;
-  h += mkPill('ALL','All','filterHolding');
-  DL_HOLDINGS.forEach(s => { h += mkPill(s, DL_HOLD_LABEL[s], 'filterHolding'); });
-  h += `</div></div>`;
-  // Progress pills
-  h += `<div class="deal-filter-group"><span class="deal-filter-label">Progress</span><div class="deal-filter-pills">`;
-  h += mkPill('ALL','All','filterProgress');
-  h += mkPill('LOW','0–30%','filterProgress');
-  h += mkPill('MID','40–60%','filterProgress');
-  h += mkPill('HIGH','70–100%','filterProgress');
-  h += `</div></div>`;
-  // Search
-  h += `<div style="margin-left:auto;"><input class="deal-search" type="text" placeholder="Search deals..." value="${DL.search.replace(/"/g,'&quot;')}" oninput="dlSetSearch(this.value)"></div>`;
-  h += `</div>`;
-  el.innerHTML = h;
-}
-
-function dlSetFilter(field, val){
-  DL[field] = val;
-  renderDealFilters();
-  renderDealCards();
-}
-function dlSetSearch(val){
-  DL.search = val;
-  renderDealCards();
-}
-
-function renderDealSummary(){
-  const el = document.getElementById('deal-summary');
-  if(!el) return;
-  const recs = getDealRecords();
-  const total = recs.length;
-  const byStat = {};
-  DL_STATUSES.forEach(s => byStat[s] = 0);
-  recs.forEach(r => { if(byStat[r.status] !== undefined) byStat[r.status]++; });
-  const avgProg = total ? Math.round(recs.reduce((a,r) => a + (r.progress||0), 0) / total) : 0;
-  const flCount = recs.filter(r=>r.city==='FL').length;
-  const nyCount = recs.filter(r=>r.city==='NY').length;
-  let h = `<div class="deal-summary-bar">`;
-  h += `<span class="deal-kpi-chip"><strong>${total}</strong>&nbsp;Total Deals</span>`;
-  if(flCount) h += `<span class="deal-kpi-chip">🌴 FL:&nbsp;<strong>${flCount}</strong></span>`;
-  if(nyCount) h += `<span class="deal-kpi-chip">🗽 NY:&nbsp;<strong>${nyCount}</strong></span>`;
-  DL_STATUSES.forEach(s => {
-    if(byStat[s]) h += `<span class="deal-kpi-chip"><span class="deal-stat-badge ${DL_STATUS_CLASS[s]}" style="padding:2px 8px;font-size:10px;">${DL_STATUS_LABEL[s]}</span>&nbsp;${byStat[s]}</span>`;
-  });
-  h += `<span class="deal-kpi-chip">Avg Progress:&nbsp;<strong>${avgProg}%</strong></span>`;
-  h += `</div>`;
-  el.innerHTML = h;
-}
-
-function dlFilteredRecords(){
-  let recs = getDealRecords();
-  if(DL.filterCity !== 'ALL') recs = recs.filter(r => r.city === DL.filterCity);
-  if(DL.filterStatus !== 'ALL') recs = recs.filter(r => r.status === DL.filterStatus);
-  if(DL.filterHolding !== 'ALL') recs = recs.filter(r => r.holding === DL.filterHolding);
-  if(DL.filterProgress === 'LOW') recs = recs.filter(r => (r.progress||0) <= 30);
-  else if(DL.filterProgress === 'MID') recs = recs.filter(r => (r.progress||0) >= 40 && (r.progress||0) <= 60);
-  else if(DL.filterProgress === 'HIGH') recs = recs.filter(r => (r.progress||0) >= 70);
-  if(DL.search){
-    const q = DL.search.toLowerCase();
-    recs = recs.filter(r =>
-      (r.location||'').toLowerCase().includes(q) ||
-      (r.area||'').toLowerCase().includes(q) ||
-      (r.address||'').toLowerCase().includes(q) ||
-      (r.broker||'').toLowerCase().includes(q) ||
-      (r.comment||'').toLowerCase().includes(q) ||
-      (r.city||'').toLowerCase().includes(q)
-    );
-  }
-  const statOrder = { LEASE:0, LOI:1, WAITING:2, INFO:3, HOLD:4 };
-  recs.sort((a,b) => (statOrder[a.status]||9) - (statOrder[b.status]||9) || (b.progress||0) - (a.progress||0));
-  return recs;
-}
-
-function renderDealCards(){
-  const pane = document.getElementById('deal-cards-pane');
-  if(!pane) return;
-  const recs = dlFilteredRecords();
-  if(!recs.length){
-    pane.innerHTML = `<div class="deal-empty"><span style="font-size:48px;">📍</span><div>No deals match your filters.</div><button class="deal-action-btn blue" onclick="dlOpenCreate()">+ Add First Deal</button></div>`;
-    return;
-  }
-  let h = `<div class="deal-cards-grid">`;
-  recs.forEach(r => { h += dlCard(r); });
-  h += `</div>`;
-  pane.innerHTML = h;
-}
-
-function _dlEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
-function dlCard(r){
-  const pct = Math.max(0, Math.min(100, parseInt(r.progress)||0));
-  const pColor = dlProgressColor(pct);
-  const statClass = DL_STATUS_CLASS[r.status] || 'deal-st-info';
-  const statLabel = DL_STATUS_LABEL[r.status] || _dlEsc(r.status);
-  const holdClass = DL_HOLD_CLASS[r.holding] || '';
-  const holdLabel = DL_HOLD_LABEL[r.holding] || _dlEsc(r.holding) || '';
-  const safeId = _dlEsc(r.id);
-  const cityIcon = DL_CITY_ICON[r.city] || '🌎';
-  const cityLabel = DL_CITY_LABEL[r.city] || r.city || '';
-
-  // Map preview
-  let mapHtml = '';
-  if(r.address && r.address.trim()){
-    mapHtml = `<div class="deal-map-preview"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-82,25,-80,27&layer=mapnik&marker=0,0" loading="lazy" title="Map" style="pointer-events:none;"></iframe>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(241,245,249,.85);font-size:11px;font-weight:600;color:#475569;padding:8px;text-align:center;">📍 ${_dlEsc(r.address).slice(0,80)}</div></div>`;
-  }
-
-  let h = `<div class="deal-card">`;
-  h += mapHtml;
-  h += `<div class="deal-card-body">`;
-  // Top: photo + location + status badge
-  h += `<div class="deal-card-top">`;
-  if(r.photo){
-    h += `<img src="${r.photo}" class="deal-card-photo" alt="Deal photo">`;
-  } else {
-    h += `<div class="deal-card-photo-empty">${cityIcon}</div>`;
-  }
-  h += `<div style="flex:1;min-width:0;">`;
-  h += `<div class="deal-card-title">${_dlEsc(r.location||'Untitled')}</div>`;
-  if(cityLabel) h += `<div style="font-size:11px;color:#6b7280;margin-top:1px;">${cityIcon} ${_dlEsc(cityLabel)}</div>`;
-  h += `</div>`;
-  h += `<span class="deal-stat-badge ${statClass}">${statLabel}</span>`;
-  h += `</div>`;
-  // Meta chips
-  h += `<div class="deal-card-meta">`;
-  if(r.area) h += `<span class="deal-meta-chip">📌 ${_dlEsc(r.area)}</span>`;
-  if(r.broker) h += `<span class="deal-meta-chip">🤝 ${_dlEsc(r.broker)}</span>`;
-  if(holdLabel) h += `<span class="deal-meta-chip ${holdClass}" style="font-weight:700;">${holdLabel}</span>`;
-  h += `</div>`;
-  // Progress bar
-  h += `<div class="deal-progress-wrap">`;
-  h += `<div class="deal-progress-labels"><span>Progress</span><span>${pct}%</span></div>`;
-  h += `<div class="deal-progress-track"><div class="deal-progress-fill" style="width:${pct}%;background:${pColor};"></div></div>`;
-  h += `</div>`;
-  // Comment
-  if(r.comment) h += `<div class="deal-card-comment">${_dlEsc(r.comment)}</div>`;
-  // PDF attachments
-  if(r.pdfName){
-    h += `<div class="deal-card-pdf"><span style="font-size:14px;">📄</span> <a href="#" onclick="dlViewPdf('${safeId}','location');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">Location PDF</a> <span style="font-size:11px;color:#64748b;">(${_dlEsc(r.pdfName)})</span></div>`;
-  }
-  if(r.renderPdfName){
-    h += `<div class="deal-card-pdf"><span style="font-size:14px;">🏗</span> <a href="#" onclick="dlViewPdf('${safeId}','render');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">Store Render</a> <span style="font-size:11px;color:#64748b;">(${_dlEsc(r.renderPdfName)})</span></div>`;
-  }
-  h += `</div>`; // end card-body
-  // Footer
-  h += `<div class="deal-card-footer">`;
-  h += `<button class="deal-action-btn blue primary" onclick="dlOpenEdit('${safeId}')">✏️ Edit</button>`;
-  h += `<button class="deal-action-btn gray" onclick="dlDeleteDeal('${safeId}')">🗑</button>`;
-  h += `</div>`;
-  h += `</div>`; // end card
-  return h;
-}
-
-// ── View PDF ───────────────────────────────────────
-function dlViewPdf(id, type){
-  const r = getDealRecords().find(x => x.id === id);
-  if(!r){ alert('Deal not found.'); return; }
-  const isRender = (type === 'render');
-  const data = isRender ? r.renderPdfData : r.pdfData;
-  const name = isRender ? (r.renderPdfName || 'Store Render') : (r.pdfName || 'Location PDF');
-  if(!data){ alert('No PDF attached.'); return; }
-  const w = window.open('','_blank');
-  if(!w){ alert('Popup blocked — please allow popups.'); return; }
-  w.document.write(`<html><head><title>${_dlEsc(name)}</title></head><body style="margin:0;"><iframe src="${data}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`);
-  w.document.close();
-}
-
-// ── Photo resize helper (max 120x120, returns base64) ──
-function _dlResizeImage(file, maxW, maxH){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function(e){
-      const img = new Image();
-      img.onload = function(){
-        let w = img.width, h = img.height;
-        if(w > maxW || h > maxH){
-          const ratio = Math.min(maxW/w, maxH/h);
-          w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// ── Create / Edit Modal ────────────────────────────
-function dlOpenCreate(){ dlShowModal(null); }
-function dlOpenEdit(id){
-  const r = getDealRecords().find(x => x.id === id);
-  if(!r){ alert('Deal not found'); return; }
-  dlShowModal(r);
-}
-
-function dlShowModal(existing){
-  const modal = document.getElementById('deal-modal');
-  if(!modal) return;
-  const isEdit = !!existing;
-  const r = existing || {};
-  const title = isEdit ? 'Edit Deal' : 'New Deal';
-  const statusOpts = DL_STATUSES.map(s =>
-    `<option value="${s}" ${r.status===s?'selected':''}>${DL_STATUS_LABEL[s]}</option>`
-  ).join('');
-  const holdOpts = `<option value="">— Select —</option>` + DL_HOLDINGS.map(hh =>
-    `<option value="${hh}" ${r.holding===hh?'selected':''}>${DL_HOLD_LABEL[hh]}</option>`
-  ).join('');
-  const cityOpts = `<option value="">— Select —</option>` + DL_CITIES.map(c =>
-    `<option value="${c}" ${r.city===c?'selected':''}>${DL_CITY_ICON[c]} ${DL_CITY_LABEL[c]}</option>`
-  ).join('');
-
-  let h = `<div class="deal-modal-backdrop" onclick="dlCloseModal()"></div>`;
-  h += `<div class="deal-modal-box">`;
-  h += `<div class="deal-modal-hdr"><span>${title}</span><button class="deal-modal-close" onclick="dlCloseModal()">×</button></div>`;
-  h += `<div class="deal-modal-body">`;
-  // Row 1: Area + Location + City
-  h += `<div class="dl-input-row">`;
-  h += `<div class="deal-form-row"><label>Area</label><input class="dl-input" id="dl-f-area" value="${_dlEsc(r.area||'')}" placeholder="e.g. South Florida"></div>`;
-  h += `<div class="deal-form-row"><label>Location</label><input class="dl-input" id="dl-f-location" value="${_dlEsc(r.location||'')}" placeholder="e.g. Coral Springs"></div>`;
-  h += `<div class="deal-form-row" style="max-width:160px;"><label>City</label><select class="dl-input" id="dl-f-city">${cityOpts}</select></div>`;
-  h += `</div>`;
-  // Row 2: Address
-  h += `<div class="deal-form-row"><label>Address</label><input class="dl-input" id="dl-f-address" value="${_dlEsc(r.address||'')}" placeholder="Full street address for map preview"></div>`;
-  // Row 3: Status + Progress
-  h += `<div class="dl-input-row">`;
-  h += `<div class="deal-form-row"><label>Status</label><select class="dl-input" id="dl-f-status">${statusOpts}</select></div>`;
-  h += `<div class="deal-form-row"><label>Progress (%)</label><input class="dl-input" id="dl-f-progress" type="number" min="0" max="100" step="5" value="${r.progress||0}"></div>`;
-  h += `</div>`;
-  // Row 4: Broker + Holding
-  h += `<div class="dl-input-row">`;
-  h += `<div class="deal-form-row"><label>Broker</label><input class="dl-input" id="dl-f-broker" value="${_dlEsc(r.broker||'')}" placeholder="Broker name"></div>`;
-  h += `<div class="deal-form-row"><label>Holding</label><select class="dl-input" id="dl-f-holding">${holdOpts}</select></div>`;
-  h += `</div>`;
-  // Row 5: Comment
-  h += `<div class="deal-form-row"><label>Comment</label><textarea class="dl-input" id="dl-f-comment" rows="3" placeholder="Notes about this deal...">${_dlEsc(r.comment||'')}</textarea></div>`;
-  // Row 6: Profile Photo
-  h += `<div class="deal-form-row"><label>Profile Photo</label>`;
-  h += `<div style="display:flex;align-items:center;gap:12px;">`;
-  if(r.photo) h += `<img src="${r.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;">`;
-  else h += `<div style="width:48px;height:48px;border-radius:50%;background:#f1f5f9;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:18px;color:#94a3b8;">📷</div>`;
-  h += `<input type="file" id="dl-f-photo" accept="image/*" class="dl-input" style="flex:1;">`;
-  if(r.photo) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-photo-clear').value='1';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
-  h += `<input type="hidden" id="dl-f-photo-clear" value="0">`;
-  h += `</div></div>`;
-  // Row 7: Location PDF
-  h += `<div class="deal-form-row"><label>Location PDF</label>`;
-  h += `<div style="display:flex;align-items:center;gap:12px;">`;
-  if(r.pdfName) h += `<span style="font-size:12px;color:#1e3a5f;font-weight:600;">📄 ${_dlEsc(r.pdfName)}</span>`;
-  if(r.pdfData) h += `<button type="button" class="deal-action-btn blue" style="padding:5px 12px;font-size:11px;" onclick="dlViewPdf('${isEdit?_dlEsc(r.id):''}','location');return false;">👁 VIEW</button>`;
-  h += `<input type="file" id="dl-f-pdf" accept=".pdf" class="dl-input" style="flex:1;">`;
-  if(r.pdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
-  h += `<input type="hidden" id="dl-f-pdf-clear" value="0">`;
-  h += `</div>`;
-  h += `<div style="font-size:10px;color:#94a3b8;margin-top:3px;">Max 5 MB. Stored locally for quick access.</div>`;
-  h += `</div>`;
-  // Row 8: Store Render PDF
-  h += `<div class="deal-form-row"><label>Store Render</label>`;
-  h += `<div style="display:flex;align-items:center;gap:12px;">`;
-  if(r.renderPdfName) h += `<span style="font-size:12px;color:#1e3a5f;font-weight:600;">📄 ${_dlEsc(r.renderPdfName)}</span>`;
-  if(r.renderPdfData) h += `<button type="button" class="deal-action-btn blue" style="padding:5px 12px;font-size:11px;" onclick="dlViewPdf('${isEdit?_dlEsc(r.id):''}','render');return false;">👁 VIEW</button>`;
-  h += `<input type="file" id="dl-f-render-pdf" accept=".pdf" class="dl-input" style="flex:1;">`;
-  if(r.renderPdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-render-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
-  h += `<input type="hidden" id="dl-f-render-pdf-clear" value="0">`;
-  h += `</div>`;
-  h += `<div style="font-size:10px;color:#94a3b8;margin-top:3px;">Max 5 MB. Stored locally for quick access.</div>`;
-  h += `</div>`;
-  h += `</div>`; // end body
-  h += `<div class="deal-modal-ftr">`;
-  h += `<button class="deal-action-btn gray" onclick="dlCloseModal()">Cancel</button>`;
-  h += `<button class="deal-action-btn blue" id="dl-save-btn" onclick="dlSaveDeal('${isEdit?_dlEsc(r.id):''}')">${isEdit?'Save Changes':'Create Deal'}</button>`;
-  h += `</div>`;
-  h += `</div>`; // end box
-  modal.innerHTML = h;
-  modal.style.display = 'flex';
-}
-
-function dlCloseModal(){
-  const modal = document.getElementById('deal-modal');
-  if(modal){ modal.style.display='none'; modal.innerHTML=''; }
-}
-
-async function dlSaveDeal(editId){
-  const area     = (document.getElementById('dl-f-area')?.value||'').trim();
-  const location = (document.getElementById('dl-f-location')?.value||'').trim();
-  const city     = document.getElementById('dl-f-city')?.value || '';
-  const address  = (document.getElementById('dl-f-address')?.value||'').trim();
-  const status   = document.getElementById('dl-f-status')?.value || 'WAITING';
-  const progress = Math.max(0, Math.min(100, parseInt(document.getElementById('dl-f-progress')?.value)||0));
-  const broker   = (document.getElementById('dl-f-broker')?.value||'').trim();
-  const holding  = document.getElementById('dl-f-holding')?.value || '';
-  const comment  = (document.getElementById('dl-f-comment')?.value||'').trim();
-
-  if(!location){ alert('Location is required.'); return; }
-
-  // Disable save button while processing files
-  const saveBtn = document.getElementById('dl-save-btn');
-  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
-
-  // Process photo
-  let photo = editId ? (getDealRecords().find(x=>x.id===editId)?.photo||null) : null;
-  const photoClear = document.getElementById('dl-f-photo-clear')?.value === '1';
-  if(photoClear) photo = null;
-  const photoInput = document.getElementById('dl-f-photo');
-  if(photoInput && photoInput.files && photoInput.files[0]){
-    try{ photo = await _dlResizeImage(photoInput.files[0], 120, 120); }
-    catch(e){ console.error('[Deals] photo resize error:', e); }
-  }
-
-  // Process Location PDF
-  let pdfData = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfData||null) : null;
-  let pdfName = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfName||null) : null;
-  const pdfClear = document.getElementById('dl-f-pdf-clear')?.value === '1';
-  if(pdfClear){ pdfData = null; pdfName = null; }
-  const pdfInput = document.getElementById('dl-f-pdf');
-  if(pdfInput && pdfInput.files && pdfInput.files[0]){
-    const file = pdfInput.files[0];
-    if(file.size > 5*1024*1024){ alert('Location PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
-    pdfName = file.name;
-    pdfData = await new Promise((res,rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
-  }
-
-  // Process Store Render PDF
-  let renderPdfData = editId ? (getDealRecords().find(x=>x.id===editId)?.renderPdfData||null) : null;
-  let renderPdfName = editId ? (getDealRecords().find(x=>x.id===editId)?.renderPdfName||null) : null;
-  const renderPdfClear = document.getElementById('dl-f-render-pdf-clear')?.value === '1';
-  if(renderPdfClear){ renderPdfData = null; renderPdfName = null; }
-  const renderPdfInput = document.getElementById('dl-f-render-pdf');
-  if(renderPdfInput && renderPdfInput.files && renderPdfInput.files[0]){
-    const file = renderPdfInput.files[0];
-    if(file.size > 5*1024*1024){ alert('Store Render PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
-    renderPdfName = file.name;
-    renderPdfData = await new Promise((res,rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
-  }
-
-  const recs = getDealRecords();
-  if(editId){
-    const idx = recs.findIndex(r => r.id === editId);
-    if(idx === -1){ alert('Deal not found'); return; }
-    recs[idx] = { ...recs[idx], area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, renderPdfData, renderPdfName, updatedAt: new Date().toISOString() };
-  } else {
-    recs.push({
-      id: dlGenId(), area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, renderPdfData, renderPdfName,
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-    });
-  }
-  saveDealRecords(recs);
-  dlCloseModal();
-  renderDealsPage();
-}
-
-function dlDeleteDeal(id){
-  if(_slRole !== 'admin'){ alert('Only admins can delete deals.'); return; }
-  if(!confirm('Delete this deal?')) return;
-  const recs = getDealRecords().filter(r => r.id !== id);
-  saveDealRecords(recs);
-  renderDealsPage();
-}
-
-// ── Seed data (called once if sl_deals_v1 is empty) ──
-function dlSeedIfEmpty(){
-  if(getDealRecords().length > 0) return;
-  const seed = [
-    {area:"MIAMI",location:"MIDTOWN MIAMI",city:"FL",status:"LEASE",progress:80,comment:"Signed — buildout starting Q3",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"BRICKELL CITY CENTRE",city:"FL",status:"LOI",progress:60,comment:"LOI submitted, waiting landlord counter",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"WYNWOOD",city:"FL",status:"WAITING",progress:40,comment:"Waiting on zoning approval",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"COCONUT GROVE",city:"FL",status:"LOI",progress:50,comment:"LOI in review",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"CORAL GABLES",city:"FL",status:"INFO",progress:10,comment:"Early research phase",broker:"",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"DORAL",city:"FL",status:"HOLD",progress:20,comment:"On hold — market conditions",broker:"COLLIERS",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"SOUTH BEACH",city:"FL",status:"WAITING",progress:30,comment:"Permit pending",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"AVENTURA",city:"FL",status:"LOI",progress:55,comment:"LOI sent — follow up next week",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"MIAMI",location:"HIALEAH",city:"FL",status:"INFO",progress:5,comment:"Demographic study underway",broker:"",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"FORT LAUDERDALE - LAS OLAS",city:"FL",status:"LEASE",progress:75,comment:"Lease signed, TI negotiation",broker:"DWNTWN REALTY",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"HOLLYWOOD",city:"FL",status:"WAITING",progress:35,comment:"Waiting on landlord feedback",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"PLANTATION",city:"FL",status:"HOLD",progress:15,comment:"Paused for Q4 review",broker:"",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"PEMBROKE PINES",city:"FL",status:"LOI",progress:45,comment:"LOI negotiation in progress",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"BROWARD",location:"CORAL SPRINGS",city:"FL",status:"INFO",progress:10,comment:"Site visit scheduled",broker:"MARCUS & MILLICHAP",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"WEST PALM BEACH",city:"FL",status:"LEASE",progress:70,comment:"Lease near final — attorney review",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"BOCA RATON",city:"FL",status:"LOI",progress:50,comment:"LOI submitted",broker:"COLLIERS",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"DELRAY BEACH",city:"FL",status:"WAITING",progress:25,comment:"Waiting on site plan approval",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"JUPITER",city:"FL",status:"INFO",progress:5,comment:"Exploring locations",broker:"",holding:"DEVELOPMENT"},
-    {area:"PALM BEACH",location:"BOYNTON BEACH",city:"FL",status:"HOLD",progress:10,comment:"On hold pending budget allocation",broker:"",holding:"DEVELOPMENT"},
-    {area:"NEW YORK",location:"MANHATTAN - MIDTOWN",city:"NY",status:"LOI",progress:60,comment:"LOI counter received, reviewing terms",broker:"CBRE",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"MANHATTAN - SOHO",city:"NY",status:"WAITING",progress:40,comment:"Waiting on co-tenancy clause",broker:"JLL",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"BROOKLYN - WILLIAMSBURG",city:"NY",status:"LOI",progress:55,comment:"LOI in negotiation",broker:"CUSHMAN",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"BROOKLYN - DUMBO",city:"NY",status:"INFO",progress:15,comment:"Site assessment in progress",broker:"NEWMARK",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"QUEENS - ASTORIA",city:"NY",status:"HOLD",progress:20,comment:"On hold — rent too high",broker:"MARCUS & MILLICHAP",holding:"INTERNATIONAL"},
-    {area:"NEW YORK",location:"QUEENS - LIC",city:"NY",status:"WAITING",progress:30,comment:"Waiting on lease draft",broker:"COLLIERS",holding:"INTERNATIONAL"},
-    {area:"TEXAS",location:"AUSTIN - SOUTH CONGRESS",city:"",status:"LOI",progress:50,comment:"LOI sent to landlord",broker:"CBRE",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"AUSTIN - DOMAIN",city:"",status:"INFO",progress:10,comment:"Market analysis underway",broker:"",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"DALLAS - DEEP ELLUM",city:"",status:"WAITING",progress:35,comment:"Waiting on tenant package review",broker:"JLL",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"HOUSTON - MONTROSE",city:"",status:"HOLD",progress:15,comment:"On hold — timing",broker:"CUSHMAN",holding:"DEVELOPMENT"},
-    {area:"TEXAS",location:"SAN ANTONIO - PEARL",city:"",status:"LOI",progress:45,comment:"LOI terms under review",broker:"NEWMARK",holding:"DEVELOPMENT"},
-    {area:"INTERNATIONAL",location:"BOGOTA - ZONA T",city:"",status:"INFO",progress:5,comment:"Exploring international expansion",broker:"LOCAL BROKER TBD",holding:"INTERNATIONAL"},
-  ];
-  const now = new Date().toISOString();
-  const records = seed.map((s,i) => ({
-    id: dlGenId() + i, area: s.area, location: s.location, city: s.city, address: '',
-    status: s.status, progress: s.progress, comment: s.comment, broker: s.broker, holding: s.holding,
-    photo: null, pdfData: null, pdfName: null, renderPdfData: null, renderPdfName: null, createdAt: now, updatedAt: now,
-  }));
-  saveDealRecords(records);
-  console.log('[Deals] Seeded', records.length, 'deals');
-}
-
-// Auto-seed on first load
-try{ dlSeedIfEmpty(); }catch(e){ console.error('[Deals] seed error:', e); }
-
-// ── Migrate: backfill city field on existing records without it ──
-(function _dlMigrateCity(){
-  const AREA_TO_CITY = {
-    'MIAMI':'FL','BROWARD':'FL','PALM BEACH':'FL',
-    'NEW YORK':'NY','BROOKLYN':'NY','QUEENS':'NY','MANHATTAN':'NY',
-  };
-  const recs = getDealRecords();
-  let changed = false;
-  recs.forEach(r => {
-    if(!r.city && r.area){
-      const key = r.area.toUpperCase();
-      if(AREA_TO_CITY[key]){ r.city = AREA_TO_CITY[key]; changed = true; }
-    }
-  });
-  if(changed){ saveDealRecords(recs); console.log('[Deals] Migrated city field for existing records'); }
-})();
 
 // ══════════════════════════════════════════════════
 //  STORE MAINTENANCE TRACKER
@@ -18491,7 +17086,7 @@ function _pfBuildData(){
     if(uberHigh)       goods.push('Strong Uber rating');
     if(!fpOver&&!lpOver&&!dpOver&&!uberLow) goods.push('All KPIs on target');
     if(dropYoY)        issues.push('Sales declining YoY');
-    // Compose structured insight
+    // Compose insight
     let insight='';
     if(s.loc===bestLoc&&ranked.length>1)        insight='🏆 Best performing store';
     else if(s.loc===worstLoc&&ranked.length>1)  insight='⚠️ Needs most attention';
@@ -18500,9 +17095,6 @@ function _pfBuildData(){
     else if(goods.length)                        insight=goods.join(' · ');
     else                                         insight='Insufficient data';
     s.insight=insight;
-    s._issues=issues; s._goods=goods;
-    s._isBest=(s.loc===bestLoc&&ranked.length>1);
-    s._isWorst=(s.loc===worstLoc&&ranked.length>1);
   });
   return stores;
 }
@@ -18733,22 +17325,19 @@ function renderPortfolioPage(){
       </div>`;
     };
     const yoyLbl=s.salesYoY!=null?(s.salesYoY>=1?'+':'')+((s.salesYoY-1)*100).toFixed(1)+'%':null;
-    // Build insight pills HTML
-    let pillsHtml='';
-    if(s._isBest) pillsHtml=`<span class="pf-insight-pill trophy">🏆 Best performing</span>`;
-    else if(s._isWorst) pillsHtml=`<span class="pf-insight-pill warn">⚠️ Needs attention</span>`;
-    else {
-      (s._issues||[]).forEach(t=>{
-        const cls=t.includes('Costs')||t.includes('above target')?'red':t.includes('declining')?'amber':t.includes('low')?'red':'amber';
-        pillsHtml+=`<span class="pf-insight-pill ${cls}">${t}</span>`;
-      });
-      (s._goods||[]).forEach(t=>{
-        const cls=t.includes('growing')||t.includes('Strong')?'green':t.includes('on target')?'blue':'green';
-        pillsHtml+=`<span class="pf-insight-pill ${cls}">${t}</span>`;
-      });
-    }
-    if(!pillsHtml) pillsHtml=`<span class="pf-insight-pill amber">Insufficient data</span>`;
-    const storeInitial=s.loc[0]||'?';
+    // Build insight pills
+    var _issues=[], _goods=[];
+    if(y.fpct!=null && y.fpct>DEFAULT_TGTS.fp) _issues.push('Food Cost high');
+    if(y.lpct!=null && y.lpct>DEFAULT_TGTS.lp) _issues.push('Labor over target');
+    if(y.dpct!=null && y.dpct>DEFAULT_TGTS.dp) _issues.push('D&C over target');
+    if(s.uber!=null && s.uber<DEFAULT_TGTS.uber) _issues.push('UberEats below '+DEFAULT_TGTS.uber.toFixed(1));
+    if(y.fpct!=null && y.fpct<=DEFAULT_TGTS.fp) _goods.push('Food Cost on target');
+    if(y.lpct!=null && y.lpct<=DEFAULT_TGTS.lp) _goods.push('Labor on target');
+    if(s.uber!=null && s.uber>=DEFAULT_TGTS.uber) _goods.push('UberEats '+s.uber.toFixed(1));
+    if(s.salesYoY!=null && s.salesYoY>=1.0) _goods.push('Sales growing');
+    var storeInitial = s.loc.charAt(0).toUpperCase();
+    var pillsHtml = _issues.map(function(t){return '<span class="pf-insight-pill bad">\u2717 '+t+'</span>';}).join('')
+                  + _goods.map(function(t){return '<span class="pf-insight-pill good">\u2713 '+t+'</span>';}).join('');
     html+=`<div class="pf-kpi-tgt-item">
       <div class="pf-kpi-tgt-store-hdr">
         <div class="pf-kpi-tgt-store-icon">${storeInitial}</div>
@@ -18774,6 +17363,93 @@ document.addEventListener('keydown', function(e){
     toggleDebugPanel();
   }
 });
+
+// ══════════════════════════════════════════════════
+//  ACTIVITY LOGGING (Supabase-backed)
+// ══════════════════════════════════════════════════
+var _actSessionId = null;
+var _actHeartbeatTimer = null;
+var _ACT_HEARTBEAT_SEC = 60;
+
+function _actStartSession(){
+  if(!_slUser || !_supa) return;
+  _actSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  var entry = {
+    id: _actSessionId,
+    user_id: _slUser.id,
+    user_name: _slDisplayName || (_slUser.email ? _slUser.email.split('@')[0] : 'Unknown'),
+    user_role: _slRole || 'unknown',
+    login_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
+  };
+  _supa.from('activity_logs').insert(entry).then(function(res){
+    if(res.error) console.warn('[Activity] insert error:', res.error.message);
+  }).catch(function(e){ console.warn('[Activity] insert failed:', e); });
+  if(_actHeartbeatTimer) clearInterval(_actHeartbeatTimer);
+  _actHeartbeatTimer = setInterval(_actHeartbeat, _ACT_HEARTBEAT_SEC * 1000);
+  document.addEventListener('visibilitychange', _actVisibility);
+}
+
+function _actHeartbeat(){
+  if(!_actSessionId || !_slUser || !_supa) return;
+  _supa.from('activity_logs')
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq('id', _actSessionId)
+    .then(function(){})
+    .catch(function(){});
+}
+
+function _actVisibility(){
+  if(document.visibilityState === 'visible') _actHeartbeat();
+}
+
+function _actEndSession(){
+  if(_actHeartbeatTimer){ clearInterval(_actHeartbeatTimer); _actHeartbeatTimer = null; }
+  document.removeEventListener('visibilitychange', _actVisibility);
+  _actHeartbeat();
+  _actSessionId = null;
+}
+
+async function renderActivityLogs(){
+  var wrap = document.getElementById('admin-activity-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">Loading activity logs...</div>';
+  try {
+    var res = await _supa.from('activity_logs').select('*').order('login_at', { ascending: false }).limit(200);
+    if(res.error) throw res.error;
+    var data = res.data;
+    if(!data || data.length === 0){
+      wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">No activity logs found.</div>';
+      return;
+    }
+    var rows = data.map(function(r){
+      var loginD = new Date(r.login_at);
+      var seenD = new Date(r.last_seen_at);
+      var dur = Math.round((seenD - loginD) / 60000);
+      var durStr = dur < 1 ? '<1 min' : dur + ' min';
+      var ago = Math.round((Date.now() - seenD) / 60000);
+      var agoStr = ago < 5 ? '<span style="color:#16a34a;font-weight:700;">Online now</span>' : ago < 60 ? ago + 'm ago' : ago < 1440 ? Math.floor(ago/60) + 'h ago' : Math.floor(ago/1440) + 'd ago';
+      return '<tr>' +
+        '<td style="padding:8px 12px;font-weight:600;">' + (r.user_name||'Unknown') + '</td>' +
+        '<td style="padding:8px 12px;">' + (r.user_role||'') + '</td>' +
+        '<td style="padding:8px 12px;">' + loginD.toLocaleDateString() + ' ' + loginD.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</td>' +
+        '<td style="padding:8px 12px;">' + agoStr + '</td>' +
+        '<td style="padding:8px 12px;">' + durStr + '</td>' +
+        '<td style="padding:8px 12px;">' + (r.device||'Desktop') + '</td>' +
+      '</tr>';
+    }).join('');
+    wrap.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<thead><tr style="background:#f8f7f4;border-bottom:2px solid #e8e2d8;text-align:left;">' +
+      '<th style="padding:10px 12px;">User</th><th style="padding:10px 12px;">Role</th>' +
+      '<th style="padding:10px 12px;">Login</th><th style="padding:10px 12px;">Last Seen</th>' +
+      '<th style="padding:10px 12px;">Duration</th><th style="padding:10px 12px;">Device</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>';
+  } catch(e){
+    console.error('[Activity] renderActivityLogs error:', e);
+    wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#b91c1c;">Failed to load activity logs: ' + (e.message||e) + '</div>';
+  }
+}
 
 // ══════════════════════════════════════════════════
 //  INIT
@@ -18803,48 +17479,6 @@ migrate();
   <div id="maint-modal-review" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
 </div>
 
-<!-- ═══ NEW DEAL STATUS PAGE ═══ -->
-<div id="pg-deals" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
-  <div class="deal-topbar">
-    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span class="deal-topbar-title">📍 NEW DEAL STATUS</span>
-    <div style="margin-left:auto;display:flex;gap:8px;padding:10px 0;">
-      <button class="deal-action-btn blue" onclick="dlOpenCreate()">+ New Deal</button>
-    </div>
-  </div>
-  <div id="deal-filters"></div>
-  <div id="deal-summary"></div>
-  <div style="padding:0 24px 40px;">
-    <div id="deal-cards-pane"></div>
-  </div>
-  <div id="deal-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
-</div>
-
-<!-- ═══ HR DASHBOARD PAGE ═══ -->
-<div id="pg-hr" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
-  <div class="hr-topbar">
-    <button onclick="hrGoBack()" id="hr-back-btn" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span class="hr-topbar-title" id="hr-topbar-label">👥 HR DASHBOARD</span>
-    <div style="margin-left:auto;display:flex;gap:8px;padding:10px 0;" id="hr-topbar-actions"></div>
-  </div>
-  <div id="hr-content"></div>
-  <div id="hr-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
-</div>
-
-<!-- ═══ MARKETING PAGE (Coming Soon) ═══ -->
-<div id="pg-marketing" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
-  <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid #e8e2d8;">
-    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e293b;letter-spacing:.08em;text-transform:uppercase;">📣 MARKETING</span>
-  </div>
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 24px;text-align:center;">
-    <div style="font-size:64px;margin-bottom:24px;">📣</div>
-    <div style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:#1e293b;letter-spacing:.04em;margin-bottom:8px;">Marketing Hub</div>
-    <div style="font-size:14px;color:#94a3b8;max-width:420px;line-height:1.7;margin-bottom:28px;">Campaign planning, social media scheduling, brand asset management, and performance analytics — all in one place.</div>
-    <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#1e3a5f;background:rgba(30,58,95,.10);border:1.5px solid rgba(30,58,95,.3);border-radius:99px;padding:8px 24px;text-transform:uppercase;">🔒 Coming Soon</span>
-  </div>
-</div>
-
 <!-- ═══ PORTFOLIO PAGE ═══ -->
 <div id="pg-portfolio" style="display:none;">
   <div class="pf-topbar">
@@ -18858,15 +17492,9 @@ migrate();
 <div id="pg-admin" style="display:none;">
   <div class="adm-hdr">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span class="adm-hdr-title">👥 ADMIN PANEL</span>
+    <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
   </div>
-  <!-- Admin Tabs -->
-  <div class="adm-tabs">
-    <button class="adm-tab-btn active" id="adm-tab-users" onclick="admSwitchTab('users')">User Management</button>
-    <button class="adm-tab-btn" id="adm-tab-activity" onclick="admSwitchTab('activity')">Activity Logs</button>
-  </div>
-  <!-- TAB 1: User Management -->
-  <div id="adm-panel-users" class="adm-layout">
+  <div class="adm-layout">
     <!-- Left: user list -->
     <div class="adm-user-list">
       <div class="adm-user-list-hdr">Users</div>
@@ -18899,15 +17527,11 @@ migrate();
               <div class="adm-perm-user-sub" id="adm-sel-sub"></div>
             </div>
           </div>
-          <!-- Full Name (admin-editable) -->
+          <!-- Full Name (admin editable) -->
           <div class="adm-perm-section-title">Full Name</div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <input type="text" id="adm-edit-fname" placeholder="First name"
-              style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .15s;"
-              onfocus="this.style.borderColor='#7f1d1d'" onblur="this.style.borderColor='#cbd5e1'" />
-            <input type="text" id="adm-edit-lname" placeholder="Last name"
-              style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .15s;"
-              onfocus="this.style.borderColor='#7f1d1d'" onblur="this.style.borderColor='#cbd5e1'" />
+          <div style="display:flex;gap:8px;padding:0 0 12px;">
+            <input type="text" id="adm-edit-fname" placeholder="First name" class="tgt-fi" style="flex:1;padding:7px 10px;font-size:12px;border-radius:6px;border:1px solid #d1d5db;">
+            <input type="text" id="adm-edit-lname" placeholder="Last name" class="tgt-fi" style="flex:1;padding:7px 10px;font-size:12px;border-radius:6px;border:1px solid #d1d5db;">
           </div>
           <!-- Location scope -->
           <div class="adm-perm-section-title">Location Access</div>
@@ -18928,11 +17552,10 @@ migrate();
         </div>
       </div>
     </div>
-  </div>
-  <!-- TAB 2: Activity Logs -->
-  <div id="adm-panel-activity" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
-    <div class="act-log-wrap" id="act-log-wrap">
-      <div class="adm-loading">Loading activity data…</div>
+    <!-- Activity Logs tab -->
+    <div style="margin-top:16px;padding:0 24px 24px;">
+      <button onclick="document.getElementById('admin-activity-wrap').style.display=document.getElementById('admin-activity-wrap').style.display==='none'?'block':'none';renderActivityLogs();" class="btn" style="font-size:11px;margin-bottom:8px;background:#f0f4f8;color:#1e3a5f;border:1px solid #c7d2e0;border-radius:6px;padding:7px 14px;cursor:pointer;">Activity Logs</button>
+      <div id="admin-activity-wrap" style="display:none;background:#fff;border:1px solid #e8e2d8;border-radius:10px;max-height:400px;overflow-y:auto;"></div>
     </div>
   </div>
 </div>
