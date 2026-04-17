@@ -3607,7 +3607,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       </div>
     </div>
     <div>
-      <div class="rc-lbl">City</div>
+      <div class="rc-lbl">State</div>
       <div class="yr-pills rc-pills" style="gap:8px;">
         <button class="yr-pill" id="rcc-FL" onclick="rcSetCity('FL')">🌴 Florida</button>
         <button class="yr-pill" id="rcc-NY" onclick="rcSetCity('NY')">🗽 New York</button>
@@ -3644,7 +3644,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   <div id="inv-pane-count" class="inv-pane">
     <div class="inv-selectors">
       <div class="inv-sel-group">
-        <label>City</label>
+        <label>State</label>
         <div class="yr-pills" style="gap:6px;">
           <button class="yr-pill on" id="inv-city-FL" onclick="invSetCity('FL')">🌴 Florida</button>
           <button class="yr-pill" id="inv-city-NY" onclick="invSetCity('NY')">🗽 New York</button>
@@ -3684,7 +3684,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
       <span style="font-size:13px;font-weight:700;color:var(--muted);">Filter:</span>
       <select id="inv-hist-city" class="rc-sel" onchange="invRenderHistory()" style="min-width:140px;">
-        <option value="">All Cities</option>
+        <option value="">All States</option>
         <option value="FL">🌴 Florida</option>
         <option value="NY">🗽 New York</option>
       </select>
@@ -4505,7 +4505,7 @@ let DB = {
 // ══════════════════════════════════════════════════
 //  MIGRATION — add new fields if missing
 // ══════════════════════════════════════════════════
-const STATES = { FL:'Florida', NY:'New York', ALL:'All Cities' };
+const STATES = { FL:'Florida', NY:'New York', ALL:'All States' };
 
 function migrate() {
   for (const yr of Object.keys(DB)) {
@@ -5904,7 +5904,7 @@ let _admCtx = { userId: null, displayName: null, role: null, state: null, scope:
 
 // Location scope options — maps to user_scopes.scope values
 const SCOPE_OPTIONS = [
-  { value: 'ALL', label: 'All Cities', icon: '🌎' },
+  { value: 'ALL', label: 'All States', icon: '🌎' },
   { value: 'FL',  label: 'Florida',    icon: '🌴' },
   { value: 'NY',  label: 'New York',   icon: '🗽' },
 ];
@@ -6087,7 +6087,7 @@ async function _adminSelectUser(userId, displayName, role, state){
     if(actBtn) actBtn.textContent = 'Show History';
     // Update sub-label with live scope value
     const subEl = document.getElementById('adm-sel-sub');
-    const scopeLabel = _admCtx.scope === 'ALL' ? 'All Cities' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
+    const scopeLabel = _admCtx.scope === 'ALL' ? 'All States' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
     const locSuffix  = _admCtx.locations.size > 0 ? ` · ${_admCtx.locations.size} store(s)` : '';
     if(subEl) subEl.textContent = `${role.charAt(0).toUpperCase()+role.slice(1)} · ${scopeLabel}${locSuffix}`;
   } catch(e){
@@ -6234,9 +6234,9 @@ function _renderAdmLocGrid(locs){
 
   const scope = _admCtx.scope || 'ALL';
 
-  // All Cities selected → no store restriction needed; hide checklist entirely.
+  // All States selected → no store restriction needed; hide checklist entirely.
   if(scope === 'ALL'){
-    container.innerHTML = '<div class="adm-loc-note">All Cities selected — this user has access to all stores within their permissions. No store-level restriction needed.</div>';
+    container.innerHTML = '<div class="adm-loc-note">All States selected — this user has access to all stores within their permissions. No store-level restriction needed.</div>';
     return;
   }
 
@@ -6376,7 +6376,7 @@ function renderNavRight(){
       <div class="yr-pills">
         <button class="yr-pill state-toggle ${S.state==='FL'?'on':''}" onclick="setState('FL')">🌴 Florida</button>
         <button class="yr-pill state-toggle ${S.state==='NY'?'on':''}" onclick="setState('NY')">🗽 New York</button>
-        <button class="yr-pill state-toggle ${S.state==='ALL'?'on':''}" onclick="setState('ALL')">🌎 All Cities</button>
+        <button class="yr-pill state-toggle ${S.state==='ALL'?'on':''}" onclick="setState('ALL')">🌎 All States</button>
       </div>
       <button class="btn ${S.cmpMode?'act':''}" onclick="toggleCmp()">⇄ Compare</button>`;
   } else if(S.page==='sales'){
@@ -8001,7 +8001,7 @@ function renderTable(){
     renderCmpTable(wrap,title);
     return;
   }
-  if(S.loc==='ALL'){title.textContent=`${S.state==='ALL'?'All Cities':STATES[S.state]} — Location Summary ${S.year}`;renderAllTable(wrap);return;}
+  if(S.loc==='ALL'){title.textContent=`${S.state==='ALL'?'All States':STATES[S.state]} — Location Summary ${S.year}`;renderAllTable(wrap);return;}
   title.textContent=S.loc+' · Monthly Detail '+S.year;
   renderLocTable(wrap);
 }
@@ -8245,7 +8245,7 @@ function renderAllTable(wrap){
   if(ls.length===0){
     wrap.innerHTML=`<div style="padding:60px 32px;text-align:center;">
       <div style="font-size:52px;margin-bottom:16px;">🏗</div>
-      <div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#212320;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">No locations yet — ${S.state==='ALL'?'All Cities':STATES[S.state]}</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#212320;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">No locations yet — ${S.state==='ALL'?'All States':STATES[S.state]}</div>
       <div style="font-size:13px;color:#64748b;margin-bottom:24px;">Use the <strong>+ Add / Edit Data</strong> button above to add your first ${S.state==='ALL'?'':STATES[S.state]+' '}location.</div>
     </div>`;
     return;
@@ -8524,7 +8524,7 @@ function onLocChange(){
 }
 function openDataModal(monthIdx){
   // State badge
-  document.getElementById('m-state-badge').textContent=S.state==='ALL'?'All Cities':STATES[S.state];
+  document.getElementById('m-state-badge').textContent=S.state==='ALL'?'All States':STATES[S.state];
   // Populate location select
   const ls=document.getElementById('m-loc');
   const existing=locs().map(l=>`<option value="${l}">${l}</option>`).join('');
@@ -13646,6 +13646,35 @@ function pxAggregateRecs(recs){
 }
 
 // ── Format helpers (P&L aware of negatives)
+function pnlSetStructView(mode){
+  window._pnlStructView = mode;
+  var tbl = document.querySelector('.pnl-tbl');
+  if(!tbl) return;
+  var rows = tbl.querySelectorAll('tbody tr');
+  var summaryBtn = document.getElementById('pnl-view-summary');
+  var fullBtn = document.getElementById('pnl-view-full');
+  // Toggle button styles
+  if(summaryBtn && fullBtn){
+    if(mode === 'summary'){
+      summaryBtn.style.cssText = 'padding:5px 14px;border-radius:8px;border:none;background:#1e3a5f;color:#fff;font-size:11px;font-weight:700;cursor:pointer;';
+      fullBtn.style.cssText = 'padding:5px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#64748b;';
+    } else {
+      fullBtn.style.cssText = 'padding:5px 14px;border-radius:8px;border:none;background:#1e3a5f;color:#fff;font-size:11px;font-weight:700;cursor:pointer;';
+      summaryBtn.style.cssText = 'padding:5px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#64748b;';
+    }
+  }
+  // Show/hide rows
+  rows.forEach(function(row){
+    var tp = row.getAttribute('data-pnl-type');
+    if(mode === 'summary'){
+      // Show: section, group, subtotal, total, highlight. Hide: item, subitem
+      row.style.display = (tp === 'item' || tp === 'subitem') ? 'none' : '';
+    } else {
+      row.style.display = '';
+    }
+  });
+}
+
 function fmtPnL(v){
   if(v==null) return '—';
   const a=Math.round(Math.abs(v)).toLocaleString('en-US');
@@ -14596,10 +14625,10 @@ function renderPnLDashboard(rec, locRecs){
           ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
 
         if(isHeader){
-          return `<tr><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
+          return `<tr data-pnl-type="section"><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
         }
         const cellBase = `${bg}${font}${bord}padding:8px 20px;`;
-        return `<tr>
+        return `<tr data-pnl-type="${tp}">
           <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
@@ -15088,6 +15117,10 @@ function renderPnLDashboard(rec, locRecs){
     ${pnlKpiPanelHTML}
     ${whatifPanel}`;
 
+  // ── P&L structure view toggle (Summary = key rows only, Full Detail = all rows)
+  // Default to full — persisted in window._pnlStructView
+  if(!window._pnlStructView) window._pnlStructView = 'full';
+
   // ── Full Detail view: compact KPI strip, anomalies, then the full structured P&L table
   const compactKpiStrip = `
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
@@ -15116,7 +15149,13 @@ function renderPnLDashboard(rec, locRecs){
   const detailView = `
     ${compactKpiStrip}
     ${anomalyPanelHTML}
-    <div class="pnl-detail-section-lbl">📋 Full P&L Structure</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="pnl-detail-section-lbl" style="margin-bottom:0;">📋 Full P&L Structure</div>
+      <div style="display:flex;gap:6px;">
+        <button id="pnl-view-summary" onclick="pnlSetStructView('summary')" style="padding:5px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#64748b;">Summary</button>
+        <button id="pnl-view-full" onclick="pnlSetStructView('full')" style="padding:5px 14px;border-radius:8px;border:none;background:#1e3a5f;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Full Detail</button>
+      </div>
+    </div>
     ${tableHTML}`;
 
   el.innerHTML=`
@@ -15125,6 +15164,9 @@ function renderPnLDashboard(rec, locRecs){
     <div class="main">
       ${isDetail ? detailView : summaryView}
     </div>`;
+
+  // Apply P&L structure view mode after render
+  if(isDetail) setTimeout(function(){ pnlSetStructView(window._pnlStructView || 'full'); }, 50);
 
   // Init all charts after DOM — only needed in Summary view (charts don't exist in Detail DOM)
   if(typeof Chart!=='undefined' && !isDetail){
@@ -17484,7 +17526,7 @@ function _nsSave(){
 function renderNSFilters(){
   var h = '';
   h += '<select class="ns-filter-sel" onchange="NS.filterCity=this.value;renderNSList();">';
-  h += '<option value="ALL"'+(NS.filterCity==='ALL'?' selected':'')+'>All Cities</option>';
+  h += '<option value="ALL"'+(NS.filterCity==='ALL'?' selected':'')+'>All States</option>';
   h += '<option value="Florida"'+(NS.filterCity==='Florida'?' selected':'')+'>Florida</option>';
   h += '<option value="New York"'+(NS.filterCity==='New York'?' selected':'')+'>New York</option>';
   h += '</select>';
@@ -17592,7 +17634,7 @@ function _nsShowDetail(d){
   // Row 1: Store Name + City
   h += '<div class="ns-detail-row">';
   h += '<div style="flex:2;"><label>Store Name</label><input id="ns-f-name" value="'+_nsEsc(d.name)+'" placeholder="e.g. Sawgrass Mills"></div>';
-  h += '<div style="flex:1;"><label>City</label><select id="ns-f-city"><option value="Florida"'+(d.city==='Florida'?' selected':'')+'>Florida</option><option value="New York"'+(d.city==='New York'?' selected':'')+'>New York</option></select></div>';
+  h += '<div style="flex:1;"><label>State</label><select id="ns-f-city"><option value="Florida"'+(d.city==='Florida'?' selected':'')+'>Florida</option><option value="New York"'+(d.city==='New York'?' selected':'')+'>New York</option></select></div>';
   h += '</div>';
 
   // Row 2: Status + Progress + Holding
@@ -17995,7 +18037,7 @@ function goAssess(){
 
 function eaBuildFilters(){
   var cityEl = document.getElementById('ea-flt-city');
-  var h = '<option value="ALL">All Cities</option>';
+  var h = '<option value="ALL">All States</option>';
   Object.keys(LOC_MAP).forEach(function(c){
     var stores = LOC_MAP[c] || [];
     if(stores.some(function(s){ return _isLocAllowed(s); })){
@@ -18012,9 +18054,9 @@ function eaBuildFilters(){
   var mh = '<option value="ALL">All Months</option>';
   Object.keys(months).sort().reverse().forEach(function(m){ mh += '<option value="'+m+'">'+m+'</option>'; });
   mEl.innerHTML = mh;
-  // Only admin can create new
+  // Anyone with assess permission can create new
   var btnNew = document.getElementById('ea-btn-new');
-  if(btnNew) btnNew.style.display = _slRole === 'admin' ? '' : 'none';
+  if(btnNew) btnNew.style.display = '';
 }
 
 function eaUpdateStoreFilter(){
@@ -18085,7 +18127,7 @@ function eaRenderList(){
     h += '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter||'')+'</div>';
     h += '<div style="font-size:11px;color:#94a3b8;">Auditor: '+_eaEsc(a.auditor)+' &middot; Rating: <strong style="color:'+color+';">'+ratingLabel+'</strong></div>';
     if(a.status === 'completed' && a.completed_by) h += '<div style="font-size:10px;color:#16a34a;margin-top:2px;">\u2705 Completed by '+_eaEsc(a.completed_by)+' on '+_eaEsc(a.completed_at ? a.completed_at.split("T")[0] : "")+'</div>';
-    if(_slRole === 'admin'){
+    {
       h += '<div style="margin-top:8px;display:flex;gap:6px;">';
       if((a.status||'in_progress') === 'in_progress'){
         h += '<button onclick="event.stopPropagation();eaMarkComplete(\''+a.id+'\')" style="padding:4px 12px;border-radius:6px;border:none;background:#16a34a;color:#fff;font-size:10px;font-weight:700;cursor:pointer;">\u2713 Mark Completed</button>';
@@ -18100,7 +18142,6 @@ function eaRenderList(){
 }
 
 function eaStartNew(){
-  if(_slRole !== 'admin') return;
   var m = document.createElement('div');
   m.id = 'ea-new-modal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1001;';
@@ -18109,8 +18150,8 @@ function eaStartNew(){
   var inpS = 'width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;';
   var h = '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:460px;">';
   h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">New Excellence Assessment</div>';
-  // City
-  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">City *</label><select id="ea-new-city" onchange="eaNewCityChanged()" style="'+inpS+'">';
+  // State
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">State *</label><select id="ea-new-city" onchange="eaNewCityChanged()" style="'+inpS+'">';
   Object.keys(LOC_MAP).forEach(function(c){
     var label = c === 'FL' ? 'Florida' : c === 'NY' ? 'New York' : c;
     h += '<option value="'+c+'">'+label+'</option>';
@@ -18216,7 +18257,7 @@ function eaRenderFormTopbar(){
   h += '<span style="font-size:11px;color:#64748b;padding:0 8px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter)+' &middot; Auditor: '+_eaEsc(a.auditor)+'</span>';
   h += '<div style="flex:1;"></div>';
   h += '<button onclick="eaAutoSave();eaRenderFormSummary();" style="padding:6px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#1e3a5f;">Recalculate</button>';
-  if(_slRole === 'admin' && (a.status||'in_progress') === 'in_progress'){
+  if((a.status||'in_progress') === 'in_progress'){
     h += '<button onclick="eaMarkComplete(\''+a.id+'\')" style="padding:6px 16px;border-radius:8px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px;">\u2713 Mark Completed</button>';
   }
   if(a.status === 'completed') h += '<span style="padding:6px 16px;border-radius:8px;background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;margin-left:8px;">\u2705 Completed</span>';
@@ -18225,7 +18266,7 @@ function eaRenderFormTopbar(){
 
 function eaRenderFormSections(){
   var a = _eaCurrent;
-  var isAdmin = _slRole === 'admin' && (a.status||'in_progress') === 'in_progress';
+  var isAdmin = (a.status||'in_progress') === 'in_progress';
   var h = '';
   _EA_SECTIONS.forEach(function(sec, si){
     var secScore = eaCalcSection(si);
@@ -18977,7 +19018,7 @@ function hrSetTab(btn, tab){
   hrRenderList();
 }
 
-// Build city-grouped store <option> or <optgroup> HTML from user permissions
+// Build state-grouped store <option> or <optgroup> HTML from user permissions
 // cityLabels maps LOC_MAP keys to display names
 // ══════════════════════════════════════════════════
 //  GLOBAL CUSTOM CONFIRM MODAL
@@ -19054,7 +19095,7 @@ function _hrStoreOptions(includeAll){
 }
 
 function _hrCityOptions(){
-  var h = '<option value="ALL">All Cities</option>';
+  var h = '<option value="ALL">All States</option>';
   var cityOrder = Object.keys(LOC_MAP);
   cityOrder.forEach(function(city){
     var cityStores = LOC_MAP[city] || [];
@@ -19081,7 +19122,7 @@ function hrRenderFilters(){
   var selStyle = 'padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;';
   var h = '';
   if(HR.tab === 'completed' || HR.tab === 'cancelled'){
-    // City filter
+    // State filter
     h += '<select id="hr-filter-city" onchange="hrCityChanged()" style="'+selStyle+'">';
     h += _hrCityOptions();
     h += '</select>';
@@ -19140,7 +19181,7 @@ function hrRenderList(){
   var storeFilter = document.getElementById('hr-filter-store');
   var sf = storeFilter ? storeFilter.value : 'ALL';
 
-  // City filter for completed tab
+  // State filter for completed tab
   var cityEl = document.getElementById('hr-filter-city');
   var cityVal = cityEl ? cityEl.value : 'ALL';
   var cityStores = cityVal !== 'ALL' ? _hrStoresForCity(cityVal) : null;
@@ -19486,7 +19527,7 @@ migrate();
     <!-- Filter bar -->
     <div style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">
       <select id="ea-flt-city" onchange="eaCityChanged()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
-        <option value="ALL">All Cities</option>
+        <option value="ALL">All States</option>
       </select>
       <select id="ea-flt-store" onchange="eaRenderList()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
         <option value="ALL">All Stores</option>
