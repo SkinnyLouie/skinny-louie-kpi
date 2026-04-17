@@ -3042,6 +3042,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <div style="height:3px;background:linear-gradient(90deg,#9b292c 0%,#c94548 40%,#e2d5b8 100%);"></div>
@@ -3229,6 +3231,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
         <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5a3a7e;background:rgba(90,58,126,.12);border:1.5px solid rgba(90,58,126,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
       </div>
+    </div>
+    <div id="hcard-stores" class="hcard c1" onclick="goStores()" style="cursor:pointer;">
+      <span class="hcard-icon">🗺️</span>
+      <div class="hcard-title">Skinny Louie Stores</div>
+      <div class="hcard-desc">Live visual map of all current and future Skinny Louie locations. Track expansion across Florida and New York with real-time status pins.</div>
+      <div class="hcard-tag">Expansion Map</div>
     </div>
     <div id="hcard-portfolio" class="hcard c1" onclick="goPortfolio()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">🏪</span>
@@ -4034,7 +4042,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -4186,6 +4194,7 @@ function _applyPermissionsUI(){
     newstores:   'hcard-newstores',
     hr:          'hcard-hr',
     marketing:   'hcard-marketing',
+    stores:      'hcard-stores',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -5857,6 +5866,7 @@ const _ADM_MODULES = [
   { id:'newstores',   label:'New Stores Status',  icon:'🏗', desc:'Pipeline tracker for new store deals' },
   { id:'hr',           label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
   { id:'marketing',    label:'Marketing',          icon:'📣', desc:'Campaigns, content & brand initiatives' },
+  { id:'stores',        label:'Skinny Louie Stores', icon:'🗺️', desc:'Expansion map & location tracker' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6288,7 +6298,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -17925,6 +17935,299 @@ async function _admLoadUserActivity(){
 }
 
 
+
+// ══════════════════════════════════════════════════
+//  SKINNY LOUIE STORES MODULE
+// ══════════════════════════════════════════════════
+var _stMapFL = null, _stMapNY = null;
+var _stLayerFL = null, _stLayerNY = null;
+var _ST_COLORS = { 'Open': '#16a34a', 'Under Construction': '#ca8a04', 'Listed': '#dc2626' };
+var _ST_KEY = 'sl_louie_stores_v1';
+
+function _stLoad(){ try{ return JSON.parse(localStorage.getItem(_ST_KEY)) || []; }catch(e){ return []; } }
+function _stSave(arr){ localStorage.setItem(_ST_KEY, JSON.stringify(arr)); }
+function _stId(){ return 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+
+function goStores(){
+  if(!_hasPermission('stores')){ _showAccessDenied('Skinny Louie Stores'); return; }
+  S.page='stores';
+  document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
+  document.getElementById('pg-stores').style.display='';
+  // Show add button for admin only
+  var btnWrap = document.getElementById('stores-admin-btn-wrap');
+  if(btnWrap){
+    btnWrap.innerHTML = _slRole === 'admin'
+      ? '<button onclick="storesOpenAdd()" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:Oswald,sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;box-shadow:0 2px 8px rgba(30,58,95,.3);">+ Add Store</button>'
+      : '';
+  }
+  // Init maps if not yet done
+  setTimeout(function(){ _stInitMaps(); storesRender(); }, 100);
+}
+
+function _stInitMaps(){
+  if(typeof L === 'undefined') return;
+  if(!_stMapFL){
+    _stMapFL = L.map('stores-map-fl',{scrollWheelZoom:true,zoomControl:true}).setView([26.05,-80.35],9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap',maxZoom:18
+    }).addTo(_stMapFL);
+    _stLayerFL = L.layerGroup().addTo(_stMapFL);
+  } else { _stMapFL.invalidateSize(); }
+  if(!_stMapNY){
+    _stMapNY = L.map('stores-map-ny',{scrollWheelZoom:true,zoomControl:true}).setView([40.74,-73.99],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap',maxZoom:18
+    }).addTo(_stMapNY);
+    _stLayerNY = L.layerGroup().addTo(_stMapNY);
+  } else { _stMapNY.invalidateSize(); }
+}
+
+function _stPinIcon(status){
+  var color = _ST_COLORS[status] || '#64748b';
+  return L.divIcon({
+    className:'',
+    html:'<svg width="28" height="38" viewBox="0 0 28 38" xmlns="http://www.w3.org/2000/svg">'
+      +'<path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z" fill="'+color+'" stroke="#fff" stroke-width="1.5"/>'
+      +'<circle cx="14" cy="13" r="5.5" fill="#fff" opacity=".9"/>'
+      +'<circle cx="14" cy="13" r="3" fill="'+color+'"/>'
+      +'</svg>',
+    iconSize:[28,38],
+    iconAnchor:[14,38],
+    popupAnchor:[0,-38]
+  });
+}
+
+function storesRender(){
+  if(!_stMapFL || !_stMapNY) return;
+  _stLayerFL.clearLayers();
+  _stLayerNY.clearLayers();
+  var all = _stLoad();
+  var statusF = document.getElementById('stores-filter-status');
+  var stateF = document.getElementById('stores-filter-state');
+  var sf = statusF ? statusF.value : 'ALL';
+  var mf = stateF ? stateF.value : 'ALL';
+  // Show/hide map panels
+  var flWrap = document.getElementById('stores-map-fl-wrap');
+  var nyWrap = document.getElementById('stores-map-ny-wrap');
+  if(flWrap) flWrap.style.display = (mf==='NY') ? 'none' : '';
+  if(nyWrap) nyWrap.style.display = (mf==='FL') ? 'none' : '';
+  // Invalidate after show/hide
+  setTimeout(function(){
+    if(mf!=='NY' && _stMapFL) _stMapFL.invalidateSize();
+    if(mf!=='FL' && _stMapNY) _stMapNY.invalidateSize();
+  },50);
+  var flCount=0, nyCount=0;
+  var listItems = [];
+  all.forEach(function(s){
+    if(sf !== 'ALL' && s.status !== sf) return;
+    if(mf !== 'ALL' && s.state !== mf) return;
+    if(!s.lat || !s.lng) return;
+    var color = _ST_COLORS[s.status] || '#64748b';
+    var popup = '<div style="min-width:200px;font-family:system-ui;">';
+    popup += '<div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:4px;">'+_stEsc(s.store_name)+'</div>';
+    popup += '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">'+_stEsc(s.address)+'</div>';
+    popup += '<div style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;color:#fff;background:'+color+';margin-bottom:6px;">'+_stEsc(s.status)+'</div>';
+    if(s.notes) popup += '<div style="font-size:11px;color:#64748b;margin-bottom:4px;"><strong>Notes:</strong> '+_stEsc(s.notes)+'</div>';
+    if(s.target_open_date) popup += '<div style="font-size:11px;color:#64748b;margin-bottom:4px;"><strong>Target:</strong> '+_stEsc(s.target_open_date)+'</div>';
+    if(_slRole==='admin'){
+      popup += '<div style="margin-top:8px;display:flex;gap:6px;">';
+      popup += '<button onclick="storesOpenEdit(\''+s.id+'\')" style="padding:4px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:10px;font-weight:700;cursor:pointer;color:#1e3a5f;">Edit</button>';
+      popup += '<button onclick="storesDeletePin(\''+s.id+'\')" style="padding:4px 12px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:10px;font-weight:700;cursor:pointer;">Delete</button>';
+      popup += '</div>';
+    }
+    popup += '</div>';
+    var marker = L.marker([s.lat, s.lng], {icon: _stPinIcon(s.status)}).bindPopup(popup);
+    if(s.state === 'FL'){ marker.addTo(_stLayerFL); flCount++; }
+    else if(s.state === 'NY'){ marker.addTo(_stLayerNY); nyCount++; }
+    listItems.push(s);
+  });
+  // Update counts
+  var flEl = document.getElementById('stores-fl-count');
+  var nyEl = document.getElementById('stores-ny-count');
+  if(flEl) flEl.textContent = '('+flCount+' location'+(flCount!==1?'s':'')+')';
+  if(nyEl) nyEl.textContent = '('+nyCount+' location'+(nyCount!==1?'s':'')+')';
+  // Render list below maps
+  _stRenderList(listItems);
+}
+
+function _stRenderList(items){
+  var wrap = document.getElementById('stores-list-wrap');
+  if(!wrap) return;
+  if(items.length === 0){ wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;">No store locations match the current filters.</div>'; return; }
+  var h = '<div style="font-family:Oswald,sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px;letter-spacing:.04em;">ALL LOCATIONS ('+items.length+')</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;">';
+  items.forEach(function(s){
+    var color = _ST_COLORS[s.status] || '#64748b';
+    var stateLabel = s.state === 'FL' ? 'Florida' : s.state === 'NY' ? 'New York' : s.state;
+    h += '<div style="background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:16px;border-left:4px solid '+color+';">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+    h += '<div style="font-family:Oswald,sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;">'+_stEsc(s.store_name)+'</div>';
+    h += '<span style="padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;color:#fff;background:'+color+';">'+_stEsc(s.status)+'</span>';
+    h += '</div>';
+    h += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">'+_stEsc(s.address)+'</div>';
+    h += '<div style="font-size:11px;color:#94a3b8;">'+stateLabel;
+    if(s.target_open_date) h += ' &middot; Target: '+_stEsc(s.target_open_date);
+    h += '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  wrap.innerHTML = h;
+}
+
+function _stEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') : ''; }
+
+function storesOpenAdd(){
+  if(_slRole !== 'admin') return;
+  _stShowModal(null);
+}
+
+function storesOpenEdit(id){
+  if(_slRole !== 'admin') return;
+  var all = _stLoad();
+  var store = all.find(function(s){ return s.id === id; });
+  if(!store){ alert('Store not found.'); return; }
+  _stShowModal(store);
+}
+
+function _stShowModal(store){
+  var isEdit = !!store;
+  var modal = document.getElementById('stores-modal');
+  var h = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1001;" onclick="if(event.target===this)storesCloseModal();">';
+  h += '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:500px;max-height:85vh;overflow-y:auto;">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;">'+(isEdit?'Edit Store':'Add New Store')+'</div>';
+  h += '<button onclick="storesCloseModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">\u2715</button>';
+  h += '</div>';
+  var lblS = 'font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;';
+  var inpS = 'width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;';
+  // Store Name
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Store Name *</label>';
+  h += '<input id="st-f-name" value="'+_stEsc(store?store.store_name:'')+'" placeholder="e.g. Wynwood" style="'+inpS+'"></div>';
+  // Address
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Address *</label>';
+  h += '<input id="st-f-address" value="'+_stEsc(store?store.address:'')+'" placeholder="e.g. 123 NW 24th St, Miami, FL 33127" style="'+inpS+'"></div>';
+  // State
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">State / Market *</label>';
+  h += '<select id="st-f-state" style="'+inpS+'">';
+  h += '<option value="FL"'+(store&&store.state==='FL'?' selected':'')+'>Florida</option>';
+  h += '<option value="NY"'+(store&&store.state==='NY'?' selected':'')+'>New York</option>';
+  h += '</select></div>';
+  // Status
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Status *</label>';
+  h += '<select id="st-f-status" style="'+inpS+'">';
+  ['Open','Under Construction','Listed'].forEach(function(st){
+    h += '<option value="'+st+'"'+(store&&store.status===st?' selected':'')+'>'+st+'</option>';
+  });
+  h += '</select></div>';
+  // Notes
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Notes <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>';
+  h += '<textarea id="st-f-notes" rows="2" placeholder="Corner unit, patio seating..." style="'+inpS+'resize:vertical;">'+(store?_stEsc(store.notes||''):'')+'</textarea></div>';
+  // Target date
+  h += '<div style="margin-bottom:20px;"><label style="'+lblS+'">Target Opening Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>';
+  h += '<input id="st-f-date" type="date" value="'+(store?store.target_open_date||'':'')+'" style="'+inpS+'"></div>';
+  // Geocoding status
+  h += '<div id="st-geocode-status" style="display:none;padding:10px;border-radius:8px;margin-bottom:14px;font-size:12px;"></div>';
+  // Buttons
+  h += '<div style="display:flex;gap:10px;justify-content:flex-end;">';
+  h += '<button onclick="storesCloseModal()" style="padding:10px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>';
+  h += '<button id="st-btn-save" onclick="storesSave('+(isEdit?"'"+store.id+"'":"null")+')" style="padding:10px 24px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(30,58,95,.3);">'+(isEdit?'Save Changes':'Add Store')+'</button>';
+  h += '</div></div></div>';
+  modal.innerHTML = h;
+  modal.style.display = 'block';
+}
+
+function storesCloseModal(){
+  var modal = document.getElementById('stores-modal');
+  modal.innerHTML = '';
+  modal.style.display = 'none';
+}
+
+async function storesSave(editId){
+  var name = document.getElementById('st-f-name').value.trim();
+  var address = document.getElementById('st-f-address').value.trim();
+  var state = document.getElementById('st-f-state').value;
+  var status = document.getElementById('st-f-status').value;
+  var notes = document.getElementById('st-f-notes').value.trim();
+  var targetDate = document.getElementById('st-f-date').value;
+  if(!name || !address){ alert('Store Name and Address are required.'); return; }
+  // Show geocoding status
+  var geoEl = document.getElementById('st-geocode-status');
+  geoEl.style.display = 'block';
+  geoEl.style.background = '#f0f9ff';
+  geoEl.style.color = '#1e3a5f';
+  geoEl.textContent = 'Locating address on map...';
+  var saveBtn = document.getElementById('st-btn-save');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Geocoding...'; }
+  try {
+    var coords = await _stGeocode(address);
+    if(!coords){
+      geoEl.style.background = '#fef2f2';
+      geoEl.style.color = '#dc2626';
+      geoEl.textContent = 'Could not find this address on the map. Please check the address and try again.';
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = editId ? 'Save Changes' : 'Add Store'; }
+      return;
+    }
+    var all = _stLoad();
+    if(editId){
+      for(var i=0;i<all.length;i++){
+        if(all[i].id === editId){
+          all[i].store_name = name;
+          all[i].address = address;
+          all[i].state = state;
+          all[i].status = status;
+          all[i].lat = coords.lat;
+          all[i].lng = coords.lng;
+          all[i].notes = notes;
+          all[i].target_open_date = targetDate;
+          all[i].updated_at = new Date().toISOString();
+          break;
+        }
+      }
+    } else {
+      all.push({
+        id: _stId(),
+        store_name: name,
+        address: address,
+        state: state,
+        status: status,
+        lat: coords.lat,
+        lng: coords.lng,
+        notes: notes,
+        target_open_date: targetDate,
+        created_by: _slDisplayName || 'Admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+    _stSave(all);
+    storesCloseModal();
+    storesRender();
+  } catch(e){
+    geoEl.style.background = '#fef2f2';
+    geoEl.style.color = '#dc2626';
+    geoEl.textContent = 'Geocoding error: ' + (e.message || e);
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = editId ? 'Save Changes' : 'Add Store'; }
+  }
+}
+
+async function _stGeocode(address){
+  var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address);
+  var resp = await fetch(url);
+  if(!resp.ok) throw new Error('Geocoding service returned ' + resp.status);
+  var data = await resp.json();
+  if(!data || data.length === 0) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+function storesDeletePin(id){
+  if(_slRole !== 'admin') return;
+  if(!confirm('Remove this store location?')) return;
+  var all = _stLoad();
+  all = all.filter(function(s){ return s.id !== id; });
+  _stSave(all);
+  storesRender();
+}
+
 // ══════════════════════════════════════════════════
 //  EVENT CALCULATOR MODULE
 // ══════════════════════════════════════════════════
@@ -18451,6 +18754,53 @@ migrate();
 </div>
 
 
+
+
+<!-- ═══ SKINNY LOUIE STORES PAGE ═══ -->
+<div id="pg-stores" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;">🗺️ SKINNY LOUIE STORES</span>
+  </div>
+  <!-- Filter bar -->
+  <div id="stores-filter-bar" style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">
+    <select id="stores-filter-status" onchange="storesRender()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
+      <option value="ALL">All Statuses</option>
+      <option value="Open">Open</option>
+      <option value="Under Construction">Under Construction</option>
+      <option value="Listed">Listed</option>
+    </select>
+    <select id="stores-filter-state" onchange="storesRender()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
+      <option value="ALL">All Markets</option>
+      <option value="FL">Florida</option>
+      <option value="NY">New York</option>
+    </select>
+    <div style="flex:1;"></div>
+    <div id="stores-admin-btn-wrap"></div>
+  </div>
+  <!-- Legend -->
+  <div style="display:flex;align-items:center;gap:18px;padding:10px 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <span style="font-size:11px;font-weight:700;color:#64748b;">PIN LEGEND:</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b;"><span style="width:12px;height:12px;border-radius:50%;background:#16a34a;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px #16a34a;"></span> Open</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b;"><span style="width:12px;height:12px;border-radius:50%;background:#ca8a04;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px #ca8a04;"></span> Under Construction</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b;"><span style="width:12px;height:12px;border-radius:50%;background:#dc2626;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626;"></span> Listed</span>
+  </div>
+  <!-- Maps container -->
+  <div id="stores-maps-wrap" style="display:flex;gap:0;flex:1;">
+    <div id="stores-map-fl-wrap" style="flex:1;min-width:0;border-right:1px solid #e8e2d8;">
+      <div style="padding:10px 20px;background:#fff;border-bottom:1px solid #e8e2d8;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:#1e3a5f;letter-spacing:.06em;">☀️ FLORIDA <span id="stores-fl-count" style="font-weight:400;color:#94a3b8;font-family:system-ui;font-size:11px;"></span></div>
+      <div id="stores-map-fl" style="height:520px;background:#e8e2d8;"></div>
+    </div>
+    <div id="stores-map-ny-wrap" style="flex:1;min-width:0;">
+      <div style="padding:10px 20px;background:#fff;border-bottom:1px solid #e8e2d8;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:#1e3a5f;letter-spacing:.06em;">🏙️ NEW YORK <span id="stores-ny-count" style="font-weight:400;color:#94a3b8;font-family:system-ui;font-size:11px;"></span></div>
+      <div id="stores-map-ny" style="height:520px;background:#e8e2d8;"></div>
+    </div>
+  </div>
+  <!-- Store list below maps -->
+  <div id="stores-list-wrap" style="padding:20px 24px;"></div>
+  <!-- Add/Edit modal placeholder -->
+  <div id="stores-modal" style="display:none;"></div>
+</div>
 
 <!-- ═══ EVENT CALCULATOR PAGE ═══ -->
 <div id="pg-events" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
