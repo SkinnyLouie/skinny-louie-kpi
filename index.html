@@ -6033,13 +6033,24 @@ async function _adminSavePerms(){
     var lname = (document.getElementById('adm-edit-lname')?.value || '').trim();
     var fullName = (fname + ' ' + lname).trim();
     if(fullName){
-      var { error: nameErr } = await _supa.from('profiles').update({ name: fullName }).eq('id', _admCtx.userId);
-      if(nameErr) console.warn('[Admin] name update error:', nameErr.message);
+      var nameRes = await _supa.from('profiles').update({ name: fullName }).eq('id', _admCtx.userId).select();
+      if(nameRes.error){
+        console.warn('[Admin] name update error:', nameRes.error.message);
+        _admSetActionMsg('Permissions saved but name failed: ' + nameRes.error.message, 'err');
+        return;
+      }
+      if(!nameRes.data || nameRes.data.length === 0){
+        console.warn('[Admin] name update: 0 rows affected - check RLS policies on profiles table');
+        _admSetActionMsg('Permissions saved but name did not update - run the RLS policy SQL', 'err');
+        return;
+      }
     }
-    console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
+    console.log('[Admin] Saved for', (fullName || _admCtx.displayName), '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
     _admSetActionMsg('Saved for ' + (fullName || _admCtx.displayName), 'ok');
     // Refresh user list to show updated name
-    renderAdminPage().then(function(){ _adminSelectUser(_admCtx.userId, fullName || _admCtx.displayName, _admCtx.role, _admCtx.state); });
+    var savedId = _admCtx.userId, savedRole = _admCtx.role, savedState = _admCtx.state;
+    await renderAdminPage();
+    _adminSelectUser(savedId, fullName || _admCtx.displayName, savedRole, savedState);
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
     _admSetActionMsg('Save failed: ' + (e.message||e), 'err');
