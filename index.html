@@ -3100,9 +3100,21 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
 .pf-cell-crown{font-size:8px;font-weight:900;color:#166534;margin-left:2px;vertical-align:super;}
 .pf-cell-nadir {font-size:8px;font-weight:900;color:#991b1b;margin-left:2px;vertical-align:super;}
 .pf-tr-hover:hover td{background:#faf5ef !important;}
-.pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:32px;}
-.pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:14px 16px;}
-.pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;}
+.pf-kpi-tgt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:32px;}
+.pf-kpi-tgt-item{background:#fff;border:1.5px solid #e8e2d8;border-radius:14px;padding:0;overflow:hidden;transition:box-shadow .15s;}
+.pf-kpi-tgt-item:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
+.pf-kpi-tgt-store-hdr{background:linear-gradient(135deg,#1e3a5f 0%,#2d4a6f 100%);padding:14px 16px 12px;display:flex;align-items:center;gap:10px;}
+.pf-kpi-tgt-store-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;}
+.pf-kpi-tgt-store{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#fff;letter-spacing:.03em;}
+.pf-kpi-tgt-body{padding:12px 16px 14px;}
+.pf-insight-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.pf-insight-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
+.pf-insight-pill.red{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.pf-insight-pill.green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
+.pf-insight-pill.amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
+.pf-insight-pill.blue{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;}
+.pf-insight-pill.trophy{background:linear-gradient(135deg,#fef9c3,#fef3c7);color:#854d0e;border:1px solid #fcd34d;font-size:11px;}
+.pf-insight-pill.warn{background:linear-gradient(135deg,#fff1f2,#fee2e2);color:#991b1b;border:1px solid #fca5a5;font-size:11px;}
 .pf-kpi-tgt-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;}
 .pf-kpi-tgt-label{color:#64748b;}
 .pf-kpi-tgt-val{font-weight:700;font-size:13px;}
@@ -3299,7 +3311,6 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
       <div class="hcard-title">P&amp;L Dashboard</div>
       <div class="hcard-desc">Profit &amp; loss review by location. Upload your P&amp;L reports to track margins and profitability.</div>
       <div class="hcard-tag">Import Data</div>
-      <span id="pnl-anomaly-badge" style="display:none;position:absolute;top:12px;right:12px;background:#dc2626;color:white;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;letter-spacing:.02em;"></span>
       <div id="pnl-lock-overlay" style="display:none;position:absolute;inset:0;border-radius:inherit;background:rgba(15,15,15,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:16px;">
         <span style="font-size:28px;">🔒</span>
         <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.05em;text-transform:uppercase;">Restricted Access</span>
@@ -3324,7 +3335,6 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
       <div class="hcard-title">New Deal Status</div>
       <div class="hcard-desc">Track real estate expansion pipeline. View LOIs, leases, and deal progress with broker info and map previews.</div>
       <div class="hcard-tag">Active · Pipeline Tracker</div>
-      <span id="deals-active-badge" style="display:none;position:absolute;top:12px;right:12px;background:#2563eb;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;align-items:center;justify-content:center;min-width:22px;"></span>
     </div>
     <div id="hcard-hr" class="hcard c3" onclick="goHR()" style="position:relative;cursor:pointer;">
       <span class="hcard-icon">👥</span>
@@ -3441,11 +3451,10 @@ tr.pnl-detail-row.pnl-collapsed { display:none !important; }
             <div class="leg-item"><div class="leg-dot" style="background:var(--y-bg);border:1px solid #fde047"></div>Watch</div>
             <div class="leg-item"><div class="leg-dot" style="background:var(--r-bg);border:1px solid #fca5a5"></div>Over Target</div>
           </div>
-          <button class="btn btn-orange edit-only" onclick="openDataModal()">+ Add / Edit Data</button>
-          <button class="btn-tgt edit-only" onclick="openTargetsModal()" id="btn-tgts" title="Set monthly KPI targets for the selected store">🎯 Set Targets</button>
-          <button class="btn-tgt edit-only" onclick="openReportModal()" id="btn-rpt" title="Generate monthly PDF report" style="border-color:#1e3a5f;color:#1e3a5f;">📄 Monthly Report</button>
-          <button class="btn-tgt edit-only" id="btn-leaderboard" onclick="toggleKpiLeaderboard()" style="border-color:#6d28d9;color:#6d28d9;">🏆 Leaderboard</button>
-          <button class="btn-tgt edit-only" id="btn-alert-rules" onclick="openAlertRulesModal()" style="border-color:#b91c1c;color:#b91c1c;">🔔 Alert Rules</button>
+          <button class="btn btn-orange admin-only" onclick="openDataModal()">+ Add / Edit Data</button>
+          <button class="btn-tgt admin-only" onclick="openTargetsModal()" id="btn-tgts" title="Set monthly KPI targets for the selected store">🎯 Set Targets</button>
+          <button class="btn-tgt admin-only" id="btn-leaderboard" onclick="toggleKpiLeaderboard()" style="border-color:#6d28d9;color:#6d28d9;">🏆 Leaderboard</button>
+          <button class="btn-tgt admin-only" id="btn-alert-rules" onclick="openAlertRulesModal()" style="border-color:#b91c1c;color:#b91c1c;">🔔 Alert Rules</button>
         </div>
       </div>
       <div class="tscroll" id="tbl-wrap"></div>
@@ -4242,6 +4251,10 @@ function _applyRoleUI(){
   const canEdit = _slRole === 'admin' || _slRole === 'manager';
   document.querySelectorAll('.edit-only').forEach(el => {
     el.style.display = canEdit ? '' : 'none';
+  });
+  // Admin-only toolbar buttons (Add/Edit Data, Set Targets, Leaderboard, Alert Rules)
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = (_slRole === 'admin') ? '' : 'none';
   });
   // Show Sync Data button only for admin
   const syncBtn = document.getElementById('force-sync-btn');
@@ -6149,6 +6162,13 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(nameEl)   nameEl.textContent   = displayName;
   if(subEl)    subEl.textContent    = role.charAt(0).toUpperCase()+role.slice(1);
 
+  // Populate full-name inputs (split stored name into first / last)
+  const nameParts = displayName.trim().split(/\s+/);
+  const fnameEl = document.getElementById('adm-edit-fname');
+  const lnameEl = document.getElementById('adm-edit-lname');
+  if(fnameEl) fnameEl.value = nameParts[0] || '';
+  if(lnameEl) lnameEl.value = nameParts.slice(1).join(' ') || '';
+
   // Load permissions, scope, and store locations in parallel
   _admCtx = { userId, displayName, role, state, scope: 'ALL', locations: new Set(), perms: new Set() };
   _admSetActionMsg('');
@@ -6232,6 +6252,19 @@ async function _adminSavePerms(){
   }
   _admSetActionMsg('Saving…');
   try {
+    // Save full name to profiles table
+    const fnameVal = (document.getElementById('adm-edit-fname')?.value || '').trim();
+    const lnameVal = (document.getElementById('adm-edit-lname')?.value || '').trim();
+    const fullName = [fnameVal, lnameVal].filter(Boolean).join(' ');
+    if(fullName){
+      const { error: nameErr } = await _supa
+        .from('profiles')
+        .update({ name: fullName })
+        .eq('id', _admCtx.userId);
+      if(nameErr) throw nameErr;
+      _admCtx.displayName = fullName;
+    }
+
     // Delete existing permissions for this user
     const { error: delErr } = await _supa
       .from('user_permissions')
@@ -6265,6 +6298,19 @@ async function _adminSavePerms(){
 
     console.log('[Admin] Saved for', _admCtx.displayName, '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
     _admSetActionMsg(`✓ Saved for ${_admCtx.displayName}`, 'ok');
+
+    // Update the editor header with new name
+    const avatarEl = document.getElementById('adm-sel-avatar');
+    const nameEl   = document.getElementById('adm-sel-name');
+    if(avatarEl && _admCtx.displayName) avatarEl.textContent = _admCtx.displayName[0].toUpperCase();
+    if(nameEl && _admCtx.displayName)   nameEl.textContent   = _admCtx.displayName;
+
+    // Refresh user list to reflect updated names
+    const savedUserId = _admCtx.userId;
+    await renderAdminPage();
+    // Re-select the user so the editor stays open
+    const row = document.getElementById('adm-uid-' + savedUserId);
+    if(row) row.click();
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
     _admSetActionMsg('Save failed: ' + (e.message||e), 'err');
@@ -6373,45 +6419,36 @@ function _adminInviteUser(){
 // ══════════════════════════════════════════════════
 let _actSessionId = null;
 let _actHeartbeatTimer = null;
-const _ACT_KEY = 'sl_activity_v1';
 const _ACT_HEARTBEAT_SEC = 60;
-const _ACT_MAX_ENTRIES = 2000; // cap to prevent unbounded growth
 
-function _actGetLog(){ try{ return JSON.parse(localStorage.getItem(_ACT_KEY)) || []; }catch(e){ return []; } }
-function _actSaveLog(log){ localStorage.setItem(_ACT_KEY, JSON.stringify(log)); }
-
-function _actStartSession(){
-  if(!_slUser) return;
+async function _actStartSession(){
+  if(\!_slUser || \!_supa) return;
   _actSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   const entry = {
     id: _actSessionId,
-    userId: _slUser.id,
-    userName: _slDisplayName || _slUser.email?.split('@')[0] || 'Unknown',
-    userRole: _slRole || 'unknown',
-    loginAt: new Date().toISOString(),
-    lastSeenAt: new Date().toISOString(),
+    user_id: _slUser.id,
+    user_name: _slDisplayName || _slUser.email?.split('@')[0] || 'Unknown',
+    user_role: _slRole || 'unknown',
+    login_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
     device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
   };
-  const log = _actGetLog();
-  log.push(entry);
-  // Trim old entries if over cap
-  if(log.length > _ACT_MAX_ENTRIES) log.splice(0, log.length - _ACT_MAX_ENTRIES);
-  _actSaveLog(log);
+  try {
+    await _supa.from('activity_logs').insert(entry);
+  } catch(e){ console.warn('[Activity] insert error:', e); }
 
-  // Heartbeat: update lastSeenAt every 60s
   if(_actHeartbeatTimer) clearInterval(_actHeartbeatTimer);
   _actHeartbeatTimer = setInterval(_actHeartbeat, _ACT_HEARTBEAT_SEC * 1000);
-  // Also update on visibility change (tab re-focus)
   document.addEventListener('visibilitychange', _actVisibility);
 }
 
-function _actHeartbeat(){
-  if(!_actSessionId || !_slUser) return;
-  const log = _actGetLog();
-  const idx = log.findIndex(r => r.id === _actSessionId);
-  if(idx === -1) return;
-  log[idx].lastSeenAt = new Date().toISOString();
-  _actSaveLog(log);
+async function _actHeartbeat(){
+  if(\!_actSessionId || \!_slUser || \!_supa) return;
+  try {
+    await _supa.from('activity_logs')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', _actSessionId);
+  } catch(e){ /* silent */ }
 }
 
 function _actVisibility(){
@@ -6419,7 +6456,7 @@ function _actVisibility(){
 }
 
 function _actEndSession(){
-  _actHeartbeat(); // final update
+  _actHeartbeat();
   if(_actHeartbeatTimer){ clearInterval(_actHeartbeatTimer); _actHeartbeatTimer = null; }
   document.removeEventListener('visibilitychange', _actVisibility);
   _actSessionId = null;
@@ -6471,11 +6508,35 @@ let _actFilterUser = 'ALL';
 let _actFilterDate = '';
 let _actFilterRange = '30'; // days
 
-function renderActivityLogs(){
+async function renderActivityLogs(){
   const wrap = document.getElementById('act-log-wrap');
-  if(!wrap) return;
+  if(\!wrap) return;
 
-  const allLog = _actGetLog();
+  wrap.innerHTML = '<div class="adm-loading">Loading activity data…</div>';
+
+  // Fetch from Supabase (RLS ensures only admin sees all rows)
+  let allLog = [];
+  try {
+    const { data, error } = await _supa
+      .from('activity_logs')
+      .select('id, user_id, user_name, user_role, login_at, last_seen_at, device')
+      .order('login_at', { ascending: false })
+      .limit(2000);
+    if(error) throw error;
+    allLog = (data || []).map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      userName: r.user_name,
+      userRole: r.user_role,
+      loginAt: r.login_at,
+      lastSeenAt: r.last_seen_at,
+      device: r.device
+    }));
+  } catch(e){
+    console.error('[Activity] fetch error:', e);
+    wrap.innerHTML = '<div style="text-align:center;padding:60px 0;color:#b91c1c;font-size:13px;">Failed to load activity logs: ' + (e.message||e) + '</div>';
+    return;
+  }
 
   // Build unique users for dropdown
   const userMap = {};
@@ -6484,10 +6545,10 @@ function renderActivityLogs(){
 
   // Apply filters
   let filtered = [...allLog];
-  if(_actFilterUser !== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
+  if(_actFilterUser \!== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
   if(_actFilterDate){
     filtered = filtered.filter(r => r.loginAt.startsWith(_actFilterDate));
-  } else if(_actFilterRange !== 'all'){
+  } else if(_actFilterRange \!== 'all'){
     const days = parseInt(_actFilterRange) || 30;
     const cutoff = new Date(Date.now() - days * 86400000).toISOString();
     filtered = filtered.filter(r => r.loginAt >= cutoff);
@@ -18430,7 +18491,7 @@ function _pfBuildData(){
     if(uberHigh)       goods.push('Strong Uber rating');
     if(!fpOver&&!lpOver&&!dpOver&&!uberLow) goods.push('All KPIs on target');
     if(dropYoY)        issues.push('Sales declining YoY');
-    // Compose insight
+    // Compose structured insight
     let insight='';
     if(s.loc===bestLoc&&ranked.length>1)        insight='🏆 Best performing store';
     else if(s.loc===worstLoc&&ranked.length>1)  insight='⚠️ Needs most attention';
@@ -18439,6 +18500,9 @@ function _pfBuildData(){
     else if(goods.length)                        insight=goods.join(' · ');
     else                                         insight='Insufficient data';
     s.insight=insight;
+    s._issues=issues; s._goods=goods;
+    s._isBest=(s.loc===bestLoc&&ranked.length>1);
+    s._isWorst=(s.loc===worstLoc&&ranked.length>1);
   });
   return stores;
 }
@@ -18669,15 +18733,35 @@ function renderPortfolioPage(){
       </div>`;
     };
     const yoyLbl=s.salesYoY!=null?(s.salesYoY>=1?'+':'')+((s.salesYoY-1)*100).toFixed(1)+'%':null;
+    // Build insight pills HTML
+    let pillsHtml='';
+    if(s._isBest) pillsHtml=`<span class="pf-insight-pill trophy">🏆 Best performing</span>`;
+    else if(s._isWorst) pillsHtml=`<span class="pf-insight-pill warn">⚠️ Needs attention</span>`;
+    else {
+      (s._issues||[]).forEach(t=>{
+        const cls=t.includes('Costs')||t.includes('above target')?'red':t.includes('declining')?'amber':t.includes('low')?'red':'amber';
+        pillsHtml+=`<span class="pf-insight-pill ${cls}">${t}</span>`;
+      });
+      (s._goods||[]).forEach(t=>{
+        const cls=t.includes('growing')||t.includes('Strong')?'green':t.includes('on target')?'blue':'green';
+        pillsHtml+=`<span class="pf-insight-pill ${cls}">${t}</span>`;
+      });
+    }
+    if(!pillsHtml) pillsHtml=`<span class="pf-insight-pill amber">Insufficient data</span>`;
+    const storeInitial=s.loc[0]||'?';
     html+=`<div class="pf-kpi-tgt-item">
-      <div class="pf-kpi-tgt-store">${s.loc}</div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-style:italic;">${s.insight||''}</div>
+      <div class="pf-kpi-tgt-store-hdr">
+        <div class="pf-kpi-tgt-store-icon">${storeInitial}</div>
+        <div class="pf-kpi-tgt-store">${s.loc}</div>
+      </div>
+      <div class="pf-kpi-tgt-body">
+      <div class="pf-insight-wrap">${pillsHtml}</div>
       ${mkRow('Food Cost', y.fpct!=null?fmtP(y.fpct):null, fmtP(DEFAULT_TGTS.fp), y.fpct!=null&&y.fpct<=DEFAULT_TGTS.fp)}
       ${mkRow('Labor',     y.lpct!=null?fmtP(y.lpct):null, fmtP(DEFAULT_TGTS.lp), y.lpct!=null&&y.lpct<=DEFAULT_TGTS.lp)}
       ${mkRow('D&C',       y.dpct!=null?fmtP(y.dpct):null, fmtP(DEFAULT_TGTS.dp), y.dpct!=null&&y.dpct<=DEFAULT_TGTS.dp)}
       ${mkRow('Uber',      s.uber!=null?s.uber.toFixed(2):null, DEFAULT_TGTS.uber.toFixed(1), s.uber!=null&&s.uber>=DEFAULT_TGTS.uber)}
       ${mkRow('Sales YoY', yoyLbl, '≥ 0%', s.salesYoY!=null&&s.salesYoY>=1.0)}
-    </div>`;
+    </div></div>`;
   }
   html+=`</div>`;
 
@@ -18814,6 +18898,16 @@ migrate();
               <div class="adm-perm-user-name" id="adm-sel-name"></div>
               <div class="adm-perm-user-sub" id="adm-sel-sub"></div>
             </div>
+          </div>
+          <!-- Full Name (admin-editable) -->
+          <div class="adm-perm-section-title">Full Name</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input type="text" id="adm-edit-fname" placeholder="First name"
+              style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .15s;"
+              onfocus="this.style.borderColor='#7f1d1d'" onblur="this.style.borderColor='#cbd5e1'" />
+            <input type="text" id="adm-edit-lname" placeholder="Last name"
+              style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .15s;"
+              onfocus="this.style.borderColor='#7f1d1d'" onblur="this.style.borderColor='#cbd5e1'" />
           </div>
           <!-- Location scope -->
           <div class="adm-perm-section-title">Location Access</div>
