@@ -3039,6 +3039,25 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hr-empty-title{font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;}
 .hr-empty-sub{font-size:12px;}
 .hr-audit-line{font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic;}
+.ea-score-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:28px;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b;}
+.ea-score-btn:hover{border-color:#94a3b8;}
+.ea-score-btn.sel-2{background:#16a34a;color:#fff;border-color:#16a34a;}
+.ea-score-btn.sel-1{background:#ca8a04;color:#fff;border-color:#ca8a04;}
+.ea-score-btn.sel-0{background:#dc2626;color:#fff;border-color:#dc2626;}
+.ea-score-btn.sel-na{background:#94a3b8;color:#fff;border-color:#94a3b8;}
+.ea-crit-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;margin-left:6px;}
+.ea-sub-hdr{font-size:11px;font-weight:700;color:#1e3a5f;padding:8px 0 4px;margin-top:8px;border-bottom:1px solid #f1ece3;text-transform:uppercase;letter-spacing:.04em;}
+.ea-item-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f8f6f2;}
+.ea-item-std{flex:1;font-size:12px;color:#374151;line-height:1.5;}
+.ea-item-btns{display:flex;gap:4px;flex-shrink:0;}
+.ea-section-card{background:#fff;border:1px solid #e8e2d8;border-radius:14px;margin-bottom:16px;overflow:hidden;}
+.ea-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;transition:background .15s;}
+.ea-section-hdr:hover{background:#faf9f7;}
+.ea-section-body{padding:0 20px 16px;display:none;}
+.ea-section-body.open{display:block;}
+.ea-pct-bar{height:6px;border-radius:3px;background:#f1ece3;overflow:hidden;flex:1;}
+.ea-pct-fill{height:100%;border-radius:3px;transition:width .3s;}
+.ea-summary-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1ece3;font-size:12px;}
 @keyframes slFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slScaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
 
@@ -3233,6 +3252,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
         <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5a3a7e;background:rgba(90,58,126,.12);border:1.5px solid rgba(90,58,126,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
       </div>
+    </div>
+    <div id="hcard-assess" class="hcard c3" onclick="goAssess()" style="cursor:pointer;">
+      <span class="hcard-icon">📋</span>
+      <div class="hcard-title">Excellence Assessment</div>
+      <div class="hcard-desc">Quarterly inspection-based scoring for every Skinny Louie location. 161 items across 13 sections with weighted scoring and critical-fail rules.</div>
+      <div class="hcard-tag">Inspection Tool</div>
     </div>
     <div id="hcard-stores" class="hcard c1" onclick="goStores()" style="cursor:pointer;">
       <span class="hcard-icon">🗺️</span>
@@ -4044,7 +4069,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -4196,6 +4221,7 @@ function _applyPermissionsUI(){
     newstores:   'hcard-newstores',
     hr:          'hcard-hr',
     marketing:   'hcard-marketing',
+    assess:      'hcard-assess',
     stores:      'hcard-stores',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
@@ -5868,6 +5894,7 @@ const _ADM_MODULES = [
   { id:'newstores',   label:'New Stores Status',  icon:'🏗', desc:'Pipeline tracker for new store deals' },
   { id:'hr',           label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
   { id:'marketing',    label:'Marketing',          icon:'📣', desc:'Campaigns, content & brand initiatives' },
+  { id:'assess',        label:'Excellence Assessment', icon:'📋', desc:'Quarterly inspection scoring by location' },
   { id:'stores',        label:'Louie Spots', icon:'🗺️', desc:'Expansion map & location tracker' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
@@ -6300,7 +6327,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -17938,6 +17965,429 @@ async function _admLoadUserActivity(){
 
 
 
+
+// ══════════════════════════════════════════════════
+//  EXCELLENCE ASSESSMENT MODULE
+// ══════════════════════════════════════════════════
+var _EA_SECTIONS = [{"name":"Opening Readiness","weight":0.08,"items":[{"sub":"Opening Standards","std":"Store is fully operational and ready at the scheduled opening time.","critical":false,"w":1},{"sub":"Opening Standards","std":"All opening positions are set and ready at least 5 minutes before opening.","critical":false,"w":1},{"sub":"Opening Standards","std":"Core equipment is powered on and at operating temperature before service begins.","critical":true,"w":2},{"sub":"Opening Standards","std":"Opening line checks and temperature checks are completed accurately before opening.","critical":true,"w":2},{"sub":"Opening Standards","std":"Front counter, dining room, restrooms, and patio are guest-ready at open.","critical":false,"w":1},{"sub":"Stock & Setup","std":"All stations are stocked to opening pars with no immediate shortages.","critical":false,"w":1},{"sub":"Stock & Setup","std":"Sanitizer buckets and towels are in place at required stations before service starts.","critical":true,"w":2},{"sub":"Stock & Setup","std":"Prep shelf and BOH shelves are clean, organized, and ready for production.","critical":false,"w":1},{"sub":"Stock & Setup","std":"Delivery tablets, printers, displays, and guest-facing equipment are online and functioning.","critical":false,"w":1},{"sub":"Leadership Verification","std":"86 items and product availability are verified and communicated before opening.","critical":false,"w":1},{"sub":"Leadership Verification","std":"Previous-shift logbook notes have been reviewed before opening.","critical":false,"w":1},{"sub":"Leadership Verification","std":"Opening manager has verified store cleanliness, stock, and readiness before doors open.","critical":false,"w":1}]},{"name":"Exterior, FOH & Dining Room","weight":0.08,"items":[{"sub":"Storefront","std":"Exterior storefront is clean, presentable, and free of dust, debris, and spider webs.","critical":false,"w":1},{"sub":"Storefront","std":"A-frame and exterior signage are clean, positioned correctly, and in good condition.","critical":false,"w":1},{"sub":"Storefront","std":"Door glass and front windows are clean and streak-free.","critical":false,"w":1},{"sub":"Dining Room","std":"Dining room floors are clean and maintained throughout the visit.","critical":false,"w":1},{"sub":"Dining Room","std":"Tables, chairs, stools, and patio furniture are clean, stable, and organized.","critical":false,"w":1},{"sub":"Dining Room","std":"Trash cans are clean, lined properly, and not overflowing.","critical":false,"w":1},{"sub":"Dining Room","std":"Condiment and guest supply area is stocked, organized, and free of clutter.","critical":false,"w":1},{"sub":"Dining Room","std":"Merchandise display is complete, clean, and secured properly.","critical":false,"w":1},{"sub":"Dining Room","std":"Mirrors, red furniture, and other guest-facing surfaces are clean.","critical":false,"w":1},{"sub":"Bathrooms","std":"Bathrooms are clean, odor-free, stocked, and fully functional.","critical":false,"w":1},{"sub":"Bathrooms","std":"Bathroom trash liners are discreet and presented properly.","critical":false,"w":1},{"sub":"Guest Environment","std":"Music volume, lighting, and overall dining room ambience are appropriate for service.","critical":false,"w":1},{"sub":"Guest Environment","std":"Guest-facing coolers and display areas are clean, stocked, and functioning.","critical":false,"w":1}]},{"name":"Cashier / POS / Order Taking","weight":0.07,"items":[{"sub":"Guest Service","std":"Cashier greets guests promptly and professionally.","critical":false,"w":1},{"sub":"Guest Service","std":"Cashier maintains a polished, organized, and clean workstation.","critical":false,"w":1},{"sub":"Guest Service","std":"Order taking is accurate and confident, with modifiers entered correctly.","critical":false,"w":1},{"sub":"POS Controls","std":"POS reflects current 86 items and menu availability accurately.","critical":false,"w":1},{"sub":"POS Controls","std":"Open tabs or transactional anomalies are reviewed and resolved appropriately.","critical":false,"w":1},{"sub":"POS Controls","std":"Tablets, printers, labels, stickers, sharpies, and other cashier supplies are fully stocked.","critical":false,"w":1},{"sub":"Station Standards","std":"Drink cooler is stocked to par and operating correctly.","critical":false,"w":1},{"sub":"Station Standards","std":"Delivery tablet is plugged in and functioning correctly.","critical":false,"w":1},{"sub":"Station Standards","std":"Guest review or service prompts are being executed according to brand expectation.","critical":false,"w":1},{"sub":"Delivery Accuracy","std":"Off-premise orders are marked, printed, and routed correctly for production.","critical":false,"w":1},{"sub":"Delivery Accuracy","std":"Speed and accuracy at the register support a smooth guest experience.","critical":false,"w":1}]},{"name":"Expo & Order Handoff","weight":0.08,"items":[{"sub":"Station Readiness","std":"Expo station is fully stocked with wraps, bags, straws, tape, markers, and towels.","critical":false,"w":1},{"sub":"Station Readiness","std":"Bun toaster is set correctly and holding the required operating temperature.","critical":true,"w":2},{"sub":"Station Readiness","std":"Liquid butter area is clean, stocked, and set correctly.","critical":false,"w":1},{"sub":"Station Readiness","std":"Cheese, lettuce, tomato, onion, pickles, and sauces are stocked and in good condition.","critical":false,"w":1},{"sub":"Station Readiness","std":"Utensils and portion tools are clean and stored correctly.","critical":false,"w":1},{"sub":"Operational Control","std":"Expo line is clean, organized, and free of clutter during service.","critical":false,"w":1},{"sub":"Operational Control","std":"Sanitizer bucket and clean towels are present and properly maintained at expo.","critical":true,"w":2},{"sub":"Operational Control","std":"Order packaging materials are neat, accessible, and used correctly.","critical":false,"w":1},{"sub":"Accuracy","std":"Expo verifies every order before guest handoff or delivery staging.","critical":false,"w":1},{"sub":"Accuracy","std":"Burger builds and modifiers match the ticket and brand standard.","critical":false,"w":1},{"sub":"Accuracy","std":"PF, ID, and delivery orders are identified and staged correctly.","critical":false,"w":1},{"sub":"Accuracy","std":"Delivery orders use the correct marking and bagging standard.","critical":false,"w":1},{"sub":"Flow","std":"Ticket flow through expo is controlled with no significant pile-up or confusion.","critical":false,"w":1}]},{"name":"Grill / Flat / Burger Build","weight":0.09,"items":[{"sub":"Equipment & Setup","std":"Flat top is clean, maintained, and operating at target temperature.","critical":true,"w":2},{"sub":"Equipment & Setup","std":"Burners, warmers, displays, and grill-side equipment are functioning properly.","critical":true,"w":1},{"sub":"Equipment & Setup","std":"Spatulas, tools, and grill utensils are clean, sharp, and in good condition.","critical":false,"w":1},{"sub":"Product Readiness","std":"Seasoning mix is prepared to recipe and mixed correctly.","critical":false,"w":1},{"sub":"Product Readiness","std":"Grill station maintains required meat pars without overstocking or shortages.","critical":false,"w":1},{"sub":"Product Readiness","std":"American cheese is stocked and handled properly.","critical":false,"w":1},{"sub":"Product Readiness","std":"GF buns and Impossible product are tempered or stored correctly and ready when needed.","critical":false,"w":1},{"sub":"Product Readiness","std":"Bacon is cooked and held to standard.","critical":false,"w":1},{"sub":"Product Readiness","std":"Grilled onions are prepared, held, and served correctly.","critical":false,"w":1},{"sub":"Product Quality","std":"Meat quality meets brand expectation for color, cook, and sear.","critical":false,"w":1},{"sub":"Product Quality","std":"Burger seasoning and build quality are consistent across orders.","critical":false,"w":1},{"sub":"Product Quality","std":"Station utensils for onions, relish, and other toppings are clean and positioned correctly.","critical":false,"w":1},{"sub":"Food Handling","std":"Meat trays are rotated correctly and stored in the proper order.","critical":true,"w":2},{"sub":"Food Handling","std":"Grease management and under-flat cleanliness meet standard.","critical":false,"w":1}]},{"name":"Fry Station","weight":0.06,"items":[{"sub":"Equipment & Setup","std":"Fryer oil level is correct and maintained above the operating line.","critical":true,"w":2},{"sub":"Equipment & Setup","std":"Fryer and warmer are turned on, functioning, and at target temperature.","critical":true,"w":2},{"sub":"Stock & Tools","std":"Fries inventory is stocked to par with no immediate shortage risk.","critical":false,"w":1},{"sub":"Stock & Tools","std":"Fry bags and packaging are stocked neatly and protected from damage.","critical":false,"w":1},{"sub":"Stock & Tools","std":"Salt dish, tongs, scoops, and other fry tools are clean and available.","critical":false,"w":1},{"sub":"Execution","std":"Fry timer is used consistently and correctly.","critical":false,"w":1},{"sub":"Execution","std":"Fries are cooked to the correct color, texture, and doneness.","critical":false,"w":1},{"sub":"Execution","std":"Fries are salted, held, and served correctly.","critical":false,"w":1},{"sub":"Cleanliness","std":"Fry station is clean, organized, and free of excessive grease buildup.","critical":false,"w":1},{"sub":"Safety","std":"Hot oil safety and surrounding slip hazards are controlled.","critical":true,"w":2}]},{"name":"Milkshake / Dessert Station","weight":0.05,"items":[{"sub":"Equipment & Setup","std":"Ice cream freezer is plugged in, operating, and at the correct temperature.","critical":true,"w":2},{"sub":"Equipment & Setup","std":"Milkshake cooler or freezer temperatures are within standard.","critical":true,"w":2},{"sub":"Stock & Rotation","std":"Ice cream stock is rotated correctly and maintained to par.","critical":false,"w":1},{"sub":"Stock & Rotation","std":"Milk is rotated properly and fully stocked.","critical":false,"w":1},{"sub":"Stock & Rotation","std":"Toppings are stocked, covered, dated, and in good condition.","critical":true,"w":1},{"sub":"Product Quality","std":"Brownies and inclusions are portioned and held correctly.","critical":false,"w":1},{"sub":"Product Quality","std":"Milkshake consistency, creaminess, and presentation meet brand standard.","critical":false,"w":1},{"sub":"Station Standards","std":"Whipped cream, cups, dome lids, and flat lids are stocked and organized.","critical":false,"w":1},{"sub":"Station Standards","std":"Milkshake station is clean, utensils are organized, and sanitizer is in place.","critical":false,"w":1}]},{"name":"Prep / Storage / BOH Organization","weight":0.07,"items":[{"sub":"Storage","std":"Walk-in coolers, freezers, and BOH storage areas are clean and organized.","critical":false,"w":1},{"sub":"Storage","std":"Refrigeration gaskets are clean and maintained.","critical":false,"w":1},{"sub":"Storage","std":"Products are labeled, dated, and rotated correctly in all storage areas.","critical":true,"w":2},{"sub":"Storage","std":"Raw product and ready-to-eat items are stored separately and safely.","critical":true,"w":2},{"sub":"Prep Standards","std":"Meat trays and prep items are dated using the correct day-identification standard.","critical":true,"w":1},{"sub":"Prep Standards","std":"Onions are chopped to standard and held correctly.","critical":false,"w":1},{"sub":"Prep Standards","std":"Tomatoes are washed and sliced to standard.","critical":true,"w":1},{"sub":"Prep Standards","std":"Louie sauce is prepared to recipe and matches the expected color and consistency.","critical":false,"w":1},{"sub":"Prep Standards","std":"Prep shelf is clean, organized, and easy to work from.","critical":false,"w":1},{"sub":"Prep Standards","std":"Back-up ingredients and smallwares are stocked and stored neatly.","critical":false,"w":1},{"sub":"Organization","std":"Dry storage is organized, labeled where needed, and product is kept off the floor.","critical":false,"w":1},{"sub":"Organization","std":"Guest supplies, merch containers, and support stock are organized and accessible.","critical":false,"w":1},{"sub":"Sanitation","std":"Chemical products are stocked and segregated away from food and single-use items.","critical":true,"w":1},{"sub":"Sanitation","std":"Mops, brooms, and cleaning tools are clean and stored correctly.","critical":false,"w":1},{"sub":"Sanitation","std":"Required sanitizer buckets and towels are present in prep areas.","critical":true,"w":1}]},{"name":"Food Safety & Compliance","weight":0.12,"items":[{"sub":"Temperature Control","std":"Refrigerator and freezer temperatures are within standard.","critical":true,"w":2},{"sub":"Temperature Control","std":"Opening, shift, and required spot temperature logs are complete and accurate.","critical":true,"w":2},{"sub":"Temperature Control","std":"Bun toaster temperature is verified and documented correctly.","critical":true,"w":1},{"sub":"Temperature Control","std":"Flat temperature is verified and documented correctly.","critical":true,"w":1},{"sub":"Temperature Control","std":"Hot and cold holding practices meet standard.","critical":true,"w":2},{"sub":"Personal Hygiene","std":"Handwashing is observed at the required times.","critical":true,"w":2},{"sub":"Personal Hygiene","std":"Gloves are used correctly and changed appropriately.","critical":true,"w":2},{"sub":"Cross-Contamination","std":"No cross-contamination risks are observed in prep, cook, or service areas.","critical":true,"w":2},{"sub":"Cross-Contamination","std":"Food-contact surfaces are clean and sanitized.","critical":true,"w":2},{"sub":"Cross-Contamination","std":"Sanitizer setup and concentration meet standard.","critical":true,"w":2},{"sub":"Product Control","std":"Expired, damaged, or compromised product is not in use.","critical":true,"w":2},{"sub":"Product Control","std":"FIFO is consistently followed across all food storage areas.","critical":true,"w":2},{"sub":"Product Control","std":"Packaging and bags are labeled correctly where required.","critical":false,"w":1},{"sub":"Documentation","std":"Fire extinguishers are in date, accessible, and not obstructed.","critical":true,"w":1},{"sub":"Documentation","std":"Business permits and required postings are current and visible.","critical":true,"w":1},{"sub":"Documentation","std":"Inspection tools, forms, and documentation are current and accessible.","critical":false,"w":1},{"sub":"Documentation","std":"Logbook entries are current and show clear follow-up on issues.","critical":false,"w":1},{"sub":"Chemical Safety","std":"Chemicals are used, labeled, and stored according to standard.","critical":true,"w":1}]},{"name":"Management & Shift Leadership","weight":0.1,"items":[{"sub":"Floor Leadership","std":"Manager is visible and actively leading the floor during service.","critical":false,"w":1},{"sub":"Floor Leadership","std":"Manager is positioned in a high-impact role during peak periods.","critical":false,"w":1},{"sub":"Floor Leadership","std":"Team members are in position before opening and after shift changes.","critical":false,"w":1},{"sub":"Communication","std":"Shift priorities and standards are clearly communicated to the team.","critical":false,"w":1},{"sub":"Communication","std":"Previous-shift issues and current-day risks are reviewed with the team.","critical":false,"w":1},{"sub":"Operational Control","std":"Manager verifies store cleanliness and stock before service periods.","critical":false,"w":1},{"sub":"Operational Control","std":"Manager performs product quality checks during the shift.","critical":false,"w":1},{"sub":"Operational Control","std":"Review counts, 86 items, and product availability are monitored proactively.","critical":false,"w":1},{"sub":"Operational Control","std":"Truck orders, vendor deliveries, and product rotation are managed correctly.","critical":false,"w":1},{"sub":"Operational Control","std":"Open tabs, voids, and other anomalies are reviewed and addressed.","critical":false,"w":1},{"sub":"Accountability","std":"Maintenance issues are documented and followed up appropriately.","critical":false,"w":1},{"sub":"Accountability","std":"Labor deployment matches business needs and avoids obvious bottlenecks.","critical":false,"w":1},{"sub":"Coaching","std":"Manager coaches standards in real time instead of allowing drift.","critical":false,"w":1},{"sub":"Coaching","std":"Accountability is enforced immediately when standards are missed.","critical":false,"w":1}]},{"name":"Closing & Reset","weight":0.05,"items":[{"sub":"Closing Standards","std":"Closing procedures are completed fully and correctly.","critical":false,"w":1},{"sub":"Closing Standards","std":"Stations are cleaned, restocked, and reset for the next shift.","critical":false,"w":1},{"sub":"Closing Standards","std":"Remaining product is wrapped, labeled, and stored correctly.","critical":true,"w":1},{"sub":"Closing Standards","std":"BOH and FOH trash are removed, reset, and presented correctly.","critical":false,"w":1},{"sub":"Closing Standards","std":"Exterior, patio, and guest-facing areas are secured correctly.","critical":false,"w":1},{"sub":"Equipment Shutdown","std":"Equipment shutdown procedures are followed correctly.","critical":true,"w":2},{"sub":"Equipment Shutdown","std":"Bun boxes and back stock are rotated and stored properly.","critical":false,"w":1},{"sub":"Equipment Shutdown","std":"Chemical refills and cleaning supplies are left ready for the next shift.","critical":false,"w":1},{"sub":"Final Condition","std":"Bathrooms are clean and fully stocked at close.","critical":false,"w":1},{"sub":"Final Condition","std":"Floors are fully cleaned, including deck-scrub and detail-clean expectations where required.","critical":false,"w":1},{"sub":"Final Condition","std":"Store is set up for a clean, efficient open the next day.","critical":false,"w":1}]},{"name":"Equipment & Facility","weight":0.05,"items":[{"sub":"Facility Condition","std":"HVAC is operating properly and the store temperature is comfortable.","critical":false,"w":1},{"sub":"Facility Condition","std":"A/C filters are clean and maintained.","critical":false,"w":1},{"sub":"Facility Condition","std":"Bug zapper is functioning properly.","critical":false,"w":1},{"sub":"Facility Condition","std":"Stools, furniture, and fixtures are in good repair.","critical":false,"w":1},{"sub":"Equipment Condition","std":"Refrigerators and freezers operate correctly and seal properly.","critical":true,"w":2},{"sub":"Equipment Condition","std":"Flat, fryer, warmer, toaster, and coolers are maintained and functioning properly.","critical":true,"w":2},{"sub":"Equipment Condition","std":"Hood filters, grease traps, and grease systems are maintained to standard.","critical":true,"w":1},{"sub":"Safety","std":"Drains are clean, flowing properly, and do not create sanitation or slip issues.","critical":false,"w":1},{"sub":"Safety","std":"No slip, trip, electrical, or fire hazards are present.","critical":true,"w":2},{"sub":"Maintenance","std":"Maintenance checklist is current and actionable.","critical":false,"w":1}]},{"name":"Brand Standards & Guest Experience","weight":0.1,"items":[{"sub":"Team Appearance","std":"Team uniforms are clean, consistent, and in good condition.","critical":false,"w":1},{"sub":"Team Appearance","std":"Aprons are worn correctly and professionally.","critical":false,"w":1},{"sub":"Team Appearance","std":"Personal appearance and grooming meet brand standard.","critical":false,"w":1},{"sub":"Guest Experience","std":"Guests are greeted promptly and treated with urgency.","critical":false,"w":1},{"sub":"Guest Experience","std":"Cashier and service team interactions feel friendly, polished, and confident.","critical":false,"w":1},{"sub":"Guest Experience","std":"Delivery and dine-in order quality meet guest expectations.","critical":false,"w":1},{"sub":"Guest Experience","std":"Order handoff is organized and professional.","critical":false,"w":1},{"sub":"Guest Experience","std":"Dining room presentation reflects Skinny Louie brand standard.","critical":false,"w":1},{"sub":"Guest Experience","std":"Music, lighting, and overall ambience align with brand expectation.","critical":false,"w":1},{"sub":"Brand Presentation","std":"Merchandise presentation is complete, clean, and appealing.","critical":false,"w":1},{"sub":"Brand Presentation","std":"Overall visit reflects a restaurant that is well-run and guest-ready.","critical":false,"w":1}]}];
+
+var _EA_KEY = 'sl_assess_v1';
+var _eaCurrent = null; // active assessment being edited
+
+function _eaLoad(){ try{ return JSON.parse(localStorage.getItem(_EA_KEY)) || []; }catch(e){ return []; } }
+function _eaSave(arr){ localStorage.setItem(_EA_KEY, JSON.stringify(arr)); }
+function _eaId(){ return 'ea_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+function _eaEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') : ''; }
+
+function goAssess(){
+  if(!_hasPermission('assess')){ _showAccessDenied('Excellence Assessment'); return; }
+  S.page='assess';
+  document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
+  document.getElementById('pg-assess').style.display='';
+  _eaCurrent = null;
+  document.getElementById('ea-view-list').style.display='';
+  document.getElementById('ea-view-form').style.display='none';
+  eaBuildFilters();
+  eaRenderList();
+}
+
+function eaBuildFilters(){
+  var cityEl = document.getElementById('ea-flt-city');
+  var h = '<option value="ALL">All Cities</option>';
+  Object.keys(LOC_MAP).forEach(function(c){
+    var stores = LOC_MAP[c] || [];
+    if(stores.some(function(s){ return _isLocAllowed(s); })){
+      var label = c === 'FL' ? 'Florida' : c === 'NY' ? 'New York' : c;
+      h += '<option value="'+c+'">'+label+'</option>';
+    }
+  });
+  cityEl.innerHTML = h;
+  eaUpdateStoreFilter();
+  // Month filter
+  var mEl = document.getElementById('ea-flt-month');
+  var months = {};
+  _eaLoad().forEach(function(a){ if(a.month) months[a.month] = true; });
+  var mh = '<option value="ALL">All Months</option>';
+  Object.keys(months).sort().reverse().forEach(function(m){ mh += '<option value="'+m+'">'+m+'</option>'; });
+  mEl.innerHTML = mh;
+  // Only admin can create new
+  var btnNew = document.getElementById('ea-btn-new');
+  if(btnNew) btnNew.style.display = _slRole === 'admin' ? '' : 'none';
+}
+
+function eaUpdateStoreFilter(){
+  var cityEl = document.getElementById('ea-flt-city');
+  var cv = cityEl ? cityEl.value : 'ALL';
+  var sEl = document.getElementById('ea-flt-store');
+  var sh = '<option value="ALL">All Stores</option>';
+  if(cv === 'ALL'){
+    Object.keys(LOC_MAP).forEach(function(c){
+      var label = c === 'FL' ? 'Florida' : c === 'NY' ? 'New York' : c;
+      var stores = (LOC_MAP[c]||[]).filter(function(s){ return _isLocAllowed(s); });
+      if(stores.length){
+        sh += '<optgroup label="'+label+'">';
+        stores.forEach(function(s){ sh += '<option value="'+s+'">'+s+'</option>'; });
+        sh += '</optgroup>';
+      }
+    });
+  } else {
+    (LOC_MAP[cv]||[]).filter(function(s){ return _isLocAllowed(s); }).forEach(function(s){
+      sh += '<option value="'+s+'">'+s+'</option>';
+    });
+  }
+  sEl.innerHTML = sh;
+}
+
+function eaCityChanged(){ eaUpdateStoreFilter(); eaRenderList(); }
+
+function eaRenderList(){
+  var all = _eaLoad();
+  var sf = document.getElementById('ea-flt-store');
+  var mf = document.getElementById('ea-flt-month');
+  var cf = document.getElementById('ea-flt-city');
+  var sv = sf ? sf.value : 'ALL';
+  var mv = mf ? mf.value : 'ALL';
+  var cv = cf ? cf.value : 'ALL';
+  var cityStores = null;
+  if(cv !== 'ALL') cityStores = (LOC_MAP[cv]||[]);
+  var items = all.filter(function(a){
+    if(sv !== 'ALL' && a.store !== sv) return false;
+    if(mv !== 'ALL' && a.month !== mv) return false;
+    if(cityStores && cityStores.indexOf(a.store) === -1) return false;
+    return true;
+  });
+  items.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
+  var wrap = document.getElementById('ea-saved-list');
+  if(items.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">📋</div><div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:8px;">No Assessments Yet</div><div style="font-size:13px;color:#94a3b8;">Create a new assessment to start scoring a store.</div></div>';
+    return;
+  }
+  var h = '<div style="font-size:12px;color:#64748b;font-weight:600;margin-bottom:12px;">'+items.length+' assessment'+(items.length!==1?'s':'')+'</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;">';
+  items.forEach(function(a){
+    var score = a.overall_score || 0;
+    var rating = a.overall_rating || 'N/A';
+    var color = score >= 90 ? '#16a34a' : score >= 75 ? '#ca8a04' : '#dc2626';
+    var ratingLabel = rating;
+    h += '<div style="background:#fff;border:1px solid #e8e2d8;border-radius:14px;padding:20px;border-left:4px solid '+color+';cursor:pointer;" onclick="eaOpenSaved(\''+a.id+'\')">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+    h += '<div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;">'+_eaEsc(a.store)+'</div>';
+    h += '<div style="font-size:24px;font-weight:800;color:'+color+';">'+score.toFixed(1)+'%</div>';
+    h += '</div>';
+    h += '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter||'')+'</div>';
+    h += '<div style="font-size:11px;color:#94a3b8;">Auditor: '+_eaEsc(a.auditor)+' &middot; Rating: <strong style="color:'+color+';">'+ratingLabel+'</strong></div>';
+    if(_slRole === 'admin'){
+      h += '<div style="margin-top:8px;display:flex;gap:6px;">';
+      h += '<button onclick="event.stopPropagation();eaDeleteAssess(\''+a.id+'\')" style="padding:4px 12px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:10px;font-weight:700;cursor:pointer;">Delete</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+  h += '</div>';
+  wrap.innerHTML = h;
+}
+
+function eaStartNew(){
+  if(_slRole !== 'admin') return;
+  // Show a modal to pick store + month + auditor
+  var m = document.createElement('div');
+  m.id = 'ea-new-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1001;';
+  m.onclick = function(e){ if(e.target===m) m.remove(); };
+  var lblS = 'font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;';
+  var inpS = 'width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;';
+  var h = '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:460px;">';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">New Excellence Assessment</div>';
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Store *</label><select id="ea-new-store" style="'+inpS+'">';
+  // grouped by city
+  Object.keys(LOC_MAP).forEach(function(c){
+    var label = c === 'FL' ? 'Florida' : c === 'NY' ? 'New York' : c;
+    var stores = (LOC_MAP[c]||[]).filter(function(s){ return _isLocAllowed(s); });
+    if(stores.length){
+      h += '<optgroup label="'+label+'">';
+      stores.forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+      h += '</optgroup>';
+    }
+  });
+  h += '</select></div>';
+  var now = new Date();
+  var defMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Month *</label><input id="ea-new-month" type="month" value="'+defMonth+'" style="'+inpS+'"></div>';
+  var q = now.getMonth() < 3 ? 'Q1' : now.getMonth() < 6 ? 'Q2' : now.getMonth() < 9 ? 'Q3' : 'Q4';
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Quarter</label><select id="ea-new-quarter" style="'+inpS+'"><option value="Q1">Q1</option><option value="Q2"'+(q==='Q2'?' selected':'')+'>Q2</option><option value="Q3"'+(q==='Q3'?' selected':'')+'>Q3</option><option value="Q4"'+(q==='Q4'?' selected':'')+'>Q4</option></select></div>';
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Auditor *</label><input id="ea-new-auditor" value="'+_eaEsc(_slDisplayName||'')+'" style="'+inpS+'"></div>';
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Region / Market</label><input id="ea-new-region" placeholder="e.g. South Florida" style="'+inpS+'"></div>';
+  h += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">';
+  h += '<button onclick="document.getElementById(\'ea-new-modal\').remove()" style="padding:10px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>';
+  h += '<button onclick="eaCreateAssess()" style="padding:10px 24px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Start Assessment</button>';
+  h += '</div></div>';
+  m.innerHTML = h;
+  document.body.appendChild(m);
+}
+
+function eaCreateAssess(){
+  var store = document.getElementById('ea-new-store').value;
+  var month = document.getElementById('ea-new-month').value;
+  var quarter = document.getElementById('ea-new-quarter').value;
+  var auditor = document.getElementById('ea-new-auditor').value.trim();
+  var region = document.getElementById('ea-new-region').value.trim();
+  if(!store || !month || !auditor){ alert('Store, Month, and Auditor are required.'); return; }
+  // Build blank scores array — one entry per item
+  var scores = {};
+  _EA_SECTIONS.forEach(function(sec, si){
+    sec.items.forEach(function(item, ii){
+      scores[si+'_'+ii] = { score: null, comment: '', action: '' };
+    });
+  });
+  var assess = {
+    id: _eaId(),
+    store: store,
+    month: month,
+    quarter: quarter,
+    auditor: auditor,
+    region: region,
+    audit_date: new Date().toISOString().split('T')[0],
+    scores: scores,
+    overall_score: 0,
+    overall_rating: 'Not Started',
+    created_by: _slDisplayName || 'Admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  var all = _eaLoad();
+  all.push(assess);
+  _eaSave(all);
+  var modal = document.getElementById('ea-new-modal');
+  if(modal) modal.remove();
+  eaOpenForm(assess.id);
+}
+
+function eaOpenSaved(id){
+  eaOpenForm(id);
+}
+
+function eaOpenForm(id){
+  var all = _eaLoad();
+  var a = all.find(function(x){ return x.id === id; });
+  if(!a){ alert('Assessment not found.'); return; }
+  _eaCurrent = a;
+  document.getElementById('ea-view-list').style.display='none';
+  document.getElementById('ea-view-form').style.display='';
+  eaRenderFormTopbar();
+  eaRenderFormSections();
+  eaRenderFormSummary();
+}
+
+function eaBackToList(){
+  // Auto-save
+  if(_eaCurrent) eaAutoSave();
+  _eaCurrent = null;
+  document.getElementById('ea-view-list').style.display='';
+  document.getElementById('ea-view-form').style.display='none';
+  eaBuildFilters();
+  eaRenderList();
+}
+
+function eaRenderFormTopbar(){
+  var a = _eaCurrent;
+  var h = '<button onclick="eaBackToList()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 12px 0 0;">← Back</button>';
+  h += '<span style="font-family:Oswald,sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;">'+_eaEsc(a.store)+'</span>';
+  h += '<span style="font-size:11px;color:#64748b;padding:0 8px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter)+' &middot; Auditor: '+_eaEsc(a.auditor)+'</span>';
+  h += '<div style="flex:1;"></div>';
+  h += '<button onclick="eaAutoSave();eaRenderFormSummary();" style="padding:6px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#1e3a5f;">Recalculate</button>';
+  document.getElementById('ea-form-topbar').innerHTML = h;
+}
+
+function eaRenderFormSections(){
+  var a = _eaCurrent;
+  var isAdmin = _slRole === 'admin';
+  var h = '';
+  _EA_SECTIONS.forEach(function(sec, si){
+    var secScore = eaCalcSection(si);
+    var pctColor = secScore.pct >= 90 ? '#16a34a' : secScore.pct >= 75 ? '#ca8a04' : '#dc2626';
+    h += '<div class="ea-section-card" id="ea-sec-'+si+'">';
+    h += '<div class="ea-section-hdr" onclick="eaToggleSection('+si+')">';
+    h += '<div style="flex:1;"><span style="font-family:Oswald,sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;">'+_eaEsc(sec.name)+'</span>';
+    h += '<span style="font-size:10px;color:#94a3b8;margin-left:8px;">('+sec.items.length+' items, weight: '+(sec.weight*100).toFixed(0)+'%)</span>';
+    if(secScore.critFails > 0) h += '<span class="ea-crit-badge">CRITICAL FAIL</span>';
+    h += '</div>';
+    h += '<div style="display:flex;align-items:center;gap:10px;min-width:140px;">';
+    h += '<div class="ea-pct-bar"><div class="ea-pct-fill" style="width:'+secScore.pct+'%;background:'+pctColor+';"></div></div>';
+    h += '<span style="font-size:13px;font-weight:800;color:'+pctColor+';min-width:44px;text-align:right;">'+secScore.pct.toFixed(0)+'%</span>';
+    h += '</div></div>';
+    h += '<div class="ea-section-body" id="ea-sec-body-'+si+'">';
+    var lastSub = '';
+    sec.items.forEach(function(item, ii){
+      var key = si+'_'+ii;
+      var sc = a.scores[key] || {};
+      var val = sc.score;
+      if(item.sub !== lastSub){
+        h += '<div class="ea-sub-hdr">'+_eaEsc(item.sub)+'</div>';
+        lastSub = item.sub;
+      }
+      h += '<div class="ea-item-row">';
+      h += '<div class="ea-item-std">'+_eaEsc(item.std);
+      if(item.critical) h += '<span class="ea-crit-badge">CRITICAL</span>';
+      if(item.w > 1) h += '<span style="font-size:9px;color:#94a3b8;margin-left:4px;">(x'+item.w+')</span>';
+      h += '</div>';
+      h += '<div class="ea-item-btns">';
+      if(isAdmin){
+        [2,1,0].forEach(function(v){
+          var cls = 'ea-score-btn' + (val === v ? ' sel-'+v : '');
+          h += '<button class="'+cls+'" onclick="eaScore('+si+','+ii+','+v+')">'+v+'</button>';
+        });
+        var naCls = 'ea-score-btn' + (val === -1 ? ' sel-na' : '');
+        h += '<button class="'+naCls+'" onclick="eaScore('+si+','+ii+',-1)" style="font-size:9px;">N/A</button>';
+      } else {
+        // read-only
+        if(val === 2) h += '<span style="color:#16a34a;font-weight:700;">2</span>';
+        else if(val === 1) h += '<span style="color:#ca8a04;font-weight:700;">1</span>';
+        else if(val === 0) h += '<span style="color:#dc2626;font-weight:700;">0</span>';
+        else if(val === -1) h += '<span style="color:#94a3b8;font-weight:700;">N/A</span>';
+        else h += '<span style="color:#d4d4d4;">--</span>';
+      }
+      h += '</div></div>';
+      // Comment/Action fields for admin
+      if(isAdmin){
+        h += '<div style="display:flex;gap:8px;padding:0 0 6px;margin-top:-4px;">';
+        h += '<input placeholder="Comment / Evidence" value="'+_eaEsc(sc.comment||'')+'" onchange="eaComment('+si+','+ii+',this.value,\'comment\')" style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid #f1ece3;font-size:10px;color:#64748b;">';
+        h += '<input placeholder="Action / Follow-up" value="'+_eaEsc(sc.action||'')+'" onchange="eaComment('+si+','+ii+',this.value,\'action\')" style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid #f1ece3;font-size:10px;color:#64748b;">';
+        h += '</div>';
+      }
+    });
+    h += '</div></div>';
+  });
+  document.getElementById('ea-form-sections').innerHTML = h;
+}
+
+function eaToggleSection(si){
+  var body = document.getElementById('ea-sec-body-'+si);
+  if(body) body.classList.toggle('open');
+}
+
+function eaScore(si, ii, val){
+  if(!_eaCurrent) return;
+  var key = si+'_'+ii;
+  if(!_eaCurrent.scores[key]) _eaCurrent.scores[key] = {};
+  _eaCurrent.scores[key].score = val;
+  // Update button visuals immediately
+  eaAutoSave();
+  eaRenderFormSections();
+  eaRenderFormSummary();
+}
+
+function eaComment(si, ii, val, field){
+  if(!_eaCurrent) return;
+  var key = si+'_'+ii;
+  if(!_eaCurrent.scores[key]) _eaCurrent.scores[key] = { score: null };
+  _eaCurrent.scores[key][field] = val;
+  // Don't re-render on comment changes, just save
+  eaAutoSave();
+}
+
+function eaCalcSection(si){
+  var a = _eaCurrent;
+  var sec = _EA_SECTIONS[si];
+  var earned = 0, maxPts = 0, critFails = 0, scored = 0;
+  sec.items.forEach(function(item, ii){
+    var key = si+'_'+ii;
+    var sc = a.scores[key] || {};
+    var val = sc.score;
+    if(val === null || val === undefined) return; // not scored
+    if(val === -1) return; // N/A
+    scored++;
+    var itemMax = 2 * item.w;
+    maxPts += itemMax;
+    earned += val * item.w;
+    if(item.critical && val === 0) critFails++;
+  });
+  var raw = maxPts > 0 ? (earned / maxPts) * 100 : 0;
+  var capped = critFails > 0 ? Math.min(raw, 70) : raw;
+  return { earned: earned, maxPts: maxPts, raw: raw, capped: capped, pct: capped, critFails: critFails, scored: scored, total: sec.items.length };
+}
+
+function eaCalcOverall(){
+  var a = _eaCurrent;
+  var totalWeighted = 0;
+  var critSections = 0;
+  _EA_SECTIONS.forEach(function(sec, si){
+    var r = eaCalcSection(si);
+    totalWeighted += (r.capped / 100) * sec.weight;
+    if(r.critFails > 0) critSections++;
+  });
+  var overall = totalWeighted * 100;
+  var rating = 'Not Started';
+  if(overall >= 90) rating = 'Excellent';
+  else if(overall >= 80) rating = 'Good';
+  else if(overall >= 70) rating = 'Needs Improvement';
+  else if(overall > 0) rating = 'Critical';
+  if(critSections > 0 && rating === 'Excellent') rating = 'Good (Critical Flags)';
+  return { score: overall, rating: rating, critSections: critSections };
+}
+
+function eaRenderFormSummary(){
+  var a = _eaCurrent;
+  var ov = eaCalcOverall();
+  var color = ov.score >= 90 ? '#16a34a' : ov.score >= 75 ? '#ca8a04' : '#dc2626';
+  var h = '<div style="text-align:center;margin-bottom:20px;">';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:.1em;margin-bottom:8px;">OVERALL SCORE</div>';
+  h += '<div style="font-size:48px;font-weight:800;color:'+color+';line-height:1;">'+ov.score.toFixed(1)+'%</div>';
+  h += '<div style="font-size:14px;font-weight:700;color:'+color+';margin-top:4px;">'+_eaEsc(ov.rating)+'</div>';
+  if(ov.critSections > 0) h += '<div style="font-size:11px;color:#dc2626;margin-top:4px;">⚠️ '+ov.critSections+' section'+(ov.critSections>1?'s':'')+' with critical fails</div>';
+  h += '</div>';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:12px;font-weight:700;color:#1e3a5f;letter-spacing:.06em;margin-bottom:10px;">SECTION BREAKDOWN</div>';
+  _EA_SECTIONS.forEach(function(sec, si){
+    var r = eaCalcSection(si);
+    var pc = r.pct;
+    var c = pc >= 90 ? '#16a34a' : pc >= 75 ? '#ca8a04' : '#dc2626';
+    h += '<div class="ea-summary-row">';
+    h += '<div style="flex:1;min-width:0;">';
+    h += '<div style="font-size:11px;font-weight:700;color:#1e3a5f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_eaEsc(sec.name)+'</div>';
+    h += '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">';
+    h += '<div class="ea-pct-bar"><div class="ea-pct-fill" style="width:'+pc+'%;background:'+c+';"></div></div>';
+    h += '<span style="font-size:11px;font-weight:700;color:'+c+';min-width:36px;text-align:right;">'+pc.toFixed(0)+'%</span>';
+    h += '</div></div>';
+    if(r.critFails > 0) h += '<span class="ea-crit-badge" style="flex-shrink:0;">⚠ CRIT</span>';
+    h += '</div>';
+  });
+  h += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e8e2d8;font-size:10px;color:#94a3b8;">';
+  h += 'Store: '+_eaEsc(a.store)+'<br>Month: '+_eaEsc(a.month)+' ('+_eaEsc(a.quarter)+')<br>Auditor: '+_eaEsc(a.auditor)+'<br>Date: '+_eaEsc(a.audit_date);
+  h += '</div>';
+  document.getElementById('ea-form-summary').innerHTML = h;
+}
+
+function eaAutoSave(){
+  if(!_eaCurrent) return;
+  var ov = eaCalcOverall();
+  _eaCurrent.overall_score = ov.score;
+  _eaCurrent.overall_rating = ov.rating;
+  _eaCurrent.updated_at = new Date().toISOString();
+  var all = _eaLoad();
+  for(var i=0;i<all.length;i++){
+    if(all[i].id === _eaCurrent.id){
+      all[i] = _eaCurrent;
+      break;
+    }
+  }
+  _eaSave(all);
+}
+
+function eaDeleteAssess(id){
+  _slConfirm({
+    title: 'Delete Assessment',
+    message: 'Are you sure you want to delete this assessment?<br>This cannot be undone.',
+    confirmText: 'Delete',
+    confirmColor: '#dc2626',
+    cancelText: 'Keep It',
+    onConfirm: function(){
+      var all = _eaLoad();
+      all = all.filter(function(a){ return a.id !== id; });
+      _eaSave(all);
+      eaRenderList();
+    }
+  });
+}
+
 // ══════════════════════════════════════════════════
 //  LOUIE SPOTS MODULE
 // ══════════════════════════════════════════════════
@@ -18820,6 +19270,39 @@ migrate();
 
 
 
+
+
+<!-- ═══ EXCELLENCE ASSESSMENT PAGE ═══ -->
+<div id="pg-assess" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;">📋 EXCELLENCE ASSESSMENT</span>
+  </div>
+  <!-- View: saved list or active assessment -->
+  <div id="ea-view-list">
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">
+      <select id="ea-flt-city" onchange="eaCityChanged()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
+        <option value="ALL">All Cities</option>
+      </select>
+      <select id="ea-flt-store" onchange="eaRenderList()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
+        <option value="ALL">All Stores</option>
+      </select>
+      <select id="ea-flt-month" onchange="eaRenderList()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
+        <option value="ALL">All Months</option>
+      </select>
+      <div style="flex:1;"></div>
+      <button id="ea-btn-new" onclick="eaStartNew()" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:Oswald,sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;box-shadow:0 2px 8px rgba(30,58,95,.3);">+ New Assessment</button>
+    </div>
+    <div id="ea-saved-list" style="padding:20px 24px;"></div>
+  </div>
+  <div id="ea-view-form" style="display:none;">
+    <div id="ea-form-topbar" style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;"></div>
+    <div style="display:flex;gap:0;max-width:100%;">
+      <div id="ea-form-sections" style="flex:1;padding:20px 24px;min-width:0;max-height:calc(100vh - 180px);overflow-y:auto;"></div>
+      <div id="ea-form-summary" style="width:340px;flex-shrink:0;padding:20px;background:#fff;border-left:1px solid #e8e2d8;max-height:calc(100vh - 180px);overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ LOUIE SPOTS PAGE ═══ -->
 <div id="pg-stores" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
