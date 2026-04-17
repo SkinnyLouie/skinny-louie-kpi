@@ -6422,7 +6422,7 @@ let _actHeartbeatTimer = null;
 const _ACT_HEARTBEAT_SEC = 60;
 
 async function _actStartSession(){
-  if(\!_slUser || \!_supa) return;
+  if(!_slUser || !_supa) return;
   _actSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   const entry = {
     id: _actSessionId,
@@ -6443,7 +6443,7 @@ async function _actStartSession(){
 }
 
 async function _actHeartbeat(){
-  if(\!_actSessionId || \!_slUser || \!_supa) return;
+  if(!_actSessionId || !_slUser || !_supa) return;
   try {
     await _supa.from('activity_logs')
       .update({ last_seen_at: new Date().toISOString() })
@@ -6510,7 +6510,7 @@ let _actFilterRange = '30'; // days
 
 async function renderActivityLogs(){
   const wrap = document.getElementById('act-log-wrap');
-  if(\!wrap) return;
+  if(!wrap) return;
 
   wrap.innerHTML = '<div class="adm-loading">Loading activity data…</div>';
 
@@ -6545,10 +6545,10 @@ async function renderActivityLogs(){
 
   // Apply filters
   let filtered = [...allLog];
-  if(_actFilterUser \!== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
+  if(_actFilterUser !== 'ALL') filtered = filtered.filter(r => r.userId === _actFilterUser);
   if(_actFilterDate){
     filtered = filtered.filter(r => r.loginAt.startsWith(_actFilterDate));
-  } else if(_actFilterRange \!== 'all'){
+  } else if(_actFilterRange !== 'all'){
     const days = parseInt(_actFilterRange) || 30;
     const cutoff = new Date(Date.now() - days * 86400000).toISOString();
     filtered = filtered.filter(r => r.loginAt >= cutoff);
