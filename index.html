@@ -16441,9 +16441,12 @@ function dlCard(r){
   h += `</div>`;
   // Comment
   if(r.comment) h += `<div class="deal-card-comment">${_dlEsc(r.comment)}</div>`;
-  // PDF attachment
+  // PDF attachments
   if(r.pdfName){
-    h += `<div class="deal-card-pdf"><span style="font-size:14px;">📄</span> <a href="#" onclick="dlViewPdf('${safeId}');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">${_dlEsc(r.pdfName)}</a></div>`;
+    h += `<div class="deal-card-pdf"><span style="font-size:14px;">📄</span> <a href="#" onclick="dlViewPdf('${safeId}','location');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">Location PDF</a> <span style="font-size:11px;color:#64748b;">(${_dlEsc(r.pdfName)})</span></div>`;
+  }
+  if(r.renderPdfName){
+    h += `<div class="deal-card-pdf"><span style="font-size:14px;">🏗</span> <a href="#" onclick="dlViewPdf('${safeId}','render');return false;" style="color:#1e3a5f;font-weight:600;text-decoration:underline;">Store Render</a> <span style="font-size:11px;color:#64748b;">(${_dlEsc(r.renderPdfName)})</span></div>`;
   }
   h += `</div>`; // end card-body
   // Footer
@@ -16456,12 +16459,16 @@ function dlCard(r){
 }
 
 // ── View PDF ───────────────────────────────────────
-function dlViewPdf(id){
+function dlViewPdf(id, type){
   const r = getDealRecords().find(x => x.id === id);
-  if(!r || !r.pdfData){ alert('No PDF attached.'); return; }
+  if(!r){ alert('Deal not found.'); return; }
+  const isRender = (type === 'render');
+  const data = isRender ? r.renderPdfData : r.pdfData;
+  const name = isRender ? (r.renderPdfName || 'Store Render') : (r.pdfName || 'Location PDF');
+  if(!data){ alert('No PDF attached.'); return; }
   const w = window.open('','_blank');
   if(!w){ alert('Popup blocked — please allow popups.'); return; }
-  w.document.write(`<html><head><title>${_dlEsc(r.pdfName||'Document')}</title></head><body style="margin:0;"><iframe src="${r.pdfData}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`);
+  w.document.write(`<html><head><title>${_dlEsc(name)}</title></head><body style="margin:0;"><iframe src="${data}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`);
   w.document.close();
 }
 
@@ -16549,13 +16556,25 @@ function dlShowModal(existing){
   if(r.photo) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-photo-clear').value='1';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
   h += `<input type="hidden" id="dl-f-photo-clear" value="0">`;
   h += `</div></div>`;
-  // Row 7: PDF Document
-  h += `<div class="deal-form-row"><label>PDF Document</label>`;
+  // Row 7: Location PDF
+  h += `<div class="deal-form-row"><label>Location PDF</label>`;
   h += `<div style="display:flex;align-items:center;gap:12px;">`;
   if(r.pdfName) h += `<span style="font-size:12px;color:#1e3a5f;font-weight:600;">📄 ${_dlEsc(r.pdfName)}</span>`;
+  if(r.pdfData) h += `<button type="button" class="deal-action-btn blue" style="padding:5px 12px;font-size:11px;" onclick="dlViewPdf('${isEdit?_dlEsc(r.id):''}','location');return false;">👁 VIEW</button>`;
   h += `<input type="file" id="dl-f-pdf" accept=".pdf" class="dl-input" style="flex:1;">`;
-  if(r.pdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.style.display='none';">✕</button>`;
+  if(r.pdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
   h += `<input type="hidden" id="dl-f-pdf-clear" value="0">`;
+  h += `</div>`;
+  h += `<div style="font-size:10px;color:#94a3b8;margin-top:3px;">Max 5 MB. Stored locally for quick access.</div>`;
+  h += `</div>`;
+  // Row 8: Store Render PDF
+  h += `<div class="deal-form-row"><label>Store Render</label>`;
+  h += `<div style="display:flex;align-items:center;gap:12px;">`;
+  if(r.renderPdfName) h += `<span style="font-size:12px;color:#1e3a5f;font-weight:600;">📄 ${_dlEsc(r.renderPdfName)}</span>`;
+  if(r.renderPdfData) h += `<button type="button" class="deal-action-btn blue" style="padding:5px 12px;font-size:11px;" onclick="dlViewPdf('${isEdit?_dlEsc(r.id):''}','render');return false;">👁 VIEW</button>`;
+  h += `<input type="file" id="dl-f-render-pdf" accept=".pdf" class="dl-input" style="flex:1;">`;
+  if(r.renderPdfName) h += `<button type="button" class="deal-action-btn gray" style="padding:6px 10px;font-size:11px;" onclick="document.getElementById('dl-f-render-pdf-clear').value='1';this.parentElement.querySelector('span').style.display='none';this.previousElementSibling.previousElementSibling.style.display='none';this.style.display='none';">✕</button>`;
+  h += `<input type="hidden" id="dl-f-render-pdf-clear" value="0">`;
   h += `</div>`;
   h += `<div style="font-size:10px;color:#94a3b8;margin-top:3px;">Max 5 MB. Stored locally for quick access.</div>`;
   h += `</div>`;
@@ -16601,7 +16620,7 @@ async function dlSaveDeal(editId){
     catch(e){ console.error('[Deals] photo resize error:', e); }
   }
 
-  // Process PDF
+  // Process Location PDF
   let pdfData = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfData||null) : null;
   let pdfName = editId ? (getDealRecords().find(x=>x.id===editId)?.pdfName||null) : null;
   const pdfClear = document.getElementById('dl-f-pdf-clear')?.value === '1';
@@ -16609,19 +16628,32 @@ async function dlSaveDeal(editId){
   const pdfInput = document.getElementById('dl-f-pdf');
   if(pdfInput && pdfInput.files && pdfInput.files[0]){
     const file = pdfInput.files[0];
-    if(file.size > 5*1024*1024){ alert('PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
+    if(file.size > 5*1024*1024){ alert('Location PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
     pdfName = file.name;
     pdfData = await new Promise((res,rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
+  }
+
+  // Process Store Render PDF
+  let renderPdfData = editId ? (getDealRecords().find(x=>x.id===editId)?.renderPdfData||null) : null;
+  let renderPdfName = editId ? (getDealRecords().find(x=>x.id===editId)?.renderPdfName||null) : null;
+  const renderPdfClear = document.getElementById('dl-f-render-pdf-clear')?.value === '1';
+  if(renderPdfClear){ renderPdfData = null; renderPdfName = null; }
+  const renderPdfInput = document.getElementById('dl-f-render-pdf');
+  if(renderPdfInput && renderPdfInput.files && renderPdfInput.files[0]){
+    const file = renderPdfInput.files[0];
+    if(file.size > 5*1024*1024){ alert('Store Render PDF is too large (max 5 MB).'); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Changes'; } return; }
+    renderPdfName = file.name;
+    renderPdfData = await new Promise((res,rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
   }
 
   const recs = getDealRecords();
   if(editId){
     const idx = recs.findIndex(r => r.id === editId);
     if(idx === -1){ alert('Deal not found'); return; }
-    recs[idx] = { ...recs[idx], area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, updatedAt: new Date().toISOString() };
+    recs[idx] = { ...recs[idx], area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, renderPdfData, renderPdfName, updatedAt: new Date().toISOString() };
   } else {
     recs.push({
-      id: dlGenId(), area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName,
+      id: dlGenId(), area, location, city, address, status, progress, broker, holding, comment, photo, pdfData, pdfName, renderPdfData, renderPdfName,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     });
   }
@@ -16678,7 +16710,7 @@ function dlSeedIfEmpty(){
   const records = seed.map((s,i) => ({
     id: dlGenId() + i, area: s.area, location: s.location, city: s.city, address: '',
     status: s.status, progress: s.progress, comment: s.comment, broker: s.broker, holding: s.holding,
-    photo: null, pdfData: null, pdfName: null, createdAt: now, updatedAt: now,
+    photo: null, pdfData: null, pdfName: null, renderPdfData: null, renderPdfName: null, createdAt: now, updatedAt: now,
   }));
   saveDealRecords(records);
   console.log('[Deals] Seeded', records.length, 'deals');
