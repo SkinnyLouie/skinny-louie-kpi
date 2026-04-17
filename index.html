@@ -11003,14 +11003,14 @@ function loadToastJson(input){
       var fname = file.name;
 
       // Cross-field void integrity helper
+      // Void helper: pass through values as-is. $0 void amount is valid
+      // (Toast counts void orders/items even when dollar amount is zero).
       var _jsonVoid = function(r){
         var a = r.voidAmount != null ? r.voidAmount : null;
         var o = r.voidOrders != null ? r.voidOrders : null;
         var i = r.voidItems != null ? r.voidItems : null;
         var p = r.voidPct != null ? r.voidPct : null;
-        if(o != null && o > 0){ if(a === 0) a = null; if(i === 0) i = null; }
-        var parsed=[a,o,i]; var hasAny=parsed.some(function(v){return v!==null;}); var hasAll=parsed.every(function(v){return v!==null;});
-        return { voidAmount:a, voidOrders:o, voidItems:i, voidPct:p, voidIncomplete:(hasAny&&!hasAll)||undefined };
+        return { voidAmount:a, voidOrders:o, voidItems:i, voidPct:p };
       };
 
       // Map state from LOC_MAP if not in record
@@ -11057,8 +11057,7 @@ function loadToastJson(input){
           dayparts: (r.dayparts||[]).map(function(dp){ return {name:dp.name, orders:dp.orders||0, netSales:+(dp.netSales||0).toFixed(2), discount:dp.discount||0}; }),
           itemDiscounts: (r.itemDiscounts||[]).map(function(d){ return {name:d.name, count:d.orders||0, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
           checkDiscounts: (r.checkDiscounts||[]).map(function(d){ return {name:d.name, count:d.orders||0, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
-          voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct,
-          voidIncomplete:_vf.voidIncomplete
+          voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct
         });
         // Daily records
         var dailyArr = r.daily || [];
@@ -12305,17 +12304,12 @@ function renderSalesDashboard(rec, locRecs, allRecs){
 
   if(SX.activeTab==='voids'){
     const ns   = rec.netSales || 1;
-    // ── Retroactive cross-field correction for legacy stored records ────────
-    // Records imported before the parser-level fix may have voidAmount=0 or
-    // voidItems=0 stored as literal zero rather than null.  Apply the same
-    // consistency rule here so the display is always correct regardless of when
-    // the record was imported:  if voidOrders > 0, a stored 0 for amount or
-    // items is impossible and must be treated as "not available" (null).
-    const _vOrdRaw = rec.voidOrders;
-    const vAmt = (_vOrdRaw != null && _vOrdRaw > 0 && rec.voidAmount === 0) ? null : rec.voidAmount;
-    const vOrd = _vOrdRaw;
-    const vItm = (_vOrdRaw != null && _vOrdRaw > 0 && rec.voidItems  === 0) ? null : rec.voidItems;
-    const vPct = rec.voidPct;
+    // Void values: pass through as-is. $0 void amount is valid when Toast
+    // counts void orders/items but the dollar total is genuinely zero.
+    const vAmt = rec.voidAmount != null ? rec.voidAmount : null;
+    const vOrd = rec.voidOrders != null ? rec.voidOrders : null;
+    const vItm = rec.voidItems != null ? rec.voidItems : null;
+    const vPct = rec.voidPct != null ? rec.voidPct : null;
 
     // ── Null-aware validity checks ──────────────────────────────────────────
     // amtOk/ordOk/itmOk/pctOk = true only when the field is present AND in range.
