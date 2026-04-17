@@ -4177,7 +4177,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ══════════════════════════════════════════════════
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const MFULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const GR_GOAL = 0.00025; // 0.025% of dine-in sales
+const GR_GOAL = 0.0005; // 0.05% of 1004 In-store (dine-in) sales
 
 // Thresholds (lower is better for cost KPIs)
 const THR = { fp:{g:.25,y:.30}, lp:{g:.20,y:.30}, dp:{g:.02,y:.03} };
@@ -8610,10 +8610,10 @@ function openTargetsModal(){
   const tgts=d?.targets||{};
   // KPI % rows (stored as decimals)
   const pctRows=[
-    {key:'fp',label:'Food Cost %',def:(DEFAULT_TGTS.fp*100).toFixed(1),unit:'%'},
-    {key:'lp',label:'Labor %',def:(DEFAULT_TGTS.lp*100).toFixed(1),unit:'%'},
-    {key:'dp',label:'D&C %',def:(DEFAULT_TGTS.dp*100).toFixed(1),unit:'%'},
-    {key:'uber',label:'UberEats Rating',def:DEFAULT_TGTS.uber.toFixed(1),unit:''}
+    {key:'fp',label:'Food Cost %',def:(DEFAULT_TGTS.fp*100).toFixed(1),unit:'%',min:20,max:30,step:0.1},
+    {key:'lp',label:'Labor %',def:(DEFAULT_TGTS.lp*100).toFixed(1),unit:'%',min:10,max:25,step:0.1},
+    {key:'dp',label:'D&C %',def:(DEFAULT_TGTS.dp*100).toFixed(1),unit:'%',min:1,max:3,step:0.1},
+    {key:'uber',label:'UberEats Rating',def:DEFAULT_TGTS.uber.toFixed(1),unit:'',min:4,max:5,step:0.1}
   ];
   // Net Sales $ rows (stored as raw dollar amounts)
   const nsRows=[
@@ -8631,10 +8631,18 @@ function openTargetsModal(){
     for(let i=0;i<12;i++){
       const v=tgts[r.key]?.[i];
       const disp=v!=null?(r.key==='uber'?parseFloat(v).toFixed(1):(v*100).toFixed(1)):'';
-      h+=`<td><input class="tgt-fi" id="tgt-${r.key}-${i}" type="number" step="0.1" placeholder="${r.def}" value="${disp}"></td>`;
+      h+=`<td><input class="tgt-fi" id="tgt-${r.key}-${i}" type="number" step="${r.step||0.1}" min="${r.min||''}" max="${r.max||''}" placeholder="${r.def}" value="${disp}"></td>`;
     }
     h+=`</tr>`;
   }
+  // Google Reviews auto-calculated row
+  h+=`<tr><td>Google Reviews <span style="color:#94a3b8;font-size:10px;">(auto: 0.05% of 1004 In-store)</span></td>`;
+  for(let i=0;i<12;i++){
+    const di=d.dineIn?.[i]||d.ns?.[i]||0;
+    const grAuto=di>0?Math.round(di*GR_GOAL):'';
+    h+=`<td style="text-align:center;color:#64748b;font-size:11px;font-weight:600;background:#f0fdf4;">${grAuto||'<span style="color:#cbd5e1;">—</span>'}</td>`;
+  }
+  h+=`</tr>`;
   // Section header — Net Sales $
   h+=`<tr><td colspan="13" style="background:#ede8de;padding:7px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#4a3f38;">💰 Net Sales $ Targets</td></tr>`;
   for(const r of nsRows){
@@ -8692,8 +8700,10 @@ function saveTargetsModal(){
       const el=document.getElementById(`tgt-${k}-${i}`);
       const v=parseFloat(el?.value);
       if(!isNaN(v)&&v>0){
-        if(k==='uber'){d.targets[k][i]=(v>=3&&v<=5)?v:null;}
-        else d.targets[k][i]=v/100;
+        if(k==='uber'){d.targets[k][i]=(v>=4&&v<=5)?v:null;}
+        else if(k==='fp'){d.targets[k][i]=(v>=20&&v<=30)?v/100:null;}
+        else if(k==='lp'){d.targets[k][i]=(v>=10&&v<=25)?v/100:null;}
+        else if(k==='dp'){d.targets[k][i]=(v>=1&&v<=3)?v/100:null;}
       } else d.targets[k][i]=null;
     }
   }
