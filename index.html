@@ -3003,6 +3003,42 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-btn-del{background:#fee2e2;color:#991b1b;}
 .adm-sel{font-size:12px;padding:4px 8px;border:1px solid #d4c9b8;border-radius:6px;background:#fff;color:#334155;cursor:pointer;}
 .adm-sel:focus{outline:none;border-color:#7e2023;}
+
+/* ── HR Dashboard ────────────────────────── */
+.hr-tab-btn{background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;color:#94a3b8;padding:14px 18px;border-bottom:2.5px solid transparent;transition:all .15s;}
+.hr-tab-btn.active{color:#1e3a5f;border-bottom-color:#1e3a5f;}
+.hr-tab-btn:hover{color:#1e3a5f;}
+.hr-land-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;padding:32px 24px;}
+.hr-land-card{background:#fff;border-radius:16px;padding:32px;cursor:pointer;border:1.5px solid #e8e2d8;transition:all .2s;text-align:center;}
+.hr-land-card:hover{border-color:#7e2023;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08);}
+.hr-land-icon{font-size:48px;margin-bottom:12px;}
+.hr-land-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:8px;}
+.hr-land-desc{font-size:13px;color:#64748b;line-height:1.5;}
+.hr-mod-tabs{display:flex;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;}
+.hr-mod-tab{background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;padding:12px 18px;color:#94a3b8;border-bottom:2.5px solid transparent;transition:all .15s;}
+.hr-mod-tab.active{border-bottom-color:#1e3a5f;color:#1e3a5f;}
+.hr-mod-tab.t-pending{color:#ca8a04;}.hr-mod-tab.t-pending.active{border-bottom-color:#ca8a04;color:#ca8a04;}
+.hr-mod-tab.t-completed{color:#16a34a;}.hr-mod-tab.t-completed.active{border-bottom-color:#16a34a;color:#16a34a;}
+.hr-card{background:#fff;border-radius:12px;border:1px solid #e8e2d8;padding:16px 20px;margin-bottom:10px;transition:all .15s;}
+.hr-card:hover{border-color:#cbd5e1;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.hr-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.hr-card-name{font-weight:700;font-size:14px;color:#1a1a1a;}
+.hr-card-store{font-size:11px;font-weight:600;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:4px;}
+.hr-card-meta{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+.hr-card-meta span{font-size:11px;color:#94a3b8;}
+.hr-card-actions{display:flex;gap:8px;margin-top:10px;justify-content:flex-end;}
+.hr-btn-complete{background:#16a34a;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.hr-btn-complete:hover{background:#15803d;}
+.hr-btn-delete{background:none;border:1px solid #fca5a5;color:#dc2626;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.hr-btn-delete:hover{background:#fef2f2;}
+.hr-btn-add{padding:8px 18px;font-size:12px;font-weight:700;background:#7e2023;color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .15s;}
+.hr-btn-add:hover{background:#9b292c;}
+.hr-empty{text-align:center;padding:60px 20px;color:#94a3b8;}
+.hr-empty-icon{font-size:40px;margin-bottom:12px;}
+.hr-empty-title{font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;}
+.hr-empty-sub{font-size:12px;}
+.hr-audit-line{font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic;}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -3160,6 +3196,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-title">New Stores Status</div>
       <div class="hcard-desc">Pipeline tracker for new store opportunities. Track leases, LOIs, progress, and documents per deal.</div>
       <div class="hcard-tag">Pipeline Tracker</div>
+    </div>
+    <div id="hcard-hr" class="hcard c7" onclick="goHR()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">👥</span>
+      <div class="hcard-title">HR Dashboard</div>
+      <div class="hcard-desc">Weekly employee news, termination tracking, and audit history. Manage staffing changes across all locations.</div>
+      <div class="hcard-tag">Active · All Locations</div>
     </div>
     <div id="hcard-inventory" class="hcard c9" onclick="goInv()" style="position:relative;cursor:pointer;">
        <span class="hcard-icon">📦</span>
@@ -3982,7 +4024,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','newstores','hr'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -4131,6 +4173,8 @@ function _applyPermissionsUI(){
     dm_report:   'hcard-dm_report',
     events:      'hcard-events',
     portfolio:   'hcard-portfolio',
+    newstores:   'hcard-newstores',
+    hr:          'hcard-hr',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -4865,6 +4909,7 @@ function goInv(){
   const first=S.page!=='inv'; S.page='inv'; if(first) invInit(); render();
 }
 function goNewStores(){
+  if(!_hasPermission('newstores')){ _showAccessDenied('New Stores Status'); return; }
   _nsLoad();
   _nsImportInitialData();
   S.page='newstores';
@@ -5798,6 +5843,8 @@ const _ADM_MODULES = [
   { id:'inventory',   label:'Inventory',         icon:'📦', desc:'Stock levels, usage & waste by location' },
   { id:'dm_report',   label:'DM Scorecard',       icon:'📋', desc:'19-KPI PDF report for district managers' },
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
+  { id:'newstores',   label:'New Stores Status',  icon:'🏗', desc:'Pipeline tracker for new store deals' },
+  { id:'hr',           label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6224,7 +6271,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -17767,6 +17814,292 @@ async function renderActivityLogs(){
   }
 }
 
+
+// ══════════════════════════════════════════════════
+//  HR DASHBOARD
+// ══════════════════════════════════════════════════
+var HR = { module: null, tab: 'pending' };
+
+function _hrLoad(){
+  try{ return JSON.parse(localStorage.getItem('sl_hr_v1') || '[]'); }catch(e){ return []; }
+}
+function _hrSave(arr){ localStorage.setItem('sl_hr_v1', JSON.stringify(arr)); }
+
+function _hrId(){ return 'hr_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+
+function goHR(){
+  if(!_hasPermission('hr')){ _showAccessDenied('HR Dashboard'); return; }
+  S.page='hr';
+  document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
+  document.getElementById('pg-hr').style.display='';
+  HR.module = null;
+  HR.tab = 'pending';
+  document.getElementById('hr-landing').style.display='';
+  document.getElementById('hr-module-view').style.display='none';
+  document.getElementById('hr-topbar-title').textContent = '\uD83D\uDC65 HR DASHBOARD';
+}
+
+function hrBack(){
+  if(HR.module){
+    HR.module = null;
+    document.getElementById('hr-landing').style.display='';
+    document.getElementById('hr-module-view').style.display='none';
+    document.getElementById('hr-topbar-title').textContent = '\uD83D\uDC65 HR DASHBOARD';
+  } else {
+    goHome();
+  }
+}
+
+function hrOpenModule(mod){
+  HR.module = mod;
+  HR.tab = 'pending';
+  document.getElementById('hr-landing').style.display='none';
+  document.getElementById('hr-module-view').style.display='';
+  var title = mod === 'news' ? '\uD83D\uDCF0 WEEKLY NEWS' : '\uD83D\uDCCB TERMINATION BOARD';
+  document.getElementById('hr-topbar-title').textContent = title;
+  hrRenderTabs();
+  hrRenderFilters();
+  hrRenderList();
+}
+
+function hrRenderTabs(){
+  var h = '';
+  ['pending','completed','history'].forEach(function(t){
+    var cls = 'hr-mod-tab';
+    if(t === 'pending') cls += ' t-pending';
+    if(t === 'completed') cls += ' t-completed';
+    if(HR.tab === t) cls += ' active';
+    var label = t === 'pending' ? '\u23F3 Pending' : t === 'completed' ? '\u2705 Completed' : '\uD83D\uDCC1 History';
+    h += '<button class="'+cls+'" onclick="hrSetTab(this,\''+t+'\')">'+label+'</button>';
+  });
+  document.getElementById('hr-mod-tabs-wrap').innerHTML = h;
+}
+
+function hrSetTab(btn, tab){
+  HR.tab = tab;
+  hrRenderTabs();
+  hrRenderList();
+}
+
+function hrRenderFilters(){
+  var stores = allowedLocs();
+  var h = '<select id="hr-filter-store" onchange="hrRenderList()" style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">';
+  h += '<option value="ALL">All Stores</option>';
+  stores.forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+  h += '</select>';
+  h += '<div style="flex:1;"></div>';
+  if(HR.tab === 'pending'){
+    h += '<button class="hr-btn-add" onclick="hrOpenCreate()">+ New Entry</button>';
+  }
+  document.getElementById('hr-mod-filters').innerHTML = h;
+}
+
+function hrRenderList(){
+  hrRenderFilters();
+  var all = _hrLoad();
+  var mod = HR.module;
+  var tab = HR.tab;
+  var storeFilter = document.getElementById('hr-filter-store');
+  var sf = storeFilter ? storeFilter.value : 'ALL';
+
+  var items = all.filter(function(r){
+    if(r.module !== mod) return false;
+    if(sf !== 'ALL' && r.store !== sf) return false;
+    if(tab === 'pending') return r.status === 'pending';
+    if(tab === 'completed') return r.status === 'completed';
+    return true; // history = all
+  });
+
+  items.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
+
+  var wrap = document.getElementById('hr-mod-list');
+  if(items.length === 0){
+    var emptyIcon = mod === 'news' ? '\uD83D\uDCF0' : '\uD83D\uDCCB';
+    var emptyMsg = tab === 'pending' ? 'No pending entries' : tab === 'completed' ? 'No completed entries yet' : 'No history available';
+    wrap.innerHTML = '<div class="hr-empty"><div class="hr-empty-icon">'+emptyIcon+'</div><div class="hr-empty-title">'+emptyMsg+'</div><div class="hr-empty-sub">'+( tab==='pending' ? 'Add a new entry to get started.' : 'Entries will appear here once processed.')+'</div></div>';
+    return;
+  }
+
+  var h = '<div style="margin-bottom:8px;font-size:12px;color:#64748b;font-weight:600;">'+items.length+' entr'+(items.length!==1?'ies':'y')+'</div>';
+  items.forEach(function(r){
+    h += '<div class="hr-card">';
+    h += '<div class="hr-card-top">';
+    h += '<div style="flex:1;min-width:0;">';
+    h += '<span class="hr-card-name">'+_hrEsc(r.employee_name)+'</span> ';
+    h += '<span class="hr-card-store">'+_hrEsc(r.store)+'</span>';
+    h += '</div>';
+    if(r.status === 'pending' && tab === 'pending'){
+      h += '<div class="hr-card-actions">';
+      h += '<button class="hr-btn-complete" onclick="event.stopPropagation();hrComplete(\''+r.id+'\')">\u2713 Complete</button>';
+      h += '<button class="hr-btn-delete" onclick="event.stopPropagation();hrDelete(\''+r.id+'\')">\u2715</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+    h += '<div class="hr-card-meta">';
+
+    if(mod === 'news'){
+      if(r.status_type) h += '<span>\uD83D\uDCCC '+_hrEsc(r.status_type)+'</span>';
+      if(r.date) h += '<span>\uD83D\uDCC5 '+_hrEsc(r.date)+'</span>';
+      if(r.notes) h += '<span>\uD83D\uDCDD '+_hrEsc(r.notes)+'</span>';
+    } else {
+      if(r.last_day) h += '<span>\uD83D\uDCC5 Last day: '+_hrEsc(r.last_day)+'</span>';
+      if(r.manager_name) h += '<span>\uD83D\uDC64 '+_hrEsc(r.manager_name)+'</span>';
+      h += '<span>7Shifts: '+(r.sevenshifts_terminated ? '\u2705' : '\u274C')+'</span>';
+      h += '<span>QB: '+(r.qb_terminated ? '\u2705' : '\u274C')+'</span>';
+    }
+    h += '</div>';
+    h += '<div class="hr-card-meta"><span>Created by '+_hrEsc(r.created_by)+' on '+_hrFmtDate(r.created_at)+'</span></div>';
+    if(r.status === 'completed' && r.processed_by){
+      h += '<div class="hr-audit-line">\u2705 Completed by '+_hrEsc(r.processed_by)+' on '+_hrFmtDate(r.processed_at)+'</div>';
+    }
+    h += '</div>';
+  });
+  wrap.innerHTML = h;
+}
+
+function _hrEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+function _hrFmtDate(d){ if(!d) return ''; try{ var dt=new Date(d); return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return d; } }
+
+function hrOpenCreate(){
+  var stores = allowedLocs();
+  var modal = document.getElementById('hr-modal-create');
+  var mod = HR.module;
+  var h = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1001;" onclick="if(event.target===this)hrCloseCreate();">';
+  h += '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:480px;max-height:85vh;overflow-y:auto;">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;">'+(mod==='news'?'New Weekly News Entry':'New Termination Entry')+'</div>';
+  h += '<button onclick="hrCloseCreate()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">\u2715</button>';
+  h += '</div>';
+
+  // Employee Full Name
+  h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Employee Full Name *</label>';
+  h += '<input id="hr-f-name" placeholder="John Doe" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;"></div>';
+
+  // Store dropdown
+  h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Store *</label>';
+  h += '<select id="hr-f-store" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">';
+  h += '<option value="">Select store...</option>';
+  stores.forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+  h += '</select></div>';
+
+  if(mod === 'news'){
+    // Notes
+    h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Notes</label>';
+    h += '<textarea id="hr-f-notes" rows="3" placeholder="Any relevant details..." style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;resize:vertical;"></textarea></div>';
+
+    // Status Type
+    h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Status Type *</label>';
+    h += '<select id="hr-f-statustype" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">';
+    h += '<option value="">Select...</option><option value="Fired">Fired</option><option value="Quit">Quit</option>';
+    h += '</select></div>';
+
+    // Date
+    h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Date *</label>';
+    h += '<input id="hr-f-date" type="date" min="2026-01-01" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;"></div>';
+  } else {
+    // Last Day Of Work
+    h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Last Day Of Work *</label>';
+    h += '<input id="hr-f-lastday" type="date" min="2026-01-01" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;"></div>';
+
+    // Manager Name
+    h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Manager Name *</label>';
+    h += '<input id="hr-f-manager" placeholder="Manager name" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;"></div>';
+
+    // 7Shifts Terminated
+    h += '<div style="margin-bottom:14px;display:flex;gap:24px;">';
+    h += '<div style="flex:1;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">7Shifts Terminated</label>';
+    h += '<select id="hr-f-7shifts" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">';
+    h += '<option value="no">No</option><option value="yes">Yes</option></select></div>';
+
+    // QB Terminated
+    h += '<div style="flex:1;"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">QB Terminated</label>';
+    h += '<select id="hr-f-qb" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">';
+    h += '<option value="no">No</option><option value="yes">Yes</option></select></div>';
+    h += '</div>';
+  }
+
+  h += '<div style="display:flex;gap:10px;margin-top:20px;">';
+  h += '<button onclick="hrCloseCreate()" style="flex:1;padding:12px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;cursor:pointer;color:#64748b;">Cancel</button>';
+  h += '<button onclick="hrSaveNew()" style="flex:1;padding:12px;border-radius:8px;border:none;background:#7e2023;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Save Entry</button>';
+  h += '</div>';
+  h += '</div></div>';
+
+  modal.innerHTML = h;
+  modal.style.display = 'block';
+}
+
+function hrCloseCreate(){
+  document.getElementById('hr-modal-create').style.display='none';
+  document.getElementById('hr-modal-create').innerHTML='';
+}
+
+function hrSaveNew(){
+  var mod = HR.module;
+  var name = (document.getElementById('hr-f-name').value||'').trim();
+  var store = (document.getElementById('hr-f-store').value||'').trim();
+  if(!name){ alert('Employee name is required.'); return; }
+  if(!store){ alert('Please select a store.'); return; }
+
+  var rec = {
+    id: _hrId(),
+    module: mod,
+    employee_name: name,
+    store: store,
+    created_by: _slDisplayName || 'Unknown',
+    created_at: new Date().toISOString(),
+    status: 'pending',
+    processed_by: null,
+    processed_at: null
+  };
+
+  if(mod === 'news'){
+    var statusType = (document.getElementById('hr-f-statustype').value||'').trim();
+    var date = (document.getElementById('hr-f-date').value||'').trim();
+    if(!statusType){ alert('Please select a status type.'); return; }
+    if(!date){ alert('Please select a date.'); return; }
+    rec.status_type = statusType;
+    rec.date = date;
+    rec.notes = (document.getElementById('hr-f-notes').value||'').trim();
+  } else {
+    var lastDay = (document.getElementById('hr-f-lastday').value||'').trim();
+    var manager = (document.getElementById('hr-f-manager').value||'').trim();
+    if(!lastDay){ alert('Last Day Of Work is required.'); return; }
+    if(!manager){ alert('Manager Name is required.'); return; }
+    rec.last_day = lastDay;
+    rec.manager_name = manager;
+    rec.sevenshifts_terminated = document.getElementById('hr-f-7shifts').value === 'yes';
+    rec.qb_terminated = document.getElementById('hr-f-qb').value === 'yes';
+  }
+
+  var all = _hrLoad();
+  all.push(rec);
+  _hrSave(all);
+  hrCloseCreate();
+  hrRenderList();
+}
+
+function hrComplete(id){
+  var all = _hrLoad();
+  for(var i=0;i<all.length;i++){
+    if(all[i].id === id){
+      all[i].status = 'completed';
+      all[i].processed_by = _slDisplayName || 'Unknown';
+      all[i].processed_at = new Date().toISOString();
+      break;
+    }
+  }
+  _hrSave(all);
+  hrRenderList();
+}
+
+function hrDelete(id){
+  if(!confirm('Delete this entry? This cannot be undone.')) return;
+  var all = _hrLoad();
+  all = all.filter(function(r){ return r.id !== id; });
+  _hrSave(all);
+  hrRenderList();
+}
+
 // ══════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════
@@ -17805,6 +18138,35 @@ migrate();
   <div id="ns-filters" class="ns-filters"></div>
   <div style="padding:16px 24px 40px;" id="ns-list"></div>
   <div id="ns-detail-modal" style="display:none;"></div>
+</div>
+
+
+<!-- ═══ HR DASHBOARD PAGE ═══ -->
+<div id="pg-hr" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div id="hr-topbar" style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <button onclick="hrBack()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span id="hr-topbar-title" style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px;">👥 HR DASHBOARD</span>
+  </div>
+  <div id="hr-landing" class="hr-land-grid">
+    <div class="hr-land-card" onclick="hrOpenModule('news')">
+      <div class="hr-land-icon">📰</div>
+      <div class="hr-land-title">Weekly News</div>
+      <div class="hr-land-desc">Report employee departures (fired or quit). Track status changes across all your locations.</div>
+    </div>
+    <div class="hr-land-card" onclick="hrOpenModule('term')">
+      <div class="hr-land-icon">📋</div>
+      <div class="hr-land-title">Termination Board</div>
+      <div class="hr-land-desc">Track offboarding steps: last day, 7Shifts removal, QuickBooks termination, and manager sign-off.</div>
+    </div>
+  </div>
+  <div id="hr-module-view" style="display:none;">
+    <div id="hr-mod-tabs-wrap" class="hr-mod-tabs"></div>
+    <div id="hr-mod-filters" style="padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;"></div>
+    <div style="padding:0 24px 40px;">
+      <div id="hr-mod-list"></div>
+    </div>
+  </div>
+  <div id="hr-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;"></div>
 </div>
 
 <!-- ═══ PORTFOLIO PAGE ═══ -->
