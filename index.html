@@ -3019,6 +3019,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hr-mod-tab.active{border-bottom-color:#1e3a5f;color:#1e3a5f;}
 .hr-mod-tab.t-pending{color:#ca8a04;}.hr-mod-tab.t-pending.active{border-bottom-color:#ca8a04;color:#ca8a04;}
 .hr-mod-tab.t-completed{color:#16a34a;}.hr-mod-tab.t-completed.active{border-bottom-color:#16a34a;color:#16a34a;}
+.hr-mod-tab.t-cancelled{color:#dc2626;}.hr-mod-tab.t-cancelled.active{border-bottom-color:#dc2626;color:#dc2626;}
 .hr-card{background:#fff;border-radius:12px;border:1px solid #e8e2d8;padding:16px 20px;margin-bottom:10px;transition:all .15s;}
 .hr-card:hover{border-color:#cbd5e1;box-shadow:0 2px 8px rgba(0,0,0,.04);}
 .hr-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -17993,12 +17994,13 @@ function hrOpenModule(mod){
 
 function hrRenderTabs(){
   var h = '';
-  ['pending','completed'].forEach(function(t){
+  ['pending','completed','cancelled'].forEach(function(t){
     var cls = 'hr-mod-tab';
     if(t === 'pending') cls += ' t-pending';
     if(t === 'completed') cls += ' t-completed';
+    if(t === 'cancelled') cls += ' t-cancelled';
     if(HR.tab === t) cls += ' active';
-    var label = t === 'pending' ? '\u23F3 Pending' : '\u2705 Completed';
+    var label = t === 'pending' ? '\u23F3 Pending' : t === 'completed' ? '\u2705 Completed' : '\u274C Cancelled';
     h += '<button class="'+cls+'" onclick="hrSetTab(this,\''+t+'\')">'+label+'</button>';
   });
   document.getElementById('hr-mod-tabs-wrap').innerHTML = h;
@@ -18007,6 +18009,7 @@ function hrRenderTabs(){
 function hrSetTab(btn, tab){
   HR.tab = tab;
   hrRenderTabs();
+  hrRenderFilters();
   hrRenderList();
 }
 
@@ -18075,7 +18078,7 @@ function _hrStoresForCity(cityCode){
 function hrRenderFilters(){
   var selStyle = 'padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;';
   var h = '';
-  if(HR.tab === 'completed'){
+  if(HR.tab === 'completed' || HR.tab === 'cancelled'){
     // City filter
     h += '<select id="hr-filter-city" onchange="hrCityChanged()" style="'+selStyle+'">';
     h += _hrCityOptions();
@@ -18083,8 +18086,7 @@ function hrRenderFilters(){
     // Store filter (populated based on city)
     h += '<select id="hr-filter-store" onchange="hrRenderList()" style="'+selStyle+'">';
     h += '<option value="ALL">All Stores</option>';
-    var cityVal = 'ALL';
-    _hrStoresForCity(cityVal).forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+    h += _hrStoreOptions(false);
     h += '</select>';
     // Date filter
     h += '<select id="hr-filter-date" onchange="hrRenderList()" style="'+selStyle+'">';
@@ -18103,6 +18105,7 @@ function hrRenderFilters(){
   if(HR.tab === 'pending'){
     h += '<button class="hr-btn-add" onclick="hrOpenCreate()">+ New Entry</button>';
   }
+  // No add button on completed or cancelled tabs
   document.getElementById('hr-mod-filters').innerHTML = h;
 }
 function hrCityChanged(){
@@ -18111,13 +18114,24 @@ function hrCityChanged(){
   var storeEl = document.getElementById('hr-filter-store');
   if(!storeEl) return;
   var sh = '<option value="ALL">All Stores</option>';
-  _hrStoresForCity(cityVal).forEach(function(s){ sh += '<option value="'+s+'">'+s+'</option>'; });
+  if(cityVal === 'ALL'){
+    // Show all stores grouped by city
+    sh += _hrStoreOptions(false);
+  } else {
+    // Show only stores for selected city
+    var label = _HR_CITY_LABELS[cityVal] || cityVal;
+    var stores = _hrStoresForCity(cityVal);
+    if(stores.length > 0){
+      sh += '<optgroup label="'+label+'">';
+      stores.forEach(function(s){ sh += '<option value="'+s+'">'+s+'</option>'; });
+      sh += '</optgroup>';
+    }
+  }
   storeEl.innerHTML = sh;
   hrRenderList();
 }
 
 function hrRenderList(){
-  hrRenderFilters();
   var all = _hrLoad();
   var mod = HR.module;
   var tab = HR.tab;
@@ -18149,7 +18163,15 @@ function hrRenderList(){
       }
       return true;
     }
-    return r.status === 'pending' || r.status === 'completed';
+    if(tab === 'cancelled'){
+      if(r.status !== 'cancelled') return false;
+      if(cutoff){
+        var d = r.cancelled_at ? new Date(r.cancelled_at) : new Date(r.created_at);
+        if(d < cutoff) return false;
+      }
+      return true;
+    }
+    return false;
   });
 
   items.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
@@ -18157,8 +18179,8 @@ function hrRenderList(){
   var wrap = document.getElementById('hr-mod-list');
   if(items.length === 0){
     var emptyIcon = mod === 'news' ? '\uD83D\uDCF0' : '\uD83D\uDCCB';
-    var emptyMsg = tab === 'pending' ? 'No pending entries' : 'No completed entries matching filters';
-    wrap.innerHTML = '<div class="hr-empty"><div class="hr-empty-icon">'+emptyIcon+'</div><div class="hr-empty-title">'+emptyMsg+'</div><div class="hr-empty-sub">'+( tab==='pending' ? 'Add a new entry to get started.' : 'Entries will appear here once processed.')+'</div></div>';
+    var emptyMsg = tab === 'pending' ? 'No pending entries' : tab === 'completed' ? 'No completed entries matching filters' : 'No cancelled entries';
+    wrap.innerHTML = '<div class="hr-empty"><div class="hr-empty-icon">'+emptyIcon+'</div><div class="hr-empty-title">'+emptyMsg+'</div><div class="hr-empty-sub">'+( tab==='pending' ? 'Add a new entry to get started.' : tab==='completed' ? 'Entries will appear here once processed.' : 'Cancelled entries will appear here.')+'</div></div>';
     return;
   }
 
@@ -18193,6 +18215,9 @@ function hrRenderList(){
     h += '<div class="hr-card-meta"><span>Created by '+_hrEsc(r.created_by)+' on '+_hrFmtDate(r.created_at)+'</span></div>';
     if(r.status === 'completed' && r.processed_by){
       h += '<div class="hr-audit-line">\u2705 Completed by '+_hrEsc(r.processed_by)+' on '+_hrFmtDate(r.processed_at)+'</div>';
+    }
+    if(r.status === 'cancelled' && r.cancelled_by){
+      h += '<div class="hr-audit-line" style="color:#dc2626;">\u274C Cancelled by '+_hrEsc(r.cancelled_by)+' on '+_hrFmtDate(r.cancelled_at)+'</div>';
     }
     h += '</div>';
   });
@@ -18342,9 +18367,16 @@ function hrComplete(id){
 }
 
 function hrDelete(id){
-  if(!confirm('Delete this entry? This cannot be undone.')) return;
+  if(!confirm('Cancel this entry?')) return;
   var all = _hrLoad();
-  all = all.filter(function(r){ return r.id !== id; });
+  for(var i=0;i<all.length;i++){
+    if(all[i].id === id){
+      all[i].status = 'cancelled';
+      all[i].cancelled_by = _slDisplayName || 'Unknown';
+      all[i].cancelled_at = new Date().toISOString();
+      break;
+    }
+  }
   _hrSave(all);
   hrRenderList();
 }
