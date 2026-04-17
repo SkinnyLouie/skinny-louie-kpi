@@ -11055,8 +11055,8 @@ function loadToastJson(input){
           categories: (r.categories||[]).map(function(c){ return {name:c.name, items:c.items||0, netSales:+(c.netSales||0).toFixed(2)}; }),
           channels: (r.channels||[]).map(function(ch){ return {name:ch.name, netSales:+(ch.netSales||0).toFixed(2), orders:ch.orders||0, items:ch.items||0, discount:ch.discount||0}; }),
           dayparts: (r.dayparts||[]).map(function(dp){ return {name:dp.name, orders:dp.orders||0, netSales:+(dp.netSales||0).toFixed(2), discount:dp.discount||0}; }),
-          itemDiscounts: (r.itemDiscounts||[]).map(function(d){ return {name:d.name, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
-          checkDiscounts: (r.checkDiscounts||[]).map(function(d){ return {name:d.name, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
+          itemDiscounts: (r.itemDiscounts||[]).map(function(d){ return {name:d.name, count:d.orders||0, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
+          checkDiscounts: (r.checkDiscounts||[]).map(function(d){ return {name:d.name, count:d.orders||0, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
           voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct,
           voidIncomplete:_vf.voidIncomplete
         });
