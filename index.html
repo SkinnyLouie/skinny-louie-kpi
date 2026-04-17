@@ -3203,6 +3203,15 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-desc">Weekly employee news, termination tracking, and audit history. Manage staffing changes across all locations.</div>
       <div class="hcard-tag">Active · All Locations</div>
     </div>
+    <div id="hcard-marketing" class="hcard c8" onclick="goMarketing()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">📣</span>
+      <div class="hcard-title">Marketing</div>
+      <div class="hcard-desc">Campaign tracking, content calendar, and store-level marketing initiatives across all locations.</div>
+      <div class="hcard-tag">Coming Soon</div>
+      <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
+        <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#1e3a5f;background:rgba(30,58,95,.1);border:1.5px solid rgba(30,58,95,.25);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
+      </div>
+    </div>
     <div id="hcard-inventory" class="hcard c9" onclick="goInv()" style="position:relative;cursor:pointer;">
        <span class="hcard-icon">📦</span>
        <div class="hcard-title">Inventory</div>
@@ -4024,7 +4033,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','newstores','hr'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','newstores','hr','marketing'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -4175,6 +4184,7 @@ function _applyPermissionsUI(){
     portfolio:   'hcard-portfolio',
     newstores:   'hcard-newstores',
     hr:          'hcard-hr',
+    marketing:   'hcard-marketing',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -5845,6 +5855,7 @@ const _ADM_MODULES = [
   { id:'events',      label:'Event Calculator',   icon:'🎉', desc:'Cost estimates for private events' },
   { id:'newstores',   label:'New Stores Status',  icon:'🏗', desc:'Pipeline tracker for new store deals' },
   { id:'hr',           label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
+  { id:'marketing',    label:'Marketing',          icon:'📣', desc:'Campaigns, content & brand initiatives' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -6029,6 +6040,11 @@ async function _adminSelectUser(userId, displayName, role, state){
     _renderAdmPermGrid(_admCtx.perms);
     _renderAdmScopeRow(_admCtx.scope);
     _renderAdmLocGrid(_admCtx.locations);
+    // Reset per-user activity log
+    var actWrap = document.getElementById('adm-user-activity');
+    if(actWrap){ actWrap.style.display='none'; actWrap.innerHTML=''; }
+    var actBtn = document.getElementById('adm-activity-toggle');
+    if(actBtn) actBtn.textContent = 'Show History';
     // Update sub-label with live scope value
     const subEl = document.getElementById('adm-sel-sub');
     const scopeLabel = _admCtx.scope === 'ALL' ? 'All Cities' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
@@ -6271,7 +6287,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -17574,7 +17590,7 @@ function _nsShowDetail(d){
   h += '<div class="ns-detail-row">';
   h += '<div style="flex:1;"><label>Project PDF</label><div style="display:flex;gap:8px;align-items:center;">';
   if(d.projectPdf){
-    h += '<a href="'+d.projectPdf+'" target="_blank" class="ns-pdf-btn">📄 View PDF</a>';
+    h += '<button class="ns-pdf-btn" onclick="nsViewPdf(\'project\')">📄 View PDF</button>';
     h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'projpdf\')">↻ Replace</button>';
   } else {
     h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'projpdf\')">📁 Upload PDF</button>';
@@ -17582,7 +17598,7 @@ function _nsShowDetail(d){
   h += '<input type="file" id="ns-f-projpdf" accept=".pdf" style="display:none;" onchange="nsHandlePdf(this,\'project\')"></div></div>';
   h += '<div style="flex:1;"><label>Store Render</label><div style="display:flex;gap:8px;align-items:center;">';
   if(d.renderPdf){
-    h += '<a href="'+d.renderPdf+'" target="_blank" class="ns-pdf-btn">📄 View Render</a>';
+    h += '<button class="ns-pdf-btn" onclick="nsViewPdf(\'render\')">📄 View Render</button>';
     h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'rendpdf\')">↻ Replace</button>';
   } else {
     h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'rendpdf\')">📁 Upload PDF</button>';
@@ -17634,6 +17650,29 @@ function nsUpdateMapPreview(){
     container.innerHTML = '<iframe class="ns-map-preview" src="https://maps.google.com/maps?q='+encodeURIComponent(addr)+'&output=embed" frameborder="0" loading="lazy"></iframe>';
   } else {
     container.innerHTML = '';
+  }
+}
+
+// PDF viewing: convert data URL to blob for browser compatibility
+function nsViewPdf(type){
+  var idx = NS.editIdx;
+  if(idx == null || !NS.deals[idx]) return;
+  var dataUrl = type === 'project' ? NS.deals[idx].projectPdf : NS.deals[idx].renderPdf;
+  if(!dataUrl){ alert('No PDF available.'); return; }
+  try {
+    var parts = dataUrl.split(',');
+    var mime = parts[0].match(/:(.*?);/)[1];
+    var bstr = atob(parts[1]);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    for(var i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
+    var blob = new Blob([u8arr], { type: mime });
+    var blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+  } catch(e){
+    console.error('[PDF] view error:', e);
+    window.open(dataUrl, '_blank');
   }
 }
 
@@ -17774,6 +17813,34 @@ function _actEndSession(){
   _actSessionId = null;
 }
 
+function _actBuildTable(data, showUser){
+  if(!data || data.length === 0) return '<div style="padding:24px;text-align:center;color:#94a3b8;">No activity logs found.</div>';
+  var rows = data.map(function(r){
+    var loginD = new Date(r.login_at);
+    var seenD = new Date(r.last_seen_at);
+    var dur = Math.round((seenD - loginD) / 60000);
+    var durStr = dur < 1 ? '<1 min' : dur >= 60 ? Math.floor(dur/60)+'h '+dur%60+'m' : dur + ' min';
+    var ago = Math.round((Date.now() - seenD) / 60000);
+    var agoStr = ago < 5 ? '<span style="color:#16a34a;font-weight:700;">Online now</span>' : ago < 60 ? ago + 'm ago' : ago < 1440 ? Math.floor(ago/60) + 'h ago' : Math.floor(ago/1440) + 'd ago';
+    var h = '<tr>';
+    if(showUser) h += '<td style="padding:8px 12px;font-weight:600;">' + (r.user_name||'Unknown') + '</td>';
+    h += '<td style="padding:8px 12px;">' + loginD.toLocaleDateString() + ' ' + loginD.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</td>';
+    h += '<td style="padding:8px 12px;">' + agoStr + '</td>';
+    h += '<td style="padding:8px 12px;">' + durStr + '</td>';
+    h += '<td style="padding:8px 12px;">' + (r.device||'Desktop') + '</td>';
+    h += '</tr>';
+    return h;
+  }).join('');
+  var userTh = showUser ? '<th style="padding:10px 12px;">User</th>' : '';
+  return '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+    '<thead><tr style="background:#f8f7f4;border-bottom:2px solid #e8e2d8;text-align:left;">' +
+    userTh +
+    '<th style="padding:10px 12px;">Login</th><th style="padding:10px 12px;">Last Seen</th>' +
+    '<th style="padding:10px 12px;">Duration</th><th style="padding:10px 12px;">Device</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>';
+}
+
+// Global activity logs (all users)
 async function renderActivityLogs(){
   var wrap = document.getElementById('admin-activity-wrap');
   if(!wrap) return;
@@ -17781,39 +17848,74 @@ async function renderActivityLogs(){
   try {
     var res = await _supa.from('activity_logs').select('*').order('login_at', { ascending: false }).limit(200);
     if(res.error) throw res.error;
-    var data = res.data;
-    if(!data || data.length === 0){
-      wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">No activity logs found.</div>';
-      return;
-    }
-    var rows = data.map(function(r){
-      var loginD = new Date(r.login_at);
-      var seenD = new Date(r.last_seen_at);
-      var dur = Math.round((seenD - loginD) / 60000);
-      var durStr = dur < 1 ? '<1 min' : dur + ' min';
-      var ago = Math.round((Date.now() - seenD) / 60000);
-      var agoStr = ago < 5 ? '<span style="color:#16a34a;font-weight:700;">Online now</span>' : ago < 60 ? ago + 'm ago' : ago < 1440 ? Math.floor(ago/60) + 'h ago' : Math.floor(ago/1440) + 'd ago';
-      return '<tr>' +
-        '<td style="padding:8px 12px;font-weight:600;">' + (r.user_name||'Unknown') + '</td>' +
-        '<td style="padding:8px 12px;">' + (r.user_role||'') + '</td>' +
-        '<td style="padding:8px 12px;">' + loginD.toLocaleDateString() + ' ' + loginD.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</td>' +
-        '<td style="padding:8px 12px;">' + agoStr + '</td>' +
-        '<td style="padding:8px 12px;">' + durStr + '</td>' +
-        '<td style="padding:8px 12px;">' + (r.device||'Desktop') + '</td>' +
-      '</tr>';
-    }).join('');
-    wrap.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-      '<thead><tr style="background:#f8f7f4;border-bottom:2px solid #e8e2d8;text-align:left;">' +
-      '<th style="padding:10px 12px;">User</th><th style="padding:10px 12px;">Role</th>' +
-      '<th style="padding:10px 12px;">Login</th><th style="padding:10px 12px;">Last Seen</th>' +
-      '<th style="padding:10px 12px;">Duration</th><th style="padding:10px 12px;">Device</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>';
+    wrap.innerHTML = _actBuildTable(res.data, true);
   } catch(e){
     console.error('[Activity] renderActivityLogs error:', e);
     wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#b91c1c;">Failed to load activity logs: ' + (e.message||e) + '</div>';
   }
 }
 
+// Per-user activity log toggle (inside admin user detail)
+function _admToggleUserActivity(){
+  var wrap = document.getElementById('adm-user-activity');
+  if(!wrap) return;
+  if(wrap.style.display !== 'none'){
+    wrap.style.display = 'none';
+    var btn = document.getElementById('adm-activity-toggle');
+    if(btn) btn.textContent = 'Show History';
+    return;
+  }
+  wrap.style.display = 'block';
+  var btn = document.getElementById('adm-activity-toggle');
+  if(btn) btn.textContent = 'Hide';
+  _admLoadUserActivity();
+}
+
+async function _admLoadUserActivity(){
+  var wrap = document.getElementById('adm-user-activity');
+  if(!wrap || !_admCtx.userId) return;
+  wrap.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px;">Loading...</div>';
+  try {
+    var res = await _supa.from('activity_logs').select('*').eq('user_id', _admCtx.userId).order('login_at', { ascending: false }).limit(100);
+    if(res.error) throw res.error;
+    var data = res.data;
+    if(!data || data.length === 0){
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;">No activity history for this user.</div>';
+      return;
+    }
+    // Summary stats
+    var totalSessions = data.length;
+    var totalMin = 0;
+    data.forEach(function(r){
+      var d = Math.round((new Date(r.last_seen_at) - new Date(r.login_at)) / 60000);
+      if(d > 0) totalMin += d;
+    });
+    var avgMin = totalSessions > 0 ? Math.round(totalMin / totalSessions) : 0;
+    var lastLogin = new Date(data[0].login_at);
+    var lastAgo = Math.round((Date.now() - lastLogin) / 60000);
+    var lastStr = lastAgo < 5 ? 'Just now' : lastAgo < 60 ? lastAgo + 'm ago' : lastAgo < 1440 ? Math.floor(lastAgo/60) + 'h ago' : Math.floor(lastAgo/1440) + 'd ago';
+    var summary = '<div style="display:flex;gap:16px;padding:12px 16px;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">';
+    summary += '<div style="font-size:11px;color:#64748b;"><strong style="color:#1e3a5f;font-size:16px;">'+totalSessions+'</strong> sessions</div>';
+    summary += '<div style="font-size:11px;color:#64748b;"><strong style="color:#1e3a5f;font-size:16px;">'+avgMin+'</strong> avg min</div>';
+    summary += '<div style="font-size:11px;color:#64748b;">Last: <strong style="color:#1e3a5f;">'+lastStr+'</strong></div>';
+    summary += '</div>';
+    wrap.innerHTML = summary + _actBuildTable(data, false);
+  } catch(e){
+    console.error('[Activity] user activity error:', e);
+    wrap.innerHTML = '<div style="padding:16px;text-align:center;color:#b91c1c;font-size:12px;">Failed: ' + (e.message||e) + '</div>';
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+//  MARKETING MODULE
+// ══════════════════════════════════════════════════
+function goMarketing(){
+  if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
+  S.page='marketing';
+  document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
+  document.getElementById('pg-marketing').style.display='';
+}
 
 // ══════════════════════════════════════════════════
 //  HR DASHBOARD
@@ -17882,7 +17984,7 @@ function hrSetTab(btn, tab){
 }
 
 function hrRenderFilters(){
-  var stores = allowedLocs();
+  var stores = _allowedLocs();
   var h = '<select id="hr-filter-store" onchange="hrRenderList()" style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">';
   h += '<option value="ALL">All Stores</option>';
   stores.forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
@@ -17961,7 +18063,7 @@ function _hrEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;
 function _hrFmtDate(d){ if(!d) return ''; try{ var dt=new Date(d); return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return d; } }
 
 function hrOpenCreate(){
-  var stores = allowedLocs();
+  var stores = _allowedLocs();
   var modal = document.getElementById('hr-modal-create');
   var mod = HR.module;
   var h = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1001;" onclick="if(event.target===this)hrCloseCreate();">';
@@ -18169,6 +18271,43 @@ migrate();
   <div id="hr-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;"></div>
 </div>
 
+
+<!-- ═══ MARKETING PAGE ═══ -->
+<div id="pg-marketing" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px;">📣 MARKETING</span>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 140px);padding:40px 24px;">
+    <div style="text-align:center;max-width:520px;">
+      <div style="width:100px;height:100px;margin:0 auto 24px;border-radius:24px;background:linear-gradient(135deg,rgba(30,58,95,.08),rgba(30,58,95,.15));display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:48px;">📣</span>
+      </div>
+      <h2 style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin:0 0 8px;">Marketing</h2>
+      <div style="display:inline-block;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;padding:6px 20px;border-radius:99px;text-transform:uppercase;margin-bottom:24px;">Coming Soon</div>
+      <p style="font-size:14px;color:#64748b;line-height:1.7;margin:0 0 32px;">This module will be used for marketing campaigns, content planning, and brand initiatives. Track campaigns, manage content calendars, and coordinate store-level marketing across all locations.</p>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:20px;flex:1;min-width:140px;max-width:180px;">
+          <div style="font-size:24px;margin-bottom:8px;">🎯</div>
+          <div style="font-size:12px;font-weight:700;color:#1e3a5f;">Campaign Tracking</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Plan, launch & measure</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:20px;flex:1;min-width:140px;max-width:180px;">
+          <div style="font-size:24px;margin-bottom:8px;">📅</div>
+          <div style="font-size:12px;font-weight:700;color:#1e3a5f;">Content Calendar</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Schedule & coordinate</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:20px;flex:1;min-width:140px;max-width:180px;">
+          <div style="font-size:24px;margin-bottom:8px;">🏪</div>
+          <div style="font-size:12px;font-weight:700;color:#1e3a5f;">Store Initiatives</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Local promotions</div>
+        </div>
+      </div>
+      <button onclick="goHome()" style="margin-top:32px;padding:12px 32px;border-radius:10px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;cursor:pointer;box-shadow:0 4px 16px rgba(30,58,95,.3);transition:all .15s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">← Back to Home</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ PORTFOLIO PAGE ═══ -->
 <div id="pg-portfolio" style="display:none;">
   <div class="pf-topbar">
@@ -18232,6 +18371,9 @@ migrate();
           <!-- Permission toggles -->
           <div class="adm-perm-section-title">Dashboard Access</div>
           <div class="adm-perm-grid" id="adm-perm-grid"></div>
+          <!-- Per-user Activity Log -->
+          <div class="adm-perm-section-title" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;">Activity Log <button id="adm-activity-toggle" onclick="_admToggleUserActivity()" style="font-size:10px;font-weight:700;background:#f0f4f8;color:#1e3a5f;border:1px solid #c7d2e0;border-radius:5px;padding:4px 10px;cursor:pointer;">Show History</button></div>
+          <div id="adm-user-activity" style="display:none;background:#faf9f7;border:1px solid #e8e2d8;border-radius:10px;max-height:350px;overflow-y:auto;margin-bottom:12px;"></div>
         </div>
         <!-- Sticky action bar -->
         <div class="adm-action-bar">
