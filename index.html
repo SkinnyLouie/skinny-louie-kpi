@@ -17786,7 +17786,18 @@ function _actStartSession(){
     device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
   };
   _supa.from('activity_logs').insert(entry).then(function(res){
-    if(res.error) console.warn('[Activity] insert error:', res.error.message);
+    if(res.error){
+      console.warn('[Activity] insert error:', res.error.message, res.error.details, res.error.hint);
+      // Retry once after 3 seconds in case of transient auth issue
+      setTimeout(function(){
+        _supa.from('activity_logs').insert(entry).then(function(r2){
+          if(r2.error) console.warn('[Activity] retry insert also failed:', r2.error.message);
+          else console.log('[Activity] retry insert succeeded');
+        }).catch(function(){});
+      }, 3000);
+    } else {
+      console.log('[Activity] session logged:', _actSessionId);
+    }
   }).catch(function(e){ console.warn('[Activity] insert failed:', e); });
   if(_actHeartbeatTimer) clearInterval(_actHeartbeatTimer);
   _actHeartbeatTimer = setInterval(_actHeartbeat, _ACT_HEARTBEAT_SEC * 1000);
@@ -17848,7 +17859,13 @@ async function renderActivityLogs(){
   try {
     var res = await _supa.from('activity_logs').select('*').order('login_at', { ascending: false }).limit(200);
     if(res.error) throw res.error;
-    wrap.innerHTML = _actBuildTable(res.data, true);
+    var data = res.data || [];
+    // Count unique users
+    var users = {}; data.forEach(function(r){ users[r.user_name] = true; });
+    var userCount = Object.keys(users).length;
+    var summary = '<div style="padding:10px 12px;font-size:11px;color:#64748b;border-bottom:1px solid #e8e2d8;">';
+    summary += '<strong>' + data.length + '</strong> sessions from <strong>' + userCount + '</strong> user' + (userCount !== 1 ? 's' : '') + '</div>';
+    wrap.innerHTML = summary + _actBuildTable(data, true);
   } catch(e){
     console.error('[Activity] renderActivityLogs error:', e);
     wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#b91c1c;">Failed to load activity logs: ' + (e.message||e) + '</div>';
@@ -17880,7 +17897,7 @@ async function _admLoadUserActivity(){
     if(res.error) throw res.error;
     var data = res.data;
     if(!data || data.length === 0){
-      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;">No activity history for this user.</div>';
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;">No activity history for this user.<br><span style="font-size:10px;margin-top:4px;display:inline-block;">The user may not have logged in yet, or their session data has not been recorded.</span></div>';
       return;
     }
     // Summary stats
@@ -17976,12 +17993,12 @@ function hrOpenModule(mod){
 
 function hrRenderTabs(){
   var h = '';
-  ['pending','completed','history'].forEach(function(t){
+  ['pending','completed'].forEach(function(t){
     var cls = 'hr-mod-tab';
     if(t === 'pending') cls += ' t-pending';
     if(t === 'completed') cls += ' t-completed';
     if(HR.tab === t) cls += ' active';
-    var label = t === 'pending' ? '\u23F3 Pending' : t === 'completed' ? '\u2705 Completed' : '\uD83D\uDCC1 History';
+    var label = t === 'pending' ? '\u23F3 Pending' : '\u2705 Completed';
     h += '<button class="'+cls+'" onclick="hrSetTab(this,\''+t+'\')">'+label+'</button>';
   });
   document.getElementById('hr-mod-tabs-wrap').innerHTML = h;
@@ -17997,13 +18014,13 @@ function hrSetTab(btn, tab){
 // cityLabels maps LOC_MAP keys to display names
 var _HR_CITY_LABELS = { FL: "Florida", NY: "New York" };
 function _hrStoreOptions(includeAll){
-  var allowed = _allowedLocs();
-  // Group allowed stores by city using LOC_MAP
+  // Use _isLocAllowed() against LOC_MAP directly so ALL permitted stores show
+  // (not just stores with uploaded data)
   var grouped = {};
   var cityOrder = Object.keys(LOC_MAP); // FL, NY
   cityOrder.forEach(function(city){
     var cityStores = LOC_MAP[city] || [];
-    var matched = cityStores.filter(function(s){ return allowed.indexOf(s) !== -1; });
+    var matched = cityStores.filter(function(s){ return _isLocAllowed(s); });
     if(matched.length > 0) grouped[city] = matched;
   });
   var cities = Object.keys(grouped);
@@ -18031,15 +18048,72 @@ function _hrStoreOptions(includeAll){
   return h;
 }
 
+function _hrCityOptions(){
+  var h = '<option value="ALL">All Cities</option>';
+  var cityOrder = Object.keys(LOC_MAP);
+  cityOrder.forEach(function(city){
+    var cityStores = LOC_MAP[city] || [];
+    var hasAccess = cityStores.some(function(s){ return _isLocAllowed(s); });
+    if(hasAccess){
+      var label = _HR_CITY_LABELS[city] || city;
+      h += '<option value="'+city+'">'+label+'</option>';
+    }
+  });
+  return h;
+}
+function _hrStoresForCity(cityCode){
+  if(!cityCode || cityCode === 'ALL'){
+    // Return all permitted stores
+    var all = [];
+    Object.keys(LOC_MAP).forEach(function(c){
+      (LOC_MAP[c]||[]).forEach(function(s){ if(_isLocAllowed(s)) all.push(s); });
+    });
+    return all;
+  }
+  return (LOC_MAP[cityCode]||[]).filter(function(s){ return _isLocAllowed(s); });
+}
 function hrRenderFilters(){
-  var h = '<select id="hr-filter-store" onchange="hrRenderList()" style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">';
-  h += _hrStoreOptions(true);
-  h += '</select>';
+  var selStyle = 'padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;';
+  var h = '';
+  if(HR.tab === 'completed'){
+    // City filter
+    h += '<select id="hr-filter-city" onchange="hrCityChanged()" style="'+selStyle+'">';
+    h += _hrCityOptions();
+    h += '</select>';
+    // Store filter (populated based on city)
+    h += '<select id="hr-filter-store" onchange="hrRenderList()" style="'+selStyle+'">';
+    h += '<option value="ALL">All Stores</option>';
+    var cityVal = 'ALL';
+    _hrStoresForCity(cityVal).forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+    h += '</select>';
+    // Date filter
+    h += '<select id="hr-filter-date" onchange="hrRenderList()" style="'+selStyle+'">';
+    h += '<option value="ALL">All Dates</option>';
+    h += '<option value="7">Last 7 days</option>';
+    h += '<option value="30">Last 30 days</option>';
+    h += '<option value="90">Last 90 days</option>';
+    h += '</select>';
+  } else {
+    // Pending tab — store filter only
+    h += '<select id="hr-filter-store" onchange="hrRenderList()" style="'+selStyle+'">';
+    h += _hrStoreOptions(true);
+    h += '</select>';
+  }
   h += '<div style="flex:1;"></div>';
   if(HR.tab === 'pending'){
     h += '<button class="hr-btn-add" onclick="hrOpenCreate()">+ New Entry</button>';
   }
   document.getElementById('hr-mod-filters').innerHTML = h;
+}
+function hrCityChanged(){
+  var cityEl = document.getElementById('hr-filter-city');
+  var cityVal = cityEl ? cityEl.value : 'ALL';
+  var storeEl = document.getElementById('hr-filter-store');
+  if(!storeEl) return;
+  var sh = '<option value="ALL">All Stores</option>';
+  _hrStoresForCity(cityVal).forEach(function(s){ sh += '<option value="'+s+'">'+s+'</option>'; });
+  storeEl.innerHTML = sh;
+  hrRenderList();
 }
 
 function hrRenderList(){
@@ -18050,12 +18124,32 @@ function hrRenderList(){
   var storeFilter = document.getElementById('hr-filter-store');
   var sf = storeFilter ? storeFilter.value : 'ALL';
 
+  // City filter for completed tab
+  var cityEl = document.getElementById('hr-filter-city');
+  var cityVal = cityEl ? cityEl.value : 'ALL';
+  var cityStores = cityVal !== 'ALL' ? _hrStoresForCity(cityVal) : null;
+  // Date filter for completed tab
+  var dateEl = document.getElementById('hr-filter-date');
+  var dateVal = dateEl ? dateEl.value : 'ALL';
+  var cutoff = null;
+  if(dateVal !== 'ALL'){
+    cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(dateVal));
+  }
   var items = all.filter(function(r){
     if(r.module !== mod) return false;
     if(sf !== 'ALL' && r.store !== sf) return false;
+    if(cityStores && cityStores.indexOf(r.store) === -1) return false;
     if(tab === 'pending') return r.status === 'pending';
-    if(tab === 'completed') return r.status === 'completed';
-    return true; // history = all
+    if(tab === 'completed'){
+      if(r.status !== 'completed') return false;
+      if(cutoff){
+        var d = r.processed_at ? new Date(r.processed_at) : new Date(r.created_at);
+        if(d < cutoff) return false;
+      }
+      return true;
+    }
+    return r.status === 'pending' || r.status === 'completed';
   });
 
   items.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
@@ -18063,7 +18157,7 @@ function hrRenderList(){
   var wrap = document.getElementById('hr-mod-list');
   if(items.length === 0){
     var emptyIcon = mod === 'news' ? '\uD83D\uDCF0' : '\uD83D\uDCCB';
-    var emptyMsg = tab === 'pending' ? 'No pending entries' : tab === 'completed' ? 'No completed entries yet' : 'No history available';
+    var emptyMsg = tab === 'pending' ? 'No pending entries' : 'No completed entries matching filters';
     wrap.innerHTML = '<div class="hr-empty"><div class="hr-empty-icon">'+emptyIcon+'</div><div class="hr-empty-title">'+emptyMsg+'</div><div class="hr-empty-sub">'+( tab==='pending' ? 'Add a new entry to get started.' : 'Entries will appear here once processed.')+'</div></div>';
     return;
   }
