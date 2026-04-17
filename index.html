@@ -17985,8 +17985,10 @@ function goAssess(){
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-assess').style.display='';
   _eaCurrent = null;
+  _eaTab = 'in_progress';
   document.getElementById('ea-view-list').style.display='';
   document.getElementById('ea-view-form').style.display='none';
+  eaRenderTabs();
   eaBuildFilters();
   eaRenderList();
 }
@@ -18054,12 +18056,18 @@ function eaRenderList(){
     if(sv !== 'ALL' && a.store !== sv) return false;
     if(mv !== 'ALL' && a.month !== mv) return false;
     if(cityStores && cityStores.indexOf(a.store) === -1) return false;
+    // Filter by tab status
+    var st = a.status || 'in_progress';
+    if(_eaTab === 'in_progress' && st !== 'in_progress') return false;
+    if(_eaTab === 'completed' && st !== 'completed') return false;
     return true;
   });
   items.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
   var wrap = document.getElementById('ea-saved-list');
   if(items.length === 0){
-    wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">📋</div><div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:8px;">No Assessments Yet</div><div style="font-size:13px;color:#94a3b8;">Create a new assessment to start scoring a store.</div></div>';
+    var emptyMsg = _eaTab === 'completed' ? 'No completed assessments yet.' : 'No assessments in progress. Create one to get started.';
+    var emptyIcon = _eaTab === 'completed' ? '✅' : '📋';
+    wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">'+emptyIcon+'</div><div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:8px;">'+emptyMsg+'</div></div>';
     return;
   }
   var h = '<div style="font-size:12px;color:#64748b;font-weight:600;margin-bottom:12px;">'+items.length+' assessment'+(items.length!==1?'s':'')+'</div>';
@@ -18076,8 +18084,12 @@ function eaRenderList(){
     h += '</div>';
     h += '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter||'')+'</div>';
     h += '<div style="font-size:11px;color:#94a3b8;">Auditor: '+_eaEsc(a.auditor)+' &middot; Rating: <strong style="color:'+color+';">'+ratingLabel+'</strong></div>';
+    if(a.status === 'completed' && a.completed_by) h += '<div style="font-size:10px;color:#16a34a;margin-top:2px;">\u2705 Completed by '+_eaEsc(a.completed_by)+' on '+_eaEsc(a.completed_at ? a.completed_at.split("T")[0] : "")+'</div>';
     if(_slRole === 'admin'){
       h += '<div style="margin-top:8px;display:flex;gap:6px;">';
+      if((a.status||'in_progress') === 'in_progress'){
+        h += '<button onclick="event.stopPropagation();eaMarkComplete(\''+a.id+'\')" style="padding:4px 12px;border-radius:6px;border:none;background:#16a34a;color:#fff;font-size:10px;font-weight:700;cursor:pointer;">\u2713 Mark Completed</button>';
+      }
       h += '<button onclick="event.stopPropagation();eaDeleteAssess(\''+a.id+'\')" style="padding:4px 12px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:10px;font-weight:700;cursor:pointer;">Delete</button>';
       h += '</div>';
     }
@@ -18089,7 +18101,6 @@ function eaRenderList(){
 
 function eaStartNew(){
   if(_slRole !== 'admin') return;
-  // Show a modal to pick store + month + auditor
   var m = document.createElement('div');
   m.id = 'ea-new-modal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1001;';
@@ -18098,25 +18109,27 @@ function eaStartNew(){
   var inpS = 'width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;';
   var h = '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:460px;">';
   h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">New Excellence Assessment</div>';
-  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Store *</label><select id="ea-new-store" style="'+inpS+'">';
-  // grouped by city
+  // City
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">City *</label><select id="ea-new-city" onchange="eaNewCityChanged()" style="'+inpS+'">';
   Object.keys(LOC_MAP).forEach(function(c){
     var label = c === 'FL' ? 'Florida' : c === 'NY' ? 'New York' : c;
-    var stores = (LOC_MAP[c]||[]).filter(function(s){ return _isLocAllowed(s); });
-    if(stores.length){
-      h += '<optgroup label="'+label+'">';
-      stores.forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
-      h += '</optgroup>';
-    }
+    h += '<option value="'+c+'">'+label+'</option>';
   });
   h += '</select></div>';
+  // Store (populated by city)
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Store *</label><select id="ea-new-store" style="'+inpS+'">';
+  var firstCity = Object.keys(LOC_MAP)[0];
+  (LOC_MAP[firstCity]||[]).forEach(function(s){ h += '<option value="'+s+'">'+s+'</option>'; });
+  h += '</select></div>';
+  // Month
   var now = new Date();
   var defMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Month *</label><input id="ea-new-month" type="month" value="'+defMonth+'" style="'+inpS+'"></div>';
+  // Quarter
   var q = now.getMonth() < 3 ? 'Q1' : now.getMonth() < 6 ? 'Q2' : now.getMonth() < 9 ? 'Q3' : 'Q4';
   h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Quarter</label><select id="ea-new-quarter" style="'+inpS+'"><option value="Q1">Q1</option><option value="Q2"'+(q==='Q2'?' selected':'')+'>Q2</option><option value="Q3"'+(q==='Q3'?' selected':'')+'>Q3</option><option value="Q4"'+(q==='Q4'?' selected':'')+'>Q4</option></select></div>';
-  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Auditor *</label><input id="ea-new-auditor" value="'+_eaEsc(_slDisplayName||'')+'" style="'+inpS+'"></div>';
-  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Region / Market</label><input id="ea-new-region" placeholder="e.g. South Florida" style="'+inpS+'"></div>';
+  // Auditor (auto-filled, read-only style)
+  h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">Auditor</label><input id="ea-new-auditor" value="'+_eaEsc(_slDisplayName||'')+'" readonly style="'+inpS+'background:#f8f6f2;color:#64748b;"></div>';
   h += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">';
   h += '<button onclick="document.getElementById(\'ea-new-modal\').remove()" style="padding:10px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>';
   h += '<button onclick="eaCreateAssess()" style="padding:10px 24px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Start Assessment</button>';
@@ -18124,14 +18137,21 @@ function eaStartNew(){
   m.innerHTML = h;
   document.body.appendChild(m);
 }
+function eaNewCityChanged(){
+  var city = document.getElementById('ea-new-city').value;
+  var storeEl = document.getElementById('ea-new-store');
+  var sh = '';
+  (LOC_MAP[city]||[]).forEach(function(s){ sh += '<option value="'+s+'">'+s+'</option>'; });
+  storeEl.innerHTML = sh;
+}
 
 function eaCreateAssess(){
   var store = document.getElementById('ea-new-store').value;
   var month = document.getElementById('ea-new-month').value;
   var quarter = document.getElementById('ea-new-quarter').value;
   var auditor = document.getElementById('ea-new-auditor').value.trim();
-  var region = document.getElementById('ea-new-region').value.trim();
-  if(!store || !month || !auditor){ alert('Store, Month, and Auditor are required.'); return; }
+  var city = document.getElementById('ea-new-city').value;
+  if(!store || !month){ alert('Store and Month are required.'); return; }
   // Build blank scores array — one entry per item
   var scores = {};
   _EA_SECTIONS.forEach(function(sec, si){
@@ -18145,7 +18165,8 @@ function eaCreateAssess(){
     month: month,
     quarter: quarter,
     auditor: auditor,
-    region: region,
+    city: city,
+    status: 'in_progress',
     audit_date: new Date().toISOString().split('T')[0],
     scores: scores,
     overall_score: 0,
@@ -18179,11 +18200,11 @@ function eaOpenForm(id){
 }
 
 function eaBackToList(){
-  // Auto-save
   if(_eaCurrent) eaAutoSave();
   _eaCurrent = null;
   document.getElementById('ea-view-list').style.display='';
   document.getElementById('ea-view-form').style.display='none';
+  eaRenderTabs();
   eaBuildFilters();
   eaRenderList();
 }
@@ -18195,12 +18216,16 @@ function eaRenderFormTopbar(){
   h += '<span style="font-size:11px;color:#64748b;padding:0 8px;">📅 '+_eaEsc(a.month)+' &middot; '+_eaEsc(a.quarter)+' &middot; Auditor: '+_eaEsc(a.auditor)+'</span>';
   h += '<div style="flex:1;"></div>';
   h += '<button onclick="eaAutoSave();eaRenderFormSummary();" style="padding:6px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#1e3a5f;">Recalculate</button>';
+  if(_slRole === 'admin' && (a.status||'in_progress') === 'in_progress'){
+    h += '<button onclick="eaMarkComplete(\''+a.id+'\')" style="padding:6px 16px;border-radius:8px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px;">\u2713 Mark Completed</button>';
+  }
+  if(a.status === 'completed') h += '<span style="padding:6px 16px;border-radius:8px;background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;margin-left:8px;">\u2705 Completed</span>';
   document.getElementById('ea-form-topbar').innerHTML = h;
 }
 
 function eaRenderFormSections(){
   var a = _eaCurrent;
-  var isAdmin = _slRole === 'admin';
+  var isAdmin = _slRole === 'admin' && (a.status||'in_progress') === 'in_progress';
   var h = '';
   _EA_SECTIONS.forEach(function(sec, si){
     var secScore = eaCalcSection(si);
@@ -18370,6 +18395,182 @@ function eaAutoSave(){
     }
   }
   _eaSave(all);
+}
+
+
+
+var _eaTab = 'in_progress'; // current tab
+
+function eaRenderTabs(){
+  var tabs = [
+    {id:'in_progress', label:'\u23F3 In Progress', cls:'t-pending'},
+    {id:'completed', label:'\u2705 Completed', cls:'t-completed'},
+    {id:'tracker', label:'\uD83D\uDCC5 Q Tracker', cls:''},
+    {id:'analytics', label:'\uD83D\uDCC8 Analytics', cls:''}
+  ];
+  var h = '';
+  tabs.forEach(function(t){
+    var cls = 'hr-mod-tab' + (t.cls ? ' '+t.cls : '');
+    if(_eaTab === t.id) cls += ' active';
+    h += '<button class="'+cls+'" onclick="eaSetTab(\''+t.id+'\')" style="padding:12px 18px;">'+t.label+'</button>';
+  });
+  document.getElementById('ea-tabs-wrap').innerHTML = h;
+}
+
+function eaSetTab(tab){
+  _eaTab = tab;
+  eaRenderTabs();
+  document.getElementById('ea-saved-list').style.display = (tab==='in_progress'||tab==='completed') ? '' : 'none';
+  document.getElementById('ea-analytics-wrap').style.display = tab==='analytics' ? '' : 'none';
+  document.getElementById('ea-tracker-wrap').style.display = tab==='tracker' ? '' : 'none';
+  if(tab==='in_progress'||tab==='completed') eaRenderList();
+  if(tab==='analytics') eaRenderAnalytics();
+  if(tab==='tracker') eaRenderTracker();
+}
+
+function eaMarkComplete(id){
+  _slConfirm({
+    title: 'Complete Assessment',
+    message: 'Mark this assessment as completed?<br>You can still view it but scores will be locked.',
+    confirmText: 'Mark Completed',
+    confirmColor: '#16a34a',
+    cancelText: 'Not Yet',
+    onConfirm: function(){
+      var all = _eaLoad();
+      for(var i=0;i<all.length;i++){
+        if(all[i].id === id){
+          all[i].status = 'completed';
+          all[i].completed_at = new Date().toISOString();
+          all[i].completed_by = _slDisplayName || 'Admin';
+          break;
+        }
+      }
+      _eaSave(all);
+      eaRenderList();
+    }
+  });
+}
+
+// ═══ Q TRACKER: stores vs quarters grid ═══
+function eaRenderTracker(){
+  var wrap = document.getElementById('ea-tracker-wrap');
+  var all = _eaLoad();
+  // Get all stores from LOC_MAP
+  var years = {};
+  all.forEach(function(a){ if(a.month){ var y = a.month.split('-')[0]; years[y] = true; } });
+  var yearList = Object.keys(years).sort().reverse();
+  if(yearList.length === 0) yearList = [new Date().getFullYear().toString()];
+  // Build for each year
+  var h = '';
+  yearList.forEach(function(year){
+    h += '<div style="margin-bottom:24px;">';
+    h += '<div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:12px;">'+year+' Quarterly Assessment Tracker</div>';
+    h += '<div style="overflow-x:auto;">';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+    h += '<thead><tr style="background:#1e3a5f;color:#fff;">';
+    h += '<th style="padding:10px 14px;text-align:left;font-family:Oswald,sans-serif;font-weight:700;">Store</th>';
+    ['Q1','Q2','Q3','Q4'].forEach(function(q){ h += '<th style="padding:10px 14px;text-align:center;font-family:Oswald,sans-serif;font-weight:700;min-width:100px;">'+q+'</th>'; });
+    h += '</tr></thead><tbody>';
+    Object.keys(LOC_MAP).forEach(function(city){
+      var label = city === 'FL' ? 'Florida' : city === 'NY' ? 'New York' : city;
+      h += '<tr><td colspan="5" style="padding:8px 14px;font-weight:700;color:#1e3a5f;background:#f1ece3;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.06em;">'+label+'</td></tr>';
+      (LOC_MAP[city]||[]).forEach(function(store){
+        h += '<tr style="border-bottom:1px solid #f1ece3;">';
+        h += '<td style="padding:8px 14px;font-weight:600;color:#374151;">'+_eaEsc(store)+'</td>';
+        ['Q1','Q2','Q3','Q4'].forEach(function(q){
+          var match = all.find(function(a){ return a.store === store && a.quarter === q && a.month && a.month.startsWith(year); });
+          var cell = '';
+          if(match){
+            if(match.status === 'completed'){
+              var sc = match.overall_score || 0;
+              var clr = sc >= 90 ? '#16a34a' : sc >= 75 ? '#ca8a04' : '#dc2626';
+              cell = '<div style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;" onclick="eaOpenSaved(\''+match.id+'\')"><span style="color:'+clr+';font-weight:800;">'+sc.toFixed(0)+'%</span> <span style="color:#16a34a;">\u2705</span></div>';
+            } else {
+              cell = '<div style="text-align:center;cursor:pointer;" onclick="eaOpenSaved(\''+match.id+'\')"><span style="color:#ca8a04;font-weight:700;">In Progress</span></div>';
+            }
+          } else {
+            cell = '<span style="color:#d4d4d4;">—</span>';
+          }
+          h += '<td style="padding:8px 14px;text-align:center;">'+cell+'</td>';
+        });
+        h += '</tr>';
+      });
+    });
+    h += '</tbody></table></div></div>';
+  });
+  wrap.innerHTML = h;
+}
+
+// ═══ ANALYTICS: compare store scores across quarters ═══
+function eaRenderAnalytics(){
+  var wrap = document.getElementById('ea-analytics-wrap');
+  var all = _eaLoad().filter(function(a){ return a.status === 'completed'; });
+  if(all.length < 1){
+    wrap.innerHTML = '<div style="text-align:center;padding:60px;color:#94a3b8;font-size:13px;">Complete at least one assessment to see analytics.</div>';
+    return;
+  }
+  // Build store comparison chart data
+  var storeData = {};
+  all.forEach(function(a){
+    if(!storeData[a.store]) storeData[a.store] = [];
+    storeData[a.store].push({ quarter: a.quarter, month: a.month, score: a.overall_score || 0, id: a.id });
+  });
+  // Sort each store's data by month
+  Object.keys(storeData).forEach(function(s){ storeData[s].sort(function(a,b){ return a.month < b.month ? -1 : 1; }); });
+
+  var h = '<div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:16px;">Store Score Comparison</div>';
+
+  // Bar chart per store across quarters
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:24px;">';
+  Object.keys(storeData).sort().forEach(function(store){
+    var entries = storeData[store];
+    h += '<div style="background:#fff;border:1px solid #e8e2d8;border-radius:14px;padding:20px;">';
+    h += '<div style="font-family:Oswald,sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px;">'+_eaEsc(store)+'</div>';
+    // Horizontal bar chart
+    entries.forEach(function(e){
+      var color = e.score >= 90 ? '#16a34a' : e.score >= 75 ? '#ca8a04' : '#dc2626';
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+      h += '<span style="font-size:11px;font-weight:700;color:#64748b;min-width:60px;">'+_eaEsc(e.quarter)+' '+_eaEsc(e.month.split('-')[0])+'</span>';
+      h += '<div style="flex:1;height:20px;background:#f1ece3;border-radius:4px;overflow:hidden;">';
+      h += '<div style="height:100%;width:'+e.score+'%;background:'+color+';border-radius:4px;transition:width .3s;"></div>';
+      h += '</div>';
+      h += '<span style="font-size:12px;font-weight:800;color:'+color+';min-width:44px;text-align:right;">'+e.score.toFixed(1)+'%</span>';
+      h += '</div>';
+    });
+    // Trend indicator
+    if(entries.length >= 2){
+      var first = entries[0].score;
+      var last = entries[entries.length-1].score;
+      var diff = last - first;
+      var arrow = diff > 0 ? '\u2191' : diff < 0 ? '\u2193' : '\u2192';
+      var tColor = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#64748b';
+      h += '<div style="margin-top:8px;font-size:11px;color:'+tColor+';font-weight:700;">'+arrow+' '+(diff>0?'+':'')+diff.toFixed(1)+'% since first assessment</div>';
+    }
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Overall rankings table
+  h += '<div style="font-family:Oswald,sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px;">Latest Assessment Rankings</div>';
+  var latest = {};
+  all.forEach(function(a){ if(!latest[a.store] || a.month > latest[a.store].month) latest[a.store] = a; });
+  var ranked = Object.values(latest).sort(function(a,b){ return (b.overall_score||0) - (a.overall_score||0); });
+  h += '<table style="width:100%;max-width:600px;border-collapse:collapse;font-size:12px;">';
+  h += '<thead><tr style="background:#1e3a5f;color:#fff;"><th style="padding:8px 14px;text-align:left;">#</th><th style="padding:8px 14px;text-align:left;">Store</th><th style="padding:8px 14px;text-align:left;">Quarter</th><th style="padding:8px 14px;text-align:right;">Score</th><th style="padding:8px 14px;text-align:left;">Rating</th></tr></thead><tbody>';
+  ranked.forEach(function(a, i){
+    var sc = a.overall_score || 0;
+    var clr = sc >= 90 ? '#16a34a' : sc >= 75 ? '#ca8a04' : '#dc2626';
+    h += '<tr style="border-bottom:1px solid #f1ece3;">';
+    h += '<td style="padding:8px 14px;font-weight:700;color:#94a3b8;">'+(i+1)+'</td>';
+    h += '<td style="padding:8px 14px;font-weight:700;color:#1e3a5f;">'+_eaEsc(a.store)+'</td>';
+    h += '<td style="padding:8px 14px;color:#64748b;">'+_eaEsc(a.quarter)+' '+_eaEsc((a.month||'').split('-')[0])+'</td>';
+    h += '<td style="padding:8px 14px;text-align:right;font-weight:800;color:'+clr+';">'+sc.toFixed(1)+'%</td>';
+    h += '<td style="padding:8px 14px;color:'+clr+';font-weight:600;">'+_eaEsc(a.overall_rating||'')+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+
+  wrap.innerHTML = h;
 }
 
 function eaDeleteAssess(id){
@@ -19280,6 +19481,9 @@ migrate();
   </div>
   <!-- View: saved list or active assessment -->
   <div id="ea-view-list">
+    <!-- Tabs -->
+    <div id="ea-tabs-wrap" style="display:flex;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;"></div>
+    <!-- Filter bar -->
     <div style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">
       <select id="ea-flt-city" onchange="eaCityChanged()" style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;">
         <option value="ALL">All Cities</option>
@@ -19294,6 +19498,8 @@ migrate();
       <button id="ea-btn-new" onclick="eaStartNew()" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;font-family:Oswald,sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;box-shadow:0 2px 8px rgba(30,58,95,.3);">+ New Assessment</button>
     </div>
     <div id="ea-saved-list" style="padding:20px 24px;"></div>
+    <div id="ea-analytics-wrap" style="display:none;padding:20px 24px;"></div>
+    <div id="ea-tracker-wrap" style="display:none;padding:20px 24px;"></div>
   </div>
   <div id="ea-view-form" style="display:none;">
     <div id="ea-form-topbar" style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;"></div>
