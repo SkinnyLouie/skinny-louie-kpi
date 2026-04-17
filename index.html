@@ -10985,80 +10985,114 @@ function getSalesDailyRecords(){
 
 // ── Load directly from toast_fetch.py JSON output (no console needed)
 function loadToastJson(input){
-  const file=input.files[0];
+  var file=input.files[0];
   if(!file) return;
-  const status=document.getElementById('toast-json-status');
+  var status=document.getElementById('toast-json-status');
   if(status){ status.style.display='block'; status.style.color='var(--muted)'; status.textContent='⏳ Reading file…'; }
-  const reader=new FileReader();
+  var reader=new FileReader();
   reader.onload=function(e){
     try{
-      const data=JSON.parse(e.target.result);
-      const startStr=data.period&&data.period.start?data.period.start:'';
-      if(!startStr||!data.locations){ throw new Error('Not a valid Toast data file'); }
-      const d=new Date(startStr+'T12:00:00');
-      const year=String(d.getFullYear());
-      const month=d.getMonth(); // 0-indexed
-      const fetched=data.fetchedAt||new Date().toISOString();
-      const fname=file.name;
+      var data=JSON.parse(e.target.result);
+      // Support both formats: records array (new) or locations array of objects (legacy)
+      var records = data.records || null;
+      if(!records && data.locations && data.locations.length && typeof data.locations[0] === 'object'){
+        records = data.locations; // legacy format where locations ARE the records
+      }
+      if(!records || !records.length) throw new Error('No records found in Toast data file');
+      var fetched = data.generated_at || data.fetchedAt || new Date().toISOString();
+      var fname = file.name;
 
-      const monthly=[]; const daily=[];
-      // Cross-field void integrity helper (mirrors Excel parser rule):
-      // JSON sources sometimes initialise numeric fields to 0 rather than omitting them.
-      // voidAmount=0 or voidItems=0 with voidOrders>0 is impossible — null them out.
-      const _jsonVoid = loc => {
-        let a = loc.voidAmount ?? null;
-        let o = loc.voidOrders ?? null;
-        let i = loc.voidItems  ?? null;
-        const p = loc.voidPct  ?? null;
+      // Cross-field void integrity helper
+      var _jsonVoid = function(r){
+        var a = r.voidAmount != null ? r.voidAmount : null;
+        var o = r.voidOrders != null ? r.voidOrders : null;
+        var i = r.voidItems != null ? r.voidItems : null;
+        var p = r.voidPct != null ? r.voidPct : null;
         if(o != null && o > 0){ if(a === 0) a = null; if(i === 0) i = null; }
-        const parsed=[a,o,i]; const hasAny=parsed.some(v=>v!==null); const hasAll=parsed.every(v=>v!==null);
+        var parsed=[a,o,i]; var hasAny=parsed.some(function(v){return v!==null;}); var hasAll=parsed.every(function(v){return v!==null;});
         return { voidAmount:a, voidOrders:o, voidItems:i, voidPct:p, voidIncomplete:(hasAny&&!hasAll)||undefined };
       };
-      for(const loc of data.locations){
-        if(!loc.netSales) continue;
-        const _vf = _jsonVoid(loc);
+
+      // Map state from LOC_MAP if not in record
+      var _findState = function(loc){
+        for(var st in LOC_MAP){
+          if((LOC_MAP[st]||[]).indexOf(loc) !== -1) return st;
+        }
+        return 'FL';
+      };
+
+      var monthly=[]; var daily=[];
+      for(var ri=0; ri<records.length; ri++){
+        var r = records[ri];
+        if(!r.netSales || r.netSales === 0) continue;
+        var year = String(r.year || '');
+        var month = r.month; // 0-indexed
+        if(year === '' || month == null) continue;
+        var state = r.state || _findState(r.loc || r.location || '');
+        var loc = r.loc || r.location || '';
+        var _vf = _jsonVoid(r);
+        // Discounts: use salesDiscounts (number) or sum from array
+        var discountTotal = 0;
+        if(typeof r.salesDiscounts === 'number') discountTotal = r.salesDiscounts;
+        else if(Array.isArray(r.discounts)) discountTotal = r.discounts.reduce(function(s,d){ return s+(d.amount||0); },0);
+
         monthly.push({
-          page:'sales', state:loc.state, loc:loc.location,
-          year, month, fileName:fname, importedAt:fetched,
-          grossSales:loc.netSales,
-          discounts:+(loc.discounts||[]).reduce((s,d)=>s+(d.amount||0),0).toFixed(2),
-          refunds:0, netSales:loc.netSales, totalOrders:loc.totalOrders,
-          categories:[],
-          channels:(loc.channels||[]).map(ch=>({name:ch.name,netSales:+(ch.netSales||0).toFixed(2),orders:ch.orders,discount:0,items:0})),
-          dayparts:(loc.dayparts||[]).map(dp=>({name:dp.name,orders:dp.orders,netSales:+(dp.netSales||0).toFixed(2),discount:0})),
-          itemDiscounts:[], checkDiscounts:(loc.discounts||[]).map(d=>({name:d.name,count:d.count,orders:d.count,amount:+(d.amount||0).toFixed(2)})),
+          page:'sales', state:state, loc:loc,
+          year:year, month:month, fileName:fname, importedAt:fetched,
+          grossSales: r.grossSales || r.netSales || 0,
+          discounts: +discountTotal.toFixed(2),
+          refunds: r.refunds || 0,
+          netSales: r.netSales || 0,
+          totalOrders: r.totalOrders || 0,
+          totalGuests: r.totalGuests || r.totalOrders || 0,
+          totalPayments: r.totalPayments || 0,
+          totalItems: r.totalItems || 0,
+          avgPerGuest: r.avgPerGuest || 0,
+          avgPerOrder: r.avgPerOrder || 0,
+          avgPerPayment: r.avgPerPayment || 0,
+          turnTimeMinutes: r.turnTimeMinutes || 0,
+          serviceMode: r.serviceMode || '',
+          categories: (r.categories||[]).map(function(c){ return {name:c.name, items:c.items||0, netSales:+(c.netSales||0).toFixed(2)}; }),
+          channels: (r.channels||[]).map(function(ch){ return {name:ch.name, netSales:+(ch.netSales||0).toFixed(2), orders:ch.orders||0, items:ch.items||0, discount:ch.discount||0}; }),
+          dayparts: (r.dayparts||[]).map(function(dp){ return {name:dp.name, orders:dp.orders||0, netSales:+(dp.netSales||0).toFixed(2), discount:dp.discount||0}; }),
+          itemDiscounts: (r.itemDiscounts||[]).map(function(d){ return {name:d.name, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
+          checkDiscounts: (r.checkDiscounts||[]).map(function(d){ return {name:d.name, orders:d.orders||0, amount:+(d.amount||0).toFixed(2)}; }),
           voidAmount:_vf.voidAmount, voidOrders:_vf.voidOrders, voidItems:_vf.voidItems, voidPct:_vf.voidPct,
           voidIncomplete:_vf.voidIncomplete
         });
-        for(const day of (loc.daily||[])){
-          const dd=new Date(day.date+'T12:00:00');
-          daily.push({state:loc.state,loc:loc.location,year:String(dd.getFullYear()),month:dd.getMonth(),day:dd.getDate(),date:day.date,netSales:day.netSales,totalOrders:day.totalOrders,avgCheck:day.avgCheck});
+        // Daily records
+        var dailyArr = r.daily || [];
+        for(var di=0; di<dailyArr.length; di++){
+          var day = dailyArr[di];
+          var dd = new Date(day.date+'T12:00:00');
+          daily.push({state:state, loc:loc, year:String(dd.getFullYear()), month:dd.getMonth(), day:dd.getDate(), date:day.date, netSales:day.netSales, totalOrders:day.totalOrders, avgCheck:day.avgCheck});
         }
       }
 
-      // Merge monthly — route through _slSaveRecords for normalisation + dedup
-      let ex=getSalesRecords().filter(r=>!(String(r.year)===year&&r.month===month&&monthly.some(n=>n.loc===r.loc)));
+      // Merge monthly — dedup by year+month+loc, keep new over old
+      var newKeys = new Set(monthly.map(function(n){ return String(n.year)+'|'+n.month+'|'+n.loc; }));
+      var ex = getSalesRecords().filter(function(r){ return !newKeys.has(String(r.year)+'|'+r.month+'|'+r.loc); });
       _slSaveRecords('sales', ex.concat(monthly));
-      // Merge daily — date-level upsert: preserve auto-synced days not in this JSON
-      // Bug fix: do NOT wipe the whole month — only overwrite the specific dates present in the file
+      // Merge daily — date-level upsert
       {
-        const newDailyKeys=new Set(daily.map(d=>d.loc+'|'+d.date));
-        const exD=getSalesDailyRecords().filter(function(r){ return !newDailyKeys.has(r.loc+'|'+r.date); });
+        var newDailyKeys=new Set(daily.map(function(d){ return d.loc+'|'+d.date; }));
+        var exD=getSalesDailyRecords().filter(function(r){ return !newDailyKeys.has(r.loc+'|'+r.date); });
         localStorage.setItem('sl_sales_daily_v1',JSON.stringify(exD.concat(daily)));
       }
       // Update upload log
-      let uploads=getUploads();
-      monthly.forEach(r=>{
-        const idx=uploads.findIndex(u=>u.page==='sales'&&u.state===r.state&&u.loc===r.loc&&String(u.year)===r.year&&u.month===r.month);
-        const entry={page:'sales',state:r.state,loc:r.loc,year:r.year,month:r.month,fileName:r.fileName,fileSize:file.size,importedAt:r.importedAt};
+      var uploads=getUploads();
+      monthly.forEach(function(r){
+        var idx=uploads.findIndex(function(u){ return u.page==='sales'&&u.state===r.state&&u.loc===r.loc&&String(u.year)===r.year&&u.month===r.month; });
+        var entry={page:'sales',state:r.state,loc:r.loc,year:r.year,month:r.month,fileName:r.fileName,fileSize:file.size,importedAt:r.importedAt};
         if(idx>-1) uploads[idx]=entry; else uploads.push(entry);
       });
       saveUploads(uploads);
 
-      if(status){ status.style.color='#15803d'; status.textContent=`✅ Loaded ${monthly.length} locations · ${daily.length} daily records — reloading…`; }
-      setTimeout(()=>{ SX.state=monthly[0].state; SX.loc=monthly[0].loc; SX.year=year; SX.month=month; SX.activeTab='overview'; navigate('sales'); renderSalesPage(); renderNavRight(); },900);
+      if(status){ status.style.color='#15803d'; status.textContent='✅ Loaded '+monthly.length+' location-months · '+daily.length+' daily records — reloading…'; }
+      setTimeout(function(){ SX.state=monthly[0].state; SX.loc=monthly[0].loc; SX.year=monthly[0].year; SX.month=monthly[0].month; SX.activeTab='overview'; navigate('sales'); renderSalesPage(); renderNavRight(); },900);
     } catch(err){
       if(status){ status.style.color='#b91c1c'; status.textContent='❌ Error: '+err.message; }
+      console.error('[Toast JSON]', err);
     }
   };
   reader.readAsText(file);
@@ -14320,31 +14354,63 @@ const ANOMALY_FIELDS = [
 
 function detectPnLAnomalies(rec, locRecs){
   // Sorted recs by time, excluding current month
-  const sorted = [...locRecs]
-    .sort((a,b)=>Number(a.year)*12+a.month-(Number(b.year)*12+b.month))
-    .filter(r=>!(r.month===rec.month&&r.year===rec.year));
-  if(sorted.length < 2) return []; // Need at least 2 months of history
-  const trail = sorted.slice(-3); // Last 3 months
-  const anomalies = [];
-  for(const f of ANOMALY_FIELDS){
-    const currVal = Math.abs(rec[f.key]||0);
-    if(currVal < 100) continue; // Skip tiny/zero values
-    const trailVals = trail.map(r=>Math.abs(r[f.key]||0)).filter(v=>v>50);
-    if(trailVals.length < 2) continue;
-    const avg = trailVals.reduce((s,v)=>s+v,0)/trailVals.length;
-    if(avg < 50) continue;
-    const delta = (currVal - avg)/avg;
-    if(delta >= 0.15){ // >15% above average
+  var curNS = Math.abs(rec.netSales||0);
+  if(curNS < 100) return []; // No net sales — skip
+  var sorted = [...locRecs]
+    .sort(function(a,b){ return Number(a.year)*12+a.month-(Number(b.year)*12+b.month); })
+    .filter(function(r){ return !(r.month===rec.month&&r.year===rec.year); });
+  if(sorted.length < 1) return [];
+  var trail = sorted.slice(-3); // Last 3 months
+  var lastMonth = sorted[sorted.length-1] || null;
+  var anomalies = [];
+  for(var i=0;i<ANOMALY_FIELDS.length;i++){
+    var fld = ANOMALY_FIELDS[i];
+    var currVal = Math.abs(rec[fld.key]||0);
+    if(currVal < 50) continue;
+    // Current % of net sales
+    var currPct = (currVal / curNS) * 100;
+    // Trailing 3-month average % of net sales
+    var trailPcts = trail.map(function(r){
+      var ns = Math.abs(r.netSales||0);
+      return ns > 100 ? (Math.abs(r[fld.key]||0) / ns) * 100 : null;
+    }).filter(function(v){ return v !== null; });
+    var avgPct = trailPcts.length > 0 ? trailPcts.reduce(function(s,v){ return s+v; },0)/trailPcts.length : null;
+    // Last month % of net sales
+    var lastPct = null;
+    if(lastMonth){
+      var lastNS = Math.abs(lastMonth.netSales||0);
+      if(lastNS > 100) lastPct = (Math.abs(lastMonth[fld.key]||0) / lastNS) * 100;
+    }
+    // Determine if anomaly: current % is >2 percentage points above 3-mo avg %
+    // AND current % is at least 15% relatively higher
+    var deltaAvg = avgPct !== null ? currPct - avgPct : null;
+    var deltaAvgRel = avgPct > 0.5 ? (currPct - avgPct) / avgPct : null;
+    var deltaLast = lastPct !== null ? currPct - lastPct : null;
+    var deltaLastRel = lastPct > 0.5 ? (currPct - lastPct) / lastPct : null;
+    // Flag if % jumped significantly vs average (>2pp absolute AND >15% relative)
+    var flagged = false;
+    var severity = 'low';
+    if(deltaAvg !== null && deltaAvgRel !== null && deltaAvg > 1.5 && deltaAvgRel >= 0.15){
+      flagged = true;
+      severity = deltaAvgRel >= 0.40 ? 'high' : deltaAvgRel >= 0.25 ? 'med' : 'low';
+    }
+    if(flagged){
       anomalies.push({
-        label: f.label,
+        label: fld.label,
+        currentPct: currPct,
+        avgPct: avgPct,
+        lastPct: lastPct,
+        deltaAvg: deltaAvg,
+        deltaAvgRel: deltaAvgRel,
+        deltaLast: deltaLast,
+        deltaLastRel: deltaLastRel,
         current: currVal,
-        avg: avg,
-        delta: delta,
-        severity: delta >= 0.40 ? 'high' : delta >= 0.25 ? 'med' : 'low'
+        avg: trailPcts.length > 0 ? trail.reduce(function(s,r){ return s+Math.abs(r[fld.key]||0); },0)/trail.length : 0,
+        severity: severity
       });
     }
   }
-  return anomalies.sort((a,b)=>b.delta-a.delta);
+  return anomalies.sort(function(a,b){ return (b.deltaAvgRel||0) - (a.deltaAvgRel||0); });
 }
 
 function updatePnLHomeBadge(){
@@ -14441,38 +14507,45 @@ function renderPnLDashboard(rec, locRecs){
         <span style="color:#15803d;font-weight:700;font-size:13px;">No expense anomalies detected</span>
         <span style="color:var(--muted);font-size:11px;">All line items within 15% of their trailing average</span>
       </div>`;
-    const fmt$=v=>'$'+Math.round(v).toLocaleString('en-US');
-    const sevCol={high:'#dc2626',med:'#d97706',low:'#ca8a04'};
-    const sevBg ={high:'#fee2e2',med:'#fef3c7',low:'#fefce8'};
-    const sevLbl={high:'High',med:'Medium',low:'Watch'};
-    const cards = anomalies.map(a=>{
-      const col=sevCol[a.severity], bg=sevBg[a.severity];
-      return `<div class="pnl-anomaly-card" style="border-left-color:${col};background:${bg};">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-          <div>
-            <div style="font-size:12px;font-weight:800;color:${col};margin-bottom:3px;">${a.label}</div>
-            <div style="font-size:11px;color:#374151;">This month: <strong>${fmt$(a.current)}</strong></div>
-            <div style="font-size:11px;color:var(--muted);">3-mo avg: ${fmt$(a.avg)}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:900;color:${col};line-height:1;">+${(a.delta*100).toFixed(0)}%</div>
-            <div style="font-size:9px;font-weight:700;background:${col};color:white;border-radius:99px;padding:2px 7px;margin-top:4px;text-transform:uppercase;letter-spacing:.04em;">${sevLbl[a.severity]}</div>
-          </div>
-        </div>
-      </div>`;
+    var sevCol={high:'#dc2626',med:'#d97706',low:'#ca8a04'};
+    var sevBg ={high:'#fee2e2',med:'#fef3c7',low:'#fefce8'};
+    var sevLbl={high:'High',med:'Medium',low:'Watch'};
+    var fPct = function(v){ return v!=null ? v.toFixed(1)+'%' : '—'; };
+    var fDelta = function(v){ return v!=null ? (v>=0?'+':'')+v.toFixed(1)+'pp' : ''; };
+    var cards = anomalies.map(function(a){
+      var col=sevCol[a.severity], bg=sevBg[a.severity];
+      var vsLastHtml = '';
+      if(a.lastPct != null){
+        var lastCol = a.deltaLast > 0 ? '#dc2626' : '#16a34a';
+        vsLastHtml = '<div style="font-size:10px;color:'+lastCol+';font-weight:600;margin-top:2px;">vs Last Mo: '+fDelta(a.deltaLast)+'</div>';
+      }
+      return '<div class="pnl-anomaly-card" style="border-left-color:'+col+';background:'+bg+';">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        +'<div>'
+        +'<div style="font-size:12px;font-weight:800;color:'+col+';margin-bottom:3px;">'+a.label+'</div>'
+        +'<div style="font-size:11px;color:#374151;">This month: <strong>'+fPct(a.currentPct)+'</strong> of net sales</div>'
+        +'<div style="font-size:11px;color:var(--muted);">3-mo avg: '+fPct(a.avgPct)+'</div>'
+        +vsLastHtml
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0;">'
+        +'<div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:900;color:'+col+';line-height:1;">'+fDelta(a.deltaAvg)+'</div>'
+        +'<div style="font-size:9px;font-weight:700;background:'+col+';color:white;border-radius:99px;padding:2px 7px;margin-top:4px;text-transform:uppercase;letter-spacing:.04em;">'+sevLbl[a.severity]+'</div>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
     }).join('');
-    return `<div class="pnl-anomaly-panel">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:20px;">🚨</span>
-          <span style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;">Expense Anomalies</span>
-        </div>
-        <span style="font-size:11px;font-weight:700;background:#dc2626;color:white;border-radius:99px;padding:3px 10px;">${anomalies.length} item${anomalies.length>1?'s':''} above average</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${rec._label||MFULL[rec.month]+' '+rec.year} vs. trailing 3-month average</span>
-      </div>
-      <div class="pnl-anomaly-grid">${cards}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:10px;">⚠ Flags any expense >15% above its trailing average. High = >40%, Medium = 25–40%, Watch = 15–25%.</div>
-    </div>`;
+    return '<div class="pnl-anomaly-panel">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<span style="font-size:20px;">🚨</span>'
+      +'<span style="font-family:Oswald,sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;">Expense Anomalies</span>'
+      +'</div>'
+      +'<span style="font-size:11px;font-weight:700;background:#dc2626;color:white;border-radius:99px;padding:3px 10px;">'+anomalies.length+' item'+(anomalies.length>1?'s':'')+' above avg %</span>'
+      +'<span style="font-size:11px;color:var(--muted);margin-left:auto;">'+(rec._label||MFULL[rec.month]+' '+rec.year)+' — % of Net Sales vs trailing 3-month avg</span>'
+      +'</div>'
+      +'<div class="pnl-anomaly-grid">'+cards+'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:10px;">⚠ Compares each expense as % of Net Sales. Flags when % is >1.5pp above AND >15% relatively higher than 3-month average. High = >40%, Medium = 25–40%, Watch = 15–25%.</div>'
+      +'</div>';
   })();
   // Also update the home page badge
   setTimeout(updatePnLHomeBadge, 0);
@@ -14651,6 +14724,10 @@ function renderPnLDashboard(rec, locRecs){
         const negStyle = li.value!=null && li.value<0 && !isHeader && !isHighlight ? 'color:#e03030;' : '';
         const pctFmt = (li.value!=null && rec.netSales>0 && !isHeader && li.value!==0)
           ? fmtPnLPct(Math.abs(li.value), rec.netSales) : '';
+        const isBoldPct = tp==='total'||tp==='subtotal'||tp==='highlight';
+        const pctStyle = isBoldPct
+          ? 'text-align:right;white-space:nowrap;font-size:12px;font-weight:700;opacity:.85;'
+          : 'text-align:right;white-space:nowrap;opacity:.65;font-size:11px;';
 
         if(isHeader){
           return `<tr data-pnl-type="section"><td colspan="3" style="${bg}${font}${bord}padding:8px 16px;">${li.label}</td></tr>`;
@@ -14659,7 +14736,7 @@ function renderPnLDashboard(rec, locRecs){
         return `<tr data-pnl-type="${tp}">
           <td style="${cellBase}padding-left:${indentPx}px;">${li.label}${codeTag}${kpiTag}</td>
           <td style="${cellBase}text-align:right;white-space:nowrap;${negStyle}">${valFmt}</td>
-          <td style="${cellBase}text-align:right;white-space:nowrap;opacity:.65;font-size:11px;">${pctFmt}</td>
+          <td style="${cellBase}${pctStyle}">${pctFmt}</td>
         </tr>`;
       }).join('');
 
