@@ -3851,7 +3851,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -5797,7 +5797,7 @@ function exportSnapshot(){
   if(btn){ btn.textContent='Generating…'; btn.disabled=true; }
 
   // 1. Collect all app localStorage data
-  const KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1'];
+  const KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
   const snap = {};
   KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) snap[k]=v; });
 
