@@ -2453,6 +2453,38 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 /* ── Maintenance tabs ── */
 .maint-tab-btn { font-size:12px;font-weight:700;padding:14px 20px;border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;color:#94a3b8;transition:all .2s;letter-spacing:.02em; }
 .maint-tab-btn.active { color:#7e2023;border-bottom-color:#7e2023; }
+/* ── New Stores Status ─────────────────────── */
+.ns-filters{display:flex;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;}
+.ns-filter-sel{padding:6px 10px;font-size:11px;border:1.5px solid #d1d5db;border-radius:6px;background:#fff;font-weight:600;color:#374151;cursor:pointer;}
+.ns-filter-sel:focus{border-color:#1e3a5f;outline:none;}
+.ns-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,box-shadow .2s;}
+.ns-card:hover{border-color:#1e3a5f;box-shadow:0 2px 8px rgba(30,58,95,.08);}
+.ns-card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.ns-card-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;}
+.ns-card-city{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.04em;}
+.ns-card-city.fl{background:#fef3c7;color:#92400e;}
+.ns-card-city.ny{background:#dbeafe;color:#1e40af;}
+.ns-badge{display:inline-block;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase;}
+.ns-badge.lease{background:#dcfce7;color:#15803d;border:1px solid #86efac;}
+.ns-badge.loi{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+.ns-badge.hold{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.ns-badge.waiting{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+.ns-progress-wrap{flex:1;min-width:120px;max-width:220px;}
+.ns-progress-bar{height:8px;background:#e8e2d8;border-radius:99px;overflow:hidden;position:relative;}
+.ns-progress-fill{height:100%;border-radius:99px;transition:width .4s;}
+.ns-progress-lbl{font-size:10px;font-weight:700;margin-top:2px;text-align:right;}
+.ns-card-meta{display:flex;gap:16px;font-size:11px;color:#64748b;margin-top:6px;flex-wrap:wrap;}
+.ns-card-meta span{display:flex;align-items:center;gap:4px;}
+.ns-detail-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);}
+.ns-detail-panel{background:#fff;border-radius:14px;width:95%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:28px;}
+.ns-detail-row{display:flex;gap:10px;margin-bottom:12px;}
+.ns-detail-row label{font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;}
+.ns-detail-row input,.ns-detail-row select,.ns-detail-row textarea{width:100%;padding:8px 10px;font-size:12px;border:1.5px solid #d1d5db;border-radius:6px;font-family:inherit;}
+.ns-detail-row textarea{min-height:60px;resize:vertical;}
+.ns-pdf-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;font-size:11px;font-weight:700;border:1.5px solid #d1d5db;border-radius:6px;cursor:pointer;background:#f8f7f4;color:#374151;transition:all .2s;}
+.ns-pdf-btn:hover{border-color:#1e3a5f;color:#1e3a5f;}
+.ns-map-preview{width:100%;height:180px;border-radius:8px;border:1px solid #e8e2d8;margin-top:6px;background:#f1f5f9;}
+
 /* ── Filter bar ── */
 .maint-filter-bar { display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 24px;background:#fff;border-bottom:1px solid #e8e2d8; }
 .maint-filter-group { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
@@ -3122,6 +3154,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-desc">Track work orders by store and priority. Open, assign, and close maintenance issues with full history and technician notes.</div>
       <div class="hcard-tag">Active · All Locations</div>
       <span id="maint-open-badge" style="display:none;position:absolute;top:12px;right:12px;background:#dc2626;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;align-items:center;justify-content:center;min-width:22px;"></span>
+    </div>
+    <div id="hcard-newstores" class="hcard c8" onclick="goNewStores()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">🏗</span>
+      <div class="hcard-title">New Stores Status</div>
+      <div class="hcard-desc">Pipeline tracker for new store opportunities. Track leases, LOIs, progress, and documents per deal.</div>
+      <div class="hcard-tag">Pipeline Tracker</div>
     </div>
     <div id="hcard-inventory" class="hcard c9" onclick="goInv()" style="position:relative;cursor:pointer;">
        <span class="hcard-icon">📦</span>
@@ -4826,6 +4864,16 @@ function goInv(){
   if(!_hasPermission('inventory')){ _showAccessDenied('Inventory'); return; }
   const first=S.page!=='inv'; S.page='inv'; if(first) invInit(); render();
 }
+function goNewStores(){
+  _nsLoad();
+  _nsImportInitialData();
+  S.page='newstores';
+  document.querySelectorAll('[id^="pg-"]').forEach(el=>el.style.display='none');
+  document.getElementById('pg-newstores').style.display='';
+  renderNSFilters();
+  renderNSList();
+}
+
 function goMaint(){
   if(!_hasPermission('maint')){ _showAccessDenied('Store Maintenance'); return; }
   S.page='maint';
@@ -17133,80 +17181,6 @@ function renderPortfolioPage(){
   let html='';
   const ranked=[...stores].filter(s=>s.hs!=null).sort((a,b)=>b.hs-a.hs);
 
-  // ── SECTION 1: Needs Attention (priority-ranked) ──────────────────────────
-  // Severity = dollar_impact × sales_weight × issue_type_weight
-  // This ensures the top item is always the biggest operational dollar risk.
-  const maxSales=Math.max(...stores.map(s=>s.ytd.ts||0));
-  const sf=s=>maxSales>0?0.4+0.6*((s.ytd.ts||0)/maxSales):1;
-  const alerts=[];
-  for(const s of stores){
-    const y=s.ytd; const loc=s.loc; const sales=s.ytd.ts||0;
-    if(y.fpct!=null && y.fpct>DEFAULT_TGTS.fp){
-      const over=y.fpct-DEFAULT_TGTS.fp;
-      const di=over*sales;
-      alerts.push({loc,severity:di*3.0*sf(s),kpi:'Food Cost',icon:'🍔',
-        sev:over>0.04?'high':'med',actual:fmtP(y.fpct),target:fmtP(DEFAULT_TGTS.fp),
-        delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:di>500?`~${fmtK(di)} at risk`:null});
-    }
-    if(y.lpct!=null && y.lpct>DEFAULT_TGTS.lp){
-      const over=y.lpct-DEFAULT_TGTS.lp;
-      const di=over*sales;
-      alerts.push({loc,severity:di*2.5*sf(s),kpi:'Labor',icon:'👥',
-        sev:over>0.04?'high':'med',actual:fmtP(y.lpct),target:fmtP(DEFAULT_TGTS.lp),
-        delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:di>500?`~${fmtK(di)} at risk`:null});
-    }
-    if(s.uber!=null && s.uber<DEFAULT_TGTS.uber){
-      const gap=DEFAULT_TGTS.uber-s.uber;
-      alerts.push({loc,severity:(gap/DEFAULT_TGTS.uber)*sales*2.0*sf(s),kpi:'Uber Rating',icon:'⭐',
-        sev:gap>0.15?'high':'med',actual:s.uber.toFixed(2),target:DEFAULT_TGTS.uber.toFixed(1),
-        delta:`-${gap.toFixed(2)} below target`,impact:null});
-    }
-    if(y.dpct!=null && y.dpct>DEFAULT_TGTS.dp){
-      const over=y.dpct-DEFAULT_TGTS.dp;
-      const di=over*sales;
-      alerts.push({loc,severity:di*1.0*sf(s),kpi:'D&C',icon:'🧹',
-        sev:over>0.01?'high':'med',actual:fmtP(y.dpct),target:fmtP(DEFAULT_TGTS.dp),
-        delta:`+${(over*100).toFixed(1)}% over target`,
-        impact:di>200?`~${fmtK(di)} at risk`:null});
-    }
-    if(s.salesYoY!=null && s.salesYoY<0.97){
-      const drop=1-s.salesYoY;
-      const di=drop*sales;
-      alerts.push({loc,severity:di*1.8*sf(s),kpi:'Sales Trend',icon:'📉',
-        sev:drop>0.05?'high':'med',actual:fmtP(s.salesYoY-1),target:'≥ 0%',
-        delta:`${((s.salesYoY-1)*100).toFixed(1)}% vs prior year`,
-        impact:di>1000?`~${fmtK(di)} revenue gap`:null});
-    }
-  }
-  alerts.sort((a,b)=>b.severity-a.severity);
-  const topAlerts=alerts.slice(0,5);
-
-  html+=`<div class="pf-section-hdr">⚠️ Needs Attention
-    <span class="pf-shdr-sub">Ranked by dollar impact · Store size weighted</span></div>`;
-  if(!topAlerts.length){
-    html+=`<div class="pf-all-ok">✅ All stores are on target for ${_pfYear}.</div>`;
-  } else {
-    html+=`<div style="margin-bottom:28px;">`;
-    topAlerts.forEach((a,idx)=>{
-      const isTop=idx===0;
-      html+=`<div class="pf-alert-item${a.sev==='high'?'':' warn'}${isTop?' pf-alert-top':''}">
-        ${isTop?`<div class="pf-alert-rank">#1</div>`:'<div class="pf-alert-rank-blank"></div>'}
-        <div class="pf-alert-icon">${a.icon}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="pf-alert-loc">${a.loc}</div>
-          <div class="pf-alert-kpi">${a.kpi} · ${a.delta}${a.impact?` · <strong style="color:#b91c1c;">${a.impact}</strong>`:''}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div class="pf-alert-actual">${a.actual}</div>
-          <div class="pf-alert-tgt">tgt ${a.target}</div>
-        </div>
-      </div>`;
-    });
-    html+=`</div>`;
-  }
-
   // ── SECTION 2: Comparison Table (main decision tool) ──────────────────────
   const COLS=[
     {k:'sales',   lbl:'Net Sales',  asc:false, tip:'YTD net sales'},
@@ -17385,6 +17359,327 @@ document.addEventListener('keydown', function(e){
   }
 });
 
+
+// ══════════════════════════════════════════════════
+//  NEW STORES STATUS DASHBOARD
+// ══════════════════════════════════════════════════
+var NS = {
+  deals: [],
+  filterCity: 'ALL',
+  filterStatus: 'ALL',
+  filterProgress: 'ALL',
+  editIdx: null
+};
+
+function _nsLoad(){
+  try { var raw = localStorage.getItem('sl_newstores'); if(raw) NS.deals = JSON.parse(raw); } catch(e){}
+}
+function _nsSave(){
+  localStorage.setItem('sl_newstores', JSON.stringify(NS.deals));
+}
+
+function renderNSFilters(){
+  var h = '';
+  h += '<select class="ns-filter-sel" onchange="NS.filterCity=this.value;renderNSList();">';
+  h += '<option value="ALL"'+(NS.filterCity==='ALL'?' selected':'')+'>All Cities</option>';
+  h += '<option value="Florida"'+(NS.filterCity==='Florida'?' selected':'')+'>Florida</option>';
+  h += '<option value="New York"'+(NS.filterCity==='New York'?' selected':'')+'>New York</option>';
+  h += '</select>';
+  h += '<select class="ns-filter-sel" onchange="NS.filterStatus=this.value;renderNSList();">';
+  h += '<option value="ALL"'+(NS.filterStatus==='ALL'?' selected':'')+'>All Status</option>';
+  ['Lease','LOI','HOLD','Waiting'].forEach(function(s){
+    h += '<option value="'+s+'"'+(NS.filterStatus===s?' selected':'')+'>'+s+'</option>';
+  });
+  h += '</select>';
+  h += '<select class="ns-filter-sel" onchange="NS.filterProgress=this.value;renderNSList();">';
+  h += '<option value="ALL"'+(NS.filterProgress==='ALL'?' selected':'')+'>All Progress</option>';
+  h += '<option value="low"'+(NS.filterProgress==='low'?' selected':'')+'>Low (0-33%)</option>';
+  h += '<option value="mid"'+(NS.filterProgress==='mid'?' selected':'')+'>Mid (34-66%)</option>';
+  h += '<option value="high"'+(NS.filterProgress==='high'?' selected':'')+'>High (67-100%)</option>';
+  h += '</select>';
+  h += '<div style="flex:1;"></div>';
+  if(_slRole==='admin'){
+    h += '<button onclick="nsOpenNew()" style="padding:7px 16px;font-size:11px;font-weight:700;background:#1e3a5f;color:#fff;border:none;border-radius:6px;cursor:pointer;">+ New Deal</button>';
+  }
+  document.getElementById('ns-filters').innerHTML = h;
+}
+
+function _nsProgressColor(p){
+  if(p >= 0.67) return '#16a34a';
+  if(p >= 0.34) return '#ca8a04';
+  return '#dc2626';
+}
+
+function renderNSList(){
+  var wrap = document.getElementById('ns-list');
+  var deals = NS.deals.filter(function(d){
+    if(NS.filterCity !== 'ALL' && d.city !== NS.filterCity) return false;
+    if(NS.filterStatus !== 'ALL' && d.status !== NS.filterStatus) return false;
+    if(NS.filterProgress !== 'ALL'){
+      if(NS.filterProgress === 'low' && d.progress > 0.33) return false;
+      if(NS.filterProgress === 'mid' && (d.progress < 0.34 || d.progress > 0.66)) return false;
+      if(NS.filterProgress === 'high' && d.progress < 0.67) return false;
+    }
+    return true;
+  });
+
+  // Sort by progress descending
+  deals.sort(function(a,b){ return b.progress - a.progress; });
+
+  if(deals.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;"><div style="font-size:40px;margin-bottom:12px;">🏗</div><div style="font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;">No deals found</div><div style="font-size:12px;">Add a new deal or adjust your filters.</div></div>';
+    return;
+  }
+
+  var h = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:12px;color:#64748b;font-weight:600;">'+deals.length+' deal'+(deals.length!==1?'s':'')+'</span></div>';
+  deals.forEach(function(d, idx){
+    var realIdx = NS.deals.indexOf(d);
+    var pPct = Math.round(d.progress * 100);
+    var pCol = _nsProgressColor(d.progress);
+    var statusCls = (d.status||'').toLowerCase().replace(/\s/g,'');
+    var cityCls = d.city === 'Florida' ? 'fl' : 'ny';
+    h += '<div class="ns-card" onclick="nsOpenDetail('+realIdx+')">';
+    h += '<div class="ns-card-hdr">';
+    h += '<div style="flex:1;min-width:0;">';
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    h += '<span class="ns-card-name">'+(_nsEsc(d.name)||'Unnamed')+'</span>';
+    h += '<span class="ns-card-city '+cityCls+'">'+(d.city||'')+'</span>';
+    h += '<span class="ns-badge '+statusCls+'">'+(d.status||'')+'</span>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div class="ns-progress-wrap">';
+    h += '<div class="ns-progress-bar"><div class="ns-progress-fill" style="width:'+pPct+'%;background:'+pCol+';"></div></div>';
+    h += '<div class="ns-progress-lbl" style="color:'+pCol+';">'+pPct+'%</div>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div class="ns-card-meta">';
+    if(d.broker) h += '<span>👤 '+_nsEsc(d.broker)+'</span>';
+    if(d.holding) h += '<span>🏢 '+_nsEsc(d.holding)+'</span>';
+    if(d.notes) h += '<span style="color:#94a3b8;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📝 '+_nsEsc(d.notes)+'</span>';
+    if(d.projectPdf) h += '<span style="color:#1e40af;">📄 Project PDF</span>';
+    if(d.renderPdf) h += '<span style="color:#1e40af;">📄 Store Render</span>';
+    h += '</div>';
+    h += '</div>';
+  });
+  wrap.innerHTML = h;
+}
+
+function _nsEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+function nsOpenNew(){
+  NS.editIdx = null;
+  _nsShowDetail({name:'',city:'Florida',status:'Waiting',progress:0,notes:'',broker:'',holding:'Development',address:'',projectPdf:null,renderPdf:null});
+}
+
+function nsOpenDetail(idx){
+  NS.editIdx = idx;
+  _nsShowDetail(NS.deals[idx]);
+}
+
+function _nsShowDetail(d){
+  var isNew = NS.editIdx === null;
+  var modal = document.getElementById('ns-detail-modal');
+  var h = '<div class="ns-detail-overlay" onclick="if(event.target===this)nsCloseDetail();">';
+  h += '<div class="ns-detail-panel">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">';
+  h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;">'+(isNew?'New Deal':'Edit Deal')+'</div>';
+  h += '<button onclick="nsCloseDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">✕</button>';
+  h += '</div>';
+
+  // Row 1: Store Name + City
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:2;"><label>Store Name</label><input id="ns-f-name" value="'+_nsEsc(d.name)+'" placeholder="e.g. Sawgrass Mills"></div>';
+  h += '<div style="flex:1;"><label>City</label><select id="ns-f-city"><option value="Florida"'+(d.city==='Florida'?' selected':'')+'>Florida</option><option value="New York"'+(d.city==='New York'?' selected':'')+'>New York</option></select></div>';
+  h += '</div>';
+
+  // Row 2: Status + Progress + Holding
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:1;"><label>Status</label><select id="ns-f-status">';
+  ['Lease','LOI','HOLD','Waiting'].forEach(function(s){
+    h += '<option value="'+s+'"'+(d.status===s?' selected':'')+'>'+s+'</option>';
+  });
+  h += '</select></div>';
+  h += '<div style="flex:1;"><label>Progress (%)</label><input id="ns-f-progress" type="range" min="0" max="100" step="5" value="'+Math.round((d.progress||0)*100)+'" oninput="nsSliderUpdate(this.value)"><div id="ns-f-progress-lbl" style="font-size:12px;font-weight:700;text-align:center;color:'+_nsProgressColor(d.progress||0)+';">'+Math.round((d.progress||0)*100)+'%</div></div>';
+  h += '<div style="flex:1;"><label>Holding</label><select id="ns-f-holding"><option value="Development"'+(d.holding==='Development'?' selected':'')+'>Development</option><option value="International"'+(d.holding==='International'?' selected':'')+'>International</option></select></div>';
+  h += '</div>';
+
+  // Row 3: Broker
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:1;"><label>Broker</label><input id="ns-f-broker" value="'+_nsEsc(d.broker||'')+'" placeholder="Broker name"></div>';
+  h += '</div>';
+
+  // Row 4: Notes
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:1;"><label>Notes</label><textarea id="ns-f-notes" placeholder="Comments, updates...">'+_nsEsc(d.notes||'')+'</textarea></div>';
+  h += '</div>';
+
+  // Row 5: Address + Map
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:1;"><label>Address</label><input id="ns-f-address" value="'+_nsEsc(d.address||'')+'" placeholder="Full address" oninput="nsUpdateMapPreview();">';
+  h += '<div id="ns-map-container">';
+  if(d.address){
+    h += '<iframe class="ns-map-preview" src="https://maps.google.com/maps?q='+encodeURIComponent(d.address)+'&output=embed" frameborder="0" loading="lazy"></iframe>';
+  }
+  h += '</div></div>';
+  h += '</div>';
+
+  // Row 6: PDF uploads
+  h += '<div class="ns-detail-row">';
+  h += '<div style="flex:1;"><label>Project PDF</label><div style="display:flex;gap:8px;align-items:center;">';
+  if(d.projectPdf){
+    h += '<a href="'+d.projectPdf+'" target="_blank" class="ns-pdf-btn">📄 View PDF</a>';
+    h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'projpdf\')">↻ Replace</button>';
+  } else {
+    h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'projpdf\')">📁 Upload PDF</button>';
+  }
+  h += '<input type="file" id="ns-f-projpdf" accept=".pdf" style="display:none;" onchange="nsHandlePdf(this,\'project\')"></div></div>';
+  h += '<div style="flex:1;"><label>Store Render</label><div style="display:flex;gap:8px;align-items:center;">';
+  if(d.renderPdf){
+    h += '<a href="'+d.renderPdf+'" target="_blank" class="ns-pdf-btn">📄 View Render</a>';
+    h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'rendpdf\')">↻ Replace</button>';
+  } else {
+    h += '<button class="ns-pdf-btn" onclick="nsClickUpload(\'rendpdf\')">📁 Upload PDF</button>';
+  }
+  h += '<input type="file" id="ns-f-rendpdf" accept=".pdf" style="display:none;" onchange="nsHandlePdf(this,\'render\')"></div></div>';
+  h += '</div>';
+
+  // Actions
+  h += '<div style="display:flex;gap:10px;margin-top:20px;justify-content:space-between;">';
+  if(!isNew && _slRole==='admin'){
+    h += '<button onclick="nsDeleteDeal()" style="padding:8px 18px;font-size:12px;font-weight:700;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">Delete</button>';
+  } else {
+    h += '<div></div>';
+  }
+  h += '<div style="display:flex;gap:8px;">';
+  h += '<button onclick="nsCloseDetail()" style="padding:8px 18px;font-size:12px;font-weight:700;background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;">Cancel</button>';
+  if(_slRole==='admin'){
+    h += '<button onclick="nsSaveDeal()" style="padding:8px 18px;font-size:12px;font-weight:700;background:#1e3a5f;color:#fff;border:none;border-radius:6px;cursor:pointer;">Save</button>';
+  }
+  h += '</div></div>';
+
+  h += '</div></div>';
+  modal.innerHTML = h;
+  modal.style.display = '';
+}
+
+
+function nsSliderUpdate(val){
+  var el = document.getElementById('ns-f-progress-lbl');
+  if(el){
+    el.textContent = val + '%';
+    el.style.color = val >= 67 ? '#16a34a' : val >= 34 ? '#ca8a04' : '#dc2626';
+  }
+}
+function nsClickUpload(id){
+  var el = document.getElementById('ns-f-' + id);
+  if(el) el.click();
+}
+function nsCloseDetail(){
+  document.getElementById('ns-detail-modal').style.display = 'none';
+  document.getElementById('ns-detail-modal').innerHTML = '';
+}
+
+function nsUpdateMapPreview(){
+  var addr = (document.getElementById('ns-f-address')?.value || '').trim();
+  var container = document.getElementById('ns-map-container');
+  if(!container) return;
+  if(addr.length > 5){
+    container.innerHTML = '<iframe class="ns-map-preview" src="https://maps.google.com/maps?q='+encodeURIComponent(addr)+'&output=embed" frameborder="0" loading="lazy"></iframe>';
+  } else {
+    container.innerHTML = '';
+  }
+}
+
+// PDF handling: store as data URL in localStorage
+var _nsTempPdfs = { project: null, render: null };
+function nsHandlePdf(input, type){
+  var file = input.files[0];
+  if(!file) return;
+  if(file.size > 10 * 1024 * 1024){ alert('PDF too large (max 10MB)'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    _nsTempPdfs[type] = e.target.result;
+    // Update UI to show uploaded
+    var label = type === 'project' ? 'Project PDF' : 'Store Render';
+    input.parentElement.innerHTML = '<span style="color:#16a34a;font-size:11px;font-weight:700;">✓ ' + file.name + ' uploaded</span> <button class="ns-pdf-btn" onclick="document.getElementById(\'ns-f-'+(type==='project'?'proj':'rend')+'pdf\').click();">↻ Replace</button><input type="file" id="ns-f-'+(type==='project'?'proj':'rend')+'pdf" accept=".pdf" style="display:none;" onchange="nsHandlePdf(this,\''+type+'\');">';
+  };
+  reader.readAsDataURL(file);
+}
+
+function nsSaveDeal(){
+  var deal = {
+    name: (document.getElementById('ns-f-name')?.value || '').trim(),
+    city: document.getElementById('ns-f-city')?.value || 'Florida',
+    status: document.getElementById('ns-f-status')?.value || 'Waiting',
+    progress: (parseInt(document.getElementById('ns-f-progress')?.value) || 0) / 100,
+    notes: (document.getElementById('ns-f-notes')?.value || '').trim(),
+    broker: (document.getElementById('ns-f-broker')?.value || '').trim(),
+    holding: document.getElementById('ns-f-holding')?.value || 'Development',
+    address: (document.getElementById('ns-f-address')?.value || '').trim(),
+    projectPdf: _nsTempPdfs.project || (NS.editIdx != null ? NS.deals[NS.editIdx]?.projectPdf : null),
+    renderPdf: _nsTempPdfs.render || (NS.editIdx != null ? NS.deals[NS.editIdx]?.renderPdf : null)
+  };
+  if(!deal.name){ alert('Store Name is required.'); return; }
+  if(NS.editIdx != null){
+    NS.deals[NS.editIdx] = deal;
+  } else {
+    NS.deals.push(deal);
+  }
+  _nsTempPdfs = { project: null, render: null };
+  _nsSave();
+  nsCloseDetail();
+  renderNSList();
+}
+
+function nsDeleteDeal(){
+  if(NS.editIdx == null) return;
+  if(!confirm('Delete this deal? This cannot be undone.')) return;
+  NS.deals.splice(NS.editIdx, 1);
+  _nsSave();
+  nsCloseDetail();
+  renderNSList();
+}
+
+// Import initial data from hardcoded Excel data
+function _nsImportInitialData(){
+  if(NS.deals.length > 0) return; // already have data
+  var raw = [
+    {name:"Sawgrass Mills",city:"Florida",status:"Lease",progress:0.8,notes:"",broker:"NC",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Pembroke Gardens",city:"Florida",status:"Lease",progress:0.7,notes:"",broker:"Angel Sanchez",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Equinox Project",city:"Florida",status:"LOI",progress:0.5,notes:"WAITING LEASE",broker:"Mike Beckett",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Link at Boca",city:"Florida",status:"LOI",progress:0.1,notes:"WAITING LOI",broker:"NC",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Westown Town Center",city:"Florida",status:"LOI",progress:0.5,notes:"WAITING LEASE",broker:"Mike Beckett",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Promenade",city:"Florida",status:"LOI",progress:0.5,notes:"THEY NEED TO KILL SHAKE SHACK DEAL",broker:"Mike Beckett",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"UTC Mall",city:"Florida",status:"LOI",progress:0.5,notes:"WAITING LEASE",broker:"Eva Synalovski",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"UCF",city:"Florida",status:"LOI",progress:0.45,notes:"",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Shops at Jupiter",city:"Florida",status:"LOI",progress:0.35,notes:"",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Sarasota Square",city:"Florida",status:"LOI",progress:0.3,notes:"",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Hyde Park",city:"Florida",status:"LOI",progress:0.3,notes:"WAITING OK FROM LL",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"UM",city:"Florida",status:"Waiting",progress:0.3,notes:"WAITING CONTRACT",broker:"SL",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Sultan",city:"Florida",status:"LOI",progress:0.2,notes:"MEETING WITH LL",broker:"NC",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Catalina Hotel",city:"Florida",status:"LOI",progress:0.2,notes:"",broker:"DINO",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Towns and County",city:"Florida",status:"LOI",progress:0.3,notes:"JOE AND THE JUICE DEAL",broker:"Angel Sanchez",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Sundy Village",city:"Florida",status:"LOI",progress:0.2,notes:"",broker:"Andrew Rosenberg",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"St. Pittsburg",city:"Florida",status:"LOI",progress:0.2,notes:"",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Inter Miami",city:"Florida",status:"Waiting",progress:0.2,notes:"WAITING COUNTER",broker:"SL",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Butler Town Center",city:"Florida",status:"Waiting",progress:0.1,notes:"WAITING LOI",broker:"Mike Beckett",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Plantation Walk",city:"Florida",status:"Waiting",progress:0.1,notes:"",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"The Standard",city:"Florida",status:"HOLD",progress:0.1,notes:"",broker:"Andrew Rosenberg",holding:"International",projectPdf:null,renderPdf:null},
+    {name:"Westland Mall",city:"Florida",status:"Waiting",progress:0,notes:"",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Palm Beach Gardens",city:"Florida",status:"Waiting",progress:0,notes:"WAITING $ KEY MONEY FOR PACKAGE",broker:"Andrew Rosenberg",holding:"Development",address:"5270 Donald Ross Rd., Suite 105, Palm Beach Gardens, FL 33418",projectPdf:null,renderPdf:null},
+    {name:"Boca Raton Military",city:"Florida",status:"Waiting",progress:0,notes:"WAITING $ KEY MONEY FOR PACKAGE",broker:"Andrew Rosenberg",holding:"Development",address:"5560 N. Military Trl., Suite 310, Boca Raton, FL 33496",projectPdf:null,renderPdf:null},
+    {name:"Wellington",city:"Florida",status:"Waiting",progress:0,notes:"WAITING $ KEY MONEY FOR PACKAGE",broker:"Andrew Rosenberg",holding:"Development",address:"1385 S. State Road 7, Building #6, Suite #103, Wellington, FL 33414",projectPdf:null,renderPdf:null},
+    {name:"Sparkman Wharf",city:"Florida",status:"Waiting",progress:0,notes:"",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Water St.",city:"Florida",status:"Waiting",progress:0,notes:"WAITING FEEDBACK FROM LL - 4/10 MEETING WITH LL",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"St. Johns Town Center",city:"Florida",status:"Waiting",progress:0,notes:"WAITING FEEDBACK FROM LL",broker:"Angel Sanchez",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Winter Park",city:"Florida",status:"Waiting",progress:0,notes:"WAITING $KEY MONEY REQ",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Disney Springs",city:"Florida",status:"Waiting",progress:0,notes:"WAITING FEEDBACK FROM LL - HARD, NO LUCK FOR NOW",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null},
+    {name:"Universal CityWalk",city:"Florida",status:"Waiting",progress:0,notes:"WAITING FEEDBACK FROM LL",broker:"Andrew Rosenberg",holding:"Development",projectPdf:null,renderPdf:null}
+  ];
+  NS.deals = raw;
+  _nsSave();
+}
+
 // ══════════════════════════════════════════════════
 //  ACTIVITY LOGGING (Supabase-backed)
 // ══════════════════════════════════════════════════
@@ -17498,6 +17793,18 @@ migrate();
   <div id="maint-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-tech"   style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-review" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
+</div>
+
+
+<!-- ═══ NEW STORES STATUS PAGE ═══ -->
+<div id="pg-newstores" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
+  <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
+    <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px;">🏗 NEW STORES STATUS</span>
+  </div>
+  <div id="ns-filters" class="ns-filters"></div>
+  <div style="padding:16px 24px 40px;" id="ns-list"></div>
+  <div id="ns-detail-modal" style="display:none;"></div>
 </div>
 
 <!-- ═══ PORTFOLIO PAGE ═══ -->
