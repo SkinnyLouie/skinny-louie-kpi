@@ -6052,6 +6052,7 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(avatarEl) avatarEl.textContent = displayName[0].toUpperCase();
   if(nameEl)   nameEl.textContent   = displayName;
   if(subEl)    subEl.textContent    = role.charAt(0).toUpperCase()+role.slice(1);
+  _admRenderRole(role);
 
   // Populate first/last name fields
   var nameParts = displayName.split(' ');
@@ -6139,10 +6140,30 @@ function _admToggleModule(moduleId){
   _admSetActionMsg('');
 }
 
+function _admSetRole(role){
+  _admCtx.role = role;
+  _admRenderRole(role);
+}
+function _admRenderRole(role){
+  var userBtn = document.getElementById('adm-role-user');
+  var adminBtn = document.getElementById('adm-role-admin');
+  if(!userBtn || !adminBtn) return;
+  if(role === 'admin'){
+    adminBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:1.5px solid #c4a035;background:rgba(196,160,53,.15);font-size:12px;font-weight:700;cursor:pointer;color:#92400e;transition:all .15s;';
+    userBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#64748b;transition:all .15s;';
+  } else {
+    userBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:1.5px solid #1e3a5f;background:rgba(30,58,95,.1);font-size:12px;font-weight:700;cursor:pointer;color:#1e3a5f;transition:all .15s;';
+    adminBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#64748b;transition:all .15s;';
+  }
+  // Update sub-label
+  var subEl = document.getElementById('adm-sel-sub');
+  if(subEl) subEl.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 async function _adminSavePerms(){
   if(!_admCtx.userId){ _admSetActionMsg('No user selected.', 'err'); return; }
-  // Self-lockout guard: prevent the current admin from removing their own admin permission.
-  if(_admCtx.userId === _slUser?.id && !_admCtx.perms.has('admin')){
+  // Self-lockout guard: prevent the current admin from demoting themselves
+  if(_admCtx.userId === _slUser?.id && _admCtx.role !== 'admin'){
     _admSetActionMsg('⚠️ Cannot remove your own admin access.', 'err');
     return;
   }
@@ -6179,6 +6200,13 @@ async function _adminSavePerms(){
       if(locInsErr) throw locInsErr;
     }
 
+    // Save role to profiles
+    var newRole = _admCtx.role || 'user';
+    var roleRes = await _supa.from('profiles').update({ role: newRole }).eq('id', _admCtx.userId).select();
+    if(roleRes.error){
+      console.warn('[Admin] role update error:', roleRes.error.message);
+    }
+
     // Save full name to profiles
     var fname = (document.getElementById('adm-edit-fname')?.value || '').trim();
     var lname = (document.getElementById('adm-edit-lname')?.value || '').trim();
@@ -6199,7 +6227,7 @@ async function _adminSavePerms(){
     console.log('[Admin] Saved for', (fullName || _admCtx.displayName), '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
     _admSetActionMsg('Saved for ' + (fullName || _admCtx.displayName), 'ok');
     // Refresh user list to show updated name
-    var savedId = _admCtx.userId, savedRole = _admCtx.role, savedState = _admCtx.state;
+    var savedId = _admCtx.userId, savedRole = newRole, savedState = _admCtx.state;
     await renderAdminPage();
     _adminSelectUser(savedId, fullName || _admCtx.displayName, savedRole, savedState);
   } catch(e){
@@ -19723,6 +19751,12 @@ migrate();
             <input type="text" id="adm-edit-fname" placeholder="First name" class="tgt-fi" style="flex:1;padding:7px 10px;font-size:12px;border-radius:6px;border:1px solid #d1d5db;">
             <input type="text" id="adm-edit-lname" placeholder="Last name" class="tgt-fi" style="flex:1;padding:7px 10px;font-size:12px;border-radius:6px;border:1px solid #d1d5db;">
           </div>
+          <!-- Role selector (admin only) -->
+          <div class="adm-perm-section-title">Role</div>
+          <div id="adm-role-row" style="display:flex;gap:8px;padding:0 0 16px;">
+            <button id="adm-role-user" onclick="_admSetRole('user')" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#64748b;transition:all .15s;">User</button>
+            <button id="adm-role-admin" onclick="_admSetRole('admin')" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#64748b;transition:all .15s;">Admin</button>
+          </div>
           <!-- Location scope -->
           <div class="adm-perm-section-title">Location Access</div>
           <div class="adm-scope-row" id="adm-scope-row"></div>
@@ -19745,11 +19779,7 @@ migrate();
         </div>
       </div>
     </div>
-    <!-- Activity Logs tab -->
-    <div style="margin-top:16px;padding:0 24px 24px;">
-      <button onclick="document.getElementById('admin-activity-wrap').style.display=document.getElementById('admin-activity-wrap').style.display==='none'?'block':'none';renderActivityLogs();" class="btn" style="font-size:11px;margin-bottom:8px;background:#f0f4f8;color:#1e3a5f;border:1px solid #c7d2e0;border-radius:6px;padding:7px 14px;cursor:pointer;">Activity Logs</button>
-      <div id="admin-activity-wrap" style="display:none;background:#fff;border:1px solid #e8e2d8;border-radius:10px;max-height:400px;overflow-y:auto;"></div>
-    </div>
+
   </div>
 </div>
 
