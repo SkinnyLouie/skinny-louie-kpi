@@ -3039,6 +3039,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hr-empty-title{font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;}
 .hr-empty-sub{font-size:12px;}
 .hr-audit-line{font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic;}
+@keyframes slFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slScaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -3234,7 +3236,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     </div>
     <div id="hcard-stores" class="hcard c1" onclick="goStores()" style="cursor:pointer;">
       <span class="hcard-icon">🗺️</span>
-      <div class="hcard-title">Skinny Louie Stores</div>
+      <div class="hcard-title">Louie Spots</div>
       <div class="hcard-desc">Live visual map of all current and future Skinny Louie locations. Track expansion across Florida and New York with real-time status pins.</div>
       <div class="hcard-tag">Expansion Map</div>
     </div>
@@ -5866,7 +5868,7 @@ const _ADM_MODULES = [
   { id:'newstores',   label:'New Stores Status',  icon:'🏗', desc:'Pipeline tracker for new store deals' },
   { id:'hr',           label:'HR Dashboard',       icon:'👥', desc:'Weekly news & termination board' },
   { id:'marketing',    label:'Marketing',          icon:'📣', desc:'Campaigns, content & brand initiatives' },
-  { id:'stores',        label:'Skinny Louie Stores', icon:'🗺️', desc:'Expansion map & location tracker' },
+  { id:'stores',        label:'Louie Spots', icon:'🗺️', desc:'Expansion map & location tracker' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -17937,7 +17939,7 @@ async function _admLoadUserActivity(){
 
 
 // ══════════════════════════════════════════════════
-//  SKINNY LOUIE STORES MODULE
+//  LOUIE SPOTS MODULE
 // ══════════════════════════════════════════════════
 var _stMapFL = null, _stMapNY = null;
 var _stLayerFL = null, _stLayerNY = null;
@@ -17949,7 +17951,7 @@ function _stSave(arr){ localStorage.setItem(_ST_KEY, JSON.stringify(arr)); }
 function _stId(){ return 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 
 function goStores(){
-  if(!_hasPermission('stores')){ _showAccessDenied('Skinny Louie Stores'); return; }
+  if(!_hasPermission('stores')){ _showAccessDenied('Louie Spots'); return; }
   S.page='stores';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-stores').style.display='';
@@ -18221,11 +18223,19 @@ async function _stGeocode(address){
 
 function storesDeletePin(id){
   if(_slRole !== 'admin') return;
-  if(!confirm('Remove this store location?')) return;
-  var all = _stLoad();
-  all = all.filter(function(s){ return s.id !== id; });
-  _stSave(all);
-  storesRender();
+  _slConfirm({
+    title: 'Remove Store',
+    message: 'Are you sure you want to remove this store location?<br>This action cannot be undone.',
+    confirmText: 'Remove',
+    confirmColor: '#dc2626',
+    cancelText: 'Keep It',
+    onConfirm: function(){
+      var all = _stLoad();
+      all = all.filter(function(s){ return s.id !== id; });
+      _stSave(all);
+      storesRender();
+    }
+  });
 }
 
 // ══════════════════════════════════════════════════
@@ -18318,6 +18328,44 @@ function hrSetTab(btn, tab){
 
 // Build city-grouped store <option> or <optgroup> HTML from user permissions
 // cityLabels maps LOC_MAP keys to display names
+// ══════════════════════════════════════════════════
+//  GLOBAL CUSTOM CONFIRM MODAL
+// ══════════════════════════════════════════════════
+function _slConfirm(opts){
+  // opts: { title, message, confirmText, confirmColor, cancelText, onConfirm }
+  var title = opts.title || 'Confirm';
+  var message = opts.message || 'Are you sure?';
+  var confirmText = opts.confirmText || 'Confirm';
+  var confirmColor = opts.confirmColor || '#1e3a5f';
+  var cancelText = opts.cancelText || 'Cancel';
+  var overlay = document.createElement('div');
+  overlay.id = 'sl-confirm-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;animation:slFadeIn .15s ease;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:28px 32px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
+  box.innerHTML = '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:10px;">'
+    + title + '</div>'
+    + '<div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:24px;">' + message + '</div>'
+    + '<div style="display:flex;gap:12px;justify-content:center;">'
+    + '<button id="sl-confirm-cancel" style="padding:10px 28px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#64748b;transition:all .15s;">'+cancelText+'</button>'
+    + '<button id="sl-confirm-ok" style="padding:10px 28px;border-radius:10px;border:none;background:'+confirmColor+';color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .15s;">'+confirmText+'</button>'
+    + '</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _slConfirmClose(); });
+  document.getElementById('sl-confirm-cancel').addEventListener('click', function(){ _slConfirmClose(); });
+  document.getElementById('sl-confirm-ok').addEventListener('click', function(){
+    _slConfirmClose();
+    if(opts.onConfirm) opts.onConfirm();
+  });
+  // Focus the cancel button so Escape works naturally
+  document.getElementById('sl-confirm-cancel').focus();
+}
+function _slConfirmClose(){
+  var el = document.getElementById('sl-confirm-overlay');
+  if(el) el.remove();
+}
+
 var _HR_CITY_LABELS = { FL: "Florida", NY: "New York" };
 function _hrStoreOptions(includeAll){
   // Use _isLocAllowed() against LOC_MAP directly so ALL permitted stores show
@@ -18656,32 +18704,49 @@ function hrSaveNew(){
 }
 
 function hrComplete(id){
-  var all = _hrLoad();
-  for(var i=0;i<all.length;i++){
-    if(all[i].id === id){
-      all[i].status = 'completed';
-      all[i].processed_by = _slDisplayName || 'Unknown';
-      all[i].processed_at = new Date().toISOString();
-      break;
+  _slConfirm({
+    title: 'Complete Entry',
+    message: 'Mark this entry as completed?',
+    confirmText: 'Complete',
+    confirmColor: '#16a34a',
+    cancelText: 'Not Yet',
+    onConfirm: function(){
+      var all = _hrLoad();
+      for(var i=0;i<all.length;i++){
+        if(all[i].id === id){
+          all[i].status = 'completed';
+          all[i].processed_by = _slDisplayName || 'Unknown';
+          all[i].processed_at = new Date().toISOString();
+          break;
+        }
+      }
+      _hrSave(all);
+      hrRenderList();
     }
-  }
-  _hrSave(all);
-  hrRenderList();
+  });
 }
 
 function hrDelete(id){
-  if(!confirm('Cancel this entry?')) return;
-  var all = _hrLoad();
-  for(var i=0;i<all.length;i++){
-    if(all[i].id === id){
-      all[i].status = 'cancelled';
-      all[i].cancelled_by = _slDisplayName || 'Unknown';
-      all[i].cancelled_at = new Date().toISOString();
-      break;
+  _slConfirm({
+    title: 'Cancel Entry',
+    message: 'Are you sure you want to cancel this entry?<br>It will be moved to the Cancelled tab.',
+    confirmText: 'Yes, Cancel It',
+    confirmColor: '#dc2626',
+    cancelText: 'Go Back',
+    onConfirm: function(){
+      var all = _hrLoad();
+      for(var i=0;i<all.length;i++){
+        if(all[i].id === id){
+          all[i].status = 'cancelled';
+          all[i].cancelled_by = _slDisplayName || 'Unknown';
+          all[i].cancelled_at = new Date().toISOString();
+          break;
+        }
+      }
+      _hrSave(all);
+      hrRenderList();
     }
-  }
-  _hrSave(all);
-  hrRenderList();
+  });
 }
 
 // ══════════════════════════════════════════════════
@@ -18756,11 +18821,11 @@ migrate();
 
 
 
-<!-- ═══ SKINNY LOUIE STORES PAGE ═══ -->
+<!-- ═══ LOUIE SPOTS PAGE ═══ -->
 <div id="pg-stores" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
   <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;">🗺️ SKINNY LOUIE STORES</span>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;">🗺️ LOUIE SPOTS</span>
   </div>
   <!-- Filter bar -->
   <div id="stores-filter-bar" style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;">
