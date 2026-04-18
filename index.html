@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub</title>
-<!-- BUILD: 2026-04-16-v49.04 -->
+<title>Skinny Louie · Performance Hub v81</title>
+<!-- BUILD: 2026-04-17-v81 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -11069,13 +11069,13 @@ function loadToastJson(input){
       }
 
       // Merge monthly — dedup by year+month+loc, keep new over old
-      var newKeys = new Set(monthly.map(function(n){ return String(n.year)+'|'+n.month+'|'+n.loc; }));
-      var ex = getSalesRecords().filter(function(r){ return !newKeys.has(String(r.year)+'|'+r.month+'|'+r.loc); });
+      var newKeys = new Set(monthly.map(function(n){ return n.state+'|'+n.loc+'|'+String(n.year)+'|'+n.month; }));
+      var ex = getSalesRecords().filter(function(r){ return !newKeys.has((r.state||'FL')+'|'+r.loc+'|'+String(r.year)+'|'+r.month); });
       _slSaveRecords('sales', ex.concat(monthly));
       // Merge daily — date-level upsert
       {
-        var newDailyKeys=new Set(daily.map(function(d){ return d.loc+'|'+d.date; }));
-        var exD=getSalesDailyRecords().filter(function(r){ return !newDailyKeys.has(r.loc+'|'+r.date); });
+        var newDailyKeys=new Set(daily.map(function(d){ return (d.state||'FL')+'|'+d.loc+'|'+d.date; }));
+        var exD=getSalesDailyRecords().filter(function(r){ return !newDailyKeys.has((r.state||'FL')+'|'+r.loc+'|'+r.date); });
         localStorage.setItem('sl_sales_daily_v1',JSON.stringify(exD.concat(daily)));
       }
       // Update upload log
@@ -11413,17 +11413,8 @@ function parseSalesFile(file, state, loc, year, month){
           }
         }
 
-        // ── Cross-field void integrity: null-out impossible zeroes ───────────────
-        // If voidOrders > 0 but voidAmount or voidItems parsed as exactly 0 (not null),
-        // those zeros are bad data — no restaurant can void 1+ orders with $0 amount
-        // and 0 items. This happens when a Toast export has blank/0 cells for those fields
-        // even though the order-count cell was populated (e.g. some older export formats
-        // or JSON sources that default numeric fields to 0 instead of omitting them).
-        // Treat them as null (= "not found"), never as genuine zeroes.
-        if(voidOrders != null && voidOrders > 0){
-          if(voidAmount === 0) voidAmount = null;
-          if(voidItems  === 0) voidItems  = null;
-        }
+        // Void values: $0 is valid when Toast counts void orders but dollar total
+        // is genuinely zero (items voided before payment). Do NOT null out zeroes.
 
         // ── Cross-field void completeness validation ──────────────────────────
         // voidIncomplete = true when the file contained SOME void data but not all
