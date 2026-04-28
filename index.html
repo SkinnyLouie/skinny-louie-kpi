@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub v81</title>
-<!-- BUILD: 2026-04-17-v81 -->
+<!-- BUILD: 2026-04-27-v81g -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -4129,6 +4129,9 @@ async function _initApp(user){
   try{ _slRunMigrationIfNeeded(); } catch(e){ console.error('[SL] Migration error:', e); }
   // v4: rename stale loc values (Dania→Dania Beach, Nomad→NoMad) — runs after cloud load
   try{ _slRunLocRenameMigration(); } catch(e){ console.error('[SL] v4 migration error:', e); }
+  // v81f: Sync P&L cost data into KPI arrays on every app start
+  // Without this, Food Cost / D&C / Labor KPI cards are empty until next P&L import
+  try { _pnlAutoSyncKPI(getPnLRecords()); } catch(e){ console.error('[SL] P&L→KPI sync error:', e); }
   _applyRoleUI();
   _actStartSession();
   window.addEventListener('beforeunload', _actEndSession);
@@ -4958,6 +4961,7 @@ function goInv(){
 }
 function goNewStores(){
   if(!_hasPermission('newstores')){ _showAccessDenied('New Stores Status'); return; }
+  window.scrollTo(0, 0); // v81g
   _nsLoad();
   _nsImportInitialData();
   S.page='newstores';
@@ -6355,6 +6359,7 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
+  window.scrollTo(0, 0); // v81g: reset scroll on every page change
   ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
@@ -18113,6 +18118,7 @@ function _eaEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;
 
 function goAssess(){
   if(!_hasPermission('assess')){ _showAccessDenied('Excellence Assessment'); return; }
+  window.scrollTo(0, 0); // v81g
   S.page='assess';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-assess').style.display='';
@@ -18734,6 +18740,7 @@ function _stId(){ return 'st_' + Date.now() + '_' + Math.random().toString(36).s
 
 function goStores(){
   if(!_hasPermission('stores')){ _showAccessDenied('Louie Spots'); return; }
+  window.scrollTo(0, 0); // v81g
   S.page='stores';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-stores').style.display='';
@@ -19025,6 +19032,7 @@ function storesDeletePin(id){
 // ══════════════════════════════════════════════════
 function goEvents(){
   if(!_hasPermission('events')){ _showAccessDenied('Event Calculator'); return; }
+  window.scrollTo(0, 0); // v81g
   S.page='events';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-events').style.display='';
@@ -19035,6 +19043,7 @@ function goEvents(){
 // ══════════════════════════════════════════════════
 function goMarketing(){
   if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
+  window.scrollTo(0, 0); // v81g
   S.page='marketing';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-marketing').style.display='';
@@ -19054,6 +19063,7 @@ function _hrId(){ return 'hr_' + Date.now() + '_' + Math.random().toString(36).s
 
 function goHR(){
   if(!_hasPermission('hr')){ _showAccessDenied('HR Dashboard'); return; }
+  window.scrollTo(0, 0); // v81g
   S.page='hr';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-hr').style.display='';
