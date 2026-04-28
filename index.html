@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v84</title>
-<!-- BUILD: 2026-04-28-v87 -->
+<title>Skinny Louie · Performance Hub v89</title>
+<!-- BUILD: 2026-04-28-v89 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -3083,7 +3083,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 /* position:fixed pins the panel directly to the viewport, eliminating any
    dependency on ancestor height, body overflow, or navbar calc accuracy.
    top:65px = 3px accent bar + 62px navbar. */
-#pg-admin{display:none;position:fixed;top:65px;left:0;right:0;bottom:0;background:#faf9f7;overflow:hidden;flex-direction:column;z-index:100;}
+#pg-admin{display:none;position:fixed;top:62px;left:0;right:0;bottom:0;background:#faf9f7;overflow:hidden;flex-direction:column;z-index:500;}
 .adm-hdr{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-shrink:0;}
 .adm-hdr-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;}
 /* Two-panel layout */
@@ -4138,7 +4138,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -6320,52 +6320,58 @@ function _admSetScope(scope){
 //     );
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
-  const scroll = document.getElementById('adm-user-scroll');
-  if(!scroll) return;
+  var scroll = document.getElementById('adm-user-scroll');
+  if(!scroll){ console.error('[Admin] adm-user-scroll not found'); return; }
 
-  scroll.innerHTML = _slStateHtml('loading', {title:'Loading users…', small:true});
-  const empty  = document.getElementById('adm-perm-empty');
-  const editor = document.getElementById('adm-perm-editor');
+  scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#1e3a5f;font-size:13px;font-weight:600;">Loading users…</div>';
+  var empty  = document.getElementById('adm-perm-empty');
+  var editor = document.getElementById('adm-perm-editor');
   if(empty)  empty.style.display = 'flex';
   if(editor) editor.style.display = 'none';
   _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set() };
 
+  if(!_supa){
+    scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#b91c1c;font-size:13px;">Supabase not connected. Refresh the page.</div>';
+    return;
+  }
+
   try {
-    const { data: profiles, error } = await _supa
+    var result = await _supa
       .from('profiles')
       .select('id, name, role, state')
       .order('name', { ascending: true });
 
-    if(error) throw error;
+    var profiles = result.data;
+    var error = result.error;
 
-    if(!profiles || !profiles.length){
-      scroll.innerHTML = _slStateHtml('empty', {icon:'👥', title:'No users found', msg:'Make sure profile records exist in the profiles table.', small:true});
+    if(error){
+      console.error('[Admin] profiles query error:', error);
+      scroll.innerHTML = '<div style="padding:20px;font-size:13px;color:#b91c1c;"><strong>Query error:</strong> ' + (error.message||JSON.stringify(error)) + '</div>';
       return;
     }
 
-    const rows = profiles.map(p => {
-      const display = p.name || '(no name)';
-      const initial = display[0].toUpperCase();
-      const safeDisplay = display.replace(/'/g, "\\'");
-      const roleLabel = (p.role||'user');
-      return `<div class="adm-user-item" id="adm-uid-${p.id}"
-          onclick="_adminSelectUser('${p.id}','${safeDisplay}','${roleLabel}','${p.state||'all'}')">
-        <div class="adm-user-avatar">${initial}</div>
-        <div>
-          <div class="adm-user-name">${display}</div>
-          <div class="adm-user-sub">${roleLabel.charAt(0).toUpperCase()+roleLabel.slice(1)}</div>
-        </div>
-      </div>`;
+    if(!profiles || !profiles.length){
+      scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;font-size:13px;">No users found in profiles table.</div>';
+      return;
+    }
+
+    var rows = profiles.map(function(p){
+      var display = p.name || '(no name)';
+      var initial = display[0].toUpperCase();
+      var safeDisplay = display.split("'").join("\\'");
+      var roleLabel = (p.role||'user');
+      return '<div class="adm-user-item" id="adm-uid-'+p.id+'" onclick="_adminSelectUser(\x27'+p.id+'\x27,\x27'+safeDisplay+'\x27,\x27'+roleLabel+'\x27,\x27'+(p.state||'all')+'\x27)">'
+        +'<div class="adm-user-avatar">'+initial+'</div>'
+        +'<div><div class="adm-user-name">'+display+'</div>'
+        +'<div class="adm-user-sub">'+roleLabel.charAt(0).toUpperCase()+roleLabel.slice(1)+'</div></div></div>';
     }).join('');
 
     scroll.innerHTML = rows;
-    console.log(`[Admin] Loaded ${profiles.length} profile(s). Permission column: "${_PERM_COL}".`);
+    console.log('[Admin] Loaded ' + profiles.length + ' profile(s).');
 
   } catch(e){
     console.error('[Admin] renderAdminPage error:', e);
-    scroll.innerHTML = `<div style="padding:16px;font-size:12px;color:#b91c1c;">
-      Failed to load users: ${e.message||String(e)}
-    </div>`;
+    scroll.innerHTML = '<div style="padding:20px;font-size:13px;color:#b91c1c;"><strong>Error:</strong> ' + (e.message||String(e)) + '</div>';
   }
 }
 
@@ -6698,7 +6704,7 @@ function render(){
   requestAnimationFrame(function(){ window.scrollTo(0, 0); });
   ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
-  document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
+  var _pgEl=document.getElementById('pg-'+S.page); _pgEl.style.display=(S.page==='home'||S.page==='admin')?'flex':'block'; if(S.page==='admin'){_pgEl.style.flexDirection='column';}
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
   else if(S.page==='sales'){ try{ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }catch(e){ console.error('renderSalesPage',e); } }
@@ -18138,7 +18144,7 @@ function dcOpenEquipmentModal(idx){
 function dcPreviewPhoto(input){
   if(!input.files||!input.files[0]) return;
   var file=input.files[0];
-  if(file.size>5*1024*1024){ alert('Photo must be under 5MB'); input.value=''; return; }
+  if(file.size>5*1024*1024){ slAlert('Photo must be under 5 MB.','warning'); input.value=''; return; }
   var reader=new FileReader();
   reader.onload=function(e){
     document.getElementById('dc-eq-photo-data').value=e.target.result;
@@ -18149,7 +18155,7 @@ function dcPreviewPhoto(input){
 
 function dcSaveEquipment(idx){
   var title=document.getElementById('dc-eq-title').value.trim();
-  if(!title){ alert('Title is required'); return; }
+  if(!title){ slAlert('Equipment title is required.','warning'); return; }
   var brand=document.getElementById('dc-eq-brand').value.trim();
   var serial=document.getElementById('dc-eq-serial').value.trim();
   var photo=document.getElementById('dc-eq-photo-data').value||'';
@@ -18162,12 +18168,11 @@ function dcSaveEquipment(idx){
 }
 
 function dcDeleteEquipment(idx){
-  _slConfirm({title:'Delete Equipment',message:'Delete this equipment entry? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteEquipment(id,loc); }});
-  return;
+  _slConfirm({title:'Delete Equipment',message:'Delete this equipment entry? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteEquipment(idx); }});
 }
-function _execDeleteEquipment(id,loc){
+function _execDeleteEquipment(idx){
   var data=dcGetLoc(DC.state,DC.loc);
-  data.equipment.splice(idx,1);
+  if(idx>=0 && idx<data.equipment.length){ data.equipment.splice(idx,1); }
   dcSaveLoc(DC.state,DC.loc,data);
   dcRender();
 }
@@ -18247,7 +18252,7 @@ function dcOpenContactModal(idx){
 
 function dcSaveContact(idx){
   var name=document.getElementById('dc-ct-name').value.trim();
-  if(!name){ alert('Name is required'); return; }
+  if(!name){ slAlert('Contact name is required.','warning'); return; }
   var role=document.getElementById('dc-ct-role').value.trim();
   var phone=document.getElementById('dc-ct-phone').value.trim();
   var email=document.getElementById('dc-ct-email').value.trim();
@@ -18262,12 +18267,11 @@ function dcSaveContact(idx){
 }
 
 function dcDeleteContact(idx){
-  _slConfirm({title:'Delete Contact',message:'Delete this contact? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteContact(id,loc); }});
-  return;
+  _slConfirm({title:'Delete Contact',message:'Delete this contact? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteContact(idx); }});
 }
-function _execDeleteContact(id,loc){
+function _execDeleteContact(idx){
   var data=dcGetLoc(DC.state,DC.loc);
-  data.contacts.splice(idx,1);
+  if(idx>=0 && data.contacts && idx<data.contacts.length){ data.contacts.splice(idx,1); }
   dcSaveLoc(DC.state,DC.loc,data);
   dcRender();
 }
