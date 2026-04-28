@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v83</title>
-<!-- BUILD: 2026-04-27-v83 -->
+<title>Skinny Louie · Performance Hub v84</title>
+<!-- BUILD: 2026-04-28-v84-FINAL -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -25,6 +25,65 @@ const UPLOAD_CFG = {
 };
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ── Centralized Chart Color Palette ──
+const SL_CHART_COLORS = {
+  // Brand primaries
+  crimson:  '#9b292c', crimsonLight: 'rgba(155,41,44,.5)', crimsonBg: 'rgba(155,41,44,.08)',
+  navy:     '#1e3a5f', navyLight:    'rgba(30,58,95,.5)',   navyBg:    'rgba(30,58,95,.08)',
+  // KPI colors
+  food:     '#2d7a4f', foodLight:    'rgba(45,122,79,.5)',
+  labor:    '#c4a850', laborLight:   'rgba(196,168,80,.5)',
+  dc:       '#7a6058', dcLight:      'rgba(122,96,88,.5)',
+  // Status
+  green:    'rgba(22,163,74,.7)',  red:   'rgba(220,38,38,.7)',
+  // Categorical (10 distinct colors for pie charts etc.)
+  cat: ['#9b292c','#1e3a5f','#2d7a4f','#c4a850','#7a6058',
+        '#6366f1','#0891b2','#d97706','#db2777','#059669'],
+  catBg: ['rgba(155,41,44,.75)','rgba(30,58,95,.75)','rgba(45,122,79,.75)',
+          'rgba(196,168,80,.75)','rgba(122,96,88,.75)','rgba(99,102,241,.75)',
+          'rgba(8,145,178,.75)','rgba(217,119,6,.75)','rgba(219,39,119,.75)',
+          'rgba(5,150,105,.75)']
+};
+
+// ── Chart.js global defaults ──
+if(typeof Chart !== 'undefined'){
+  Chart.defaults.font.family = "'Oswald', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.titleFont = { weight: '700' };
+}
+
+// ── Global Escape key handler for modals ──
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  // Close the topmost visible overlay
+  var ids = ['sl-alert-modal','ov-data','ov-report','ov-alert-rules','ov-tgts','ov-rc-picker'];
+  for(var i = 0; i < ids.length; i++){
+    var el = document.getElementById(ids[i]);
+    if(el && (el.style.display === 'flex' || el.style.display === 'block')){
+      el.style.display = 'none';
+      e.stopPropagation();
+      return;
+    }
+  }
+  // Check PDF preview
+  var pdfOv = document.querySelector('.sl-pdf-overlay');
+  if(pdfOv){ pdfOv.click(); e.stopPropagation(); return; }
+  // Check sl-confirm modal
+  var slModal = document.querySelector('.sl-modal-overlay');
+  if(slModal && slModal.style.display === 'flex'){
+    slModal.remove();
+    e.stopPropagation();
+    return;
+  }
+});
 
 // Upload state per page
 const US = {
@@ -449,11 +508,17 @@ function _slRestoreFromBackup(pg){
     const info = _slBackupInfo(pg);
     const when = info ? info.when : '?';
     const reason = info ? info.reason : '';
-    if(!confirm(
-      'Restore '+recs.length+' '+pg.toUpperCase()+' record(s) from backup taken at '+when+'?\n\n'+
-      (reason ? 'Backup reason: '+reason+'\n\n' : '')+
-      'Your current data will be saved as the new backup before restoring.'
-    )) return;
+    _slConfirm({title:'Restore Backup',message:'Restore <b>'+recs.length+'</b> '+pg.toUpperCase()+' record(s) from backup taken at <b>'+when+'</b>?'+(reason?'<br><br>Backup reason: '+reason:'')+'<br><br>Your current data will be saved as the new backup before restoring.',confirmText:'Restore',confirmColor:'#1e3a5f',onConfirm:function(){
+    _slBackupData(pg, 'pre-restore');
+    _slSaveRecords(pg, recs);
+    if(pg==='pnl' && typeof repairPnLUploadLog==='function') repairPnLUploadLog();
+    slAlert('Restored '+recs.length+' records from backup ('+when+').','info');
+    if(pg==='pnl'   && typeof renderPnLPage==='function')   renderPnLPage();
+    if(pg==='sales' && typeof renderSalesPage==='function') renderSalesPage();
+    if(pg==='mix'   && typeof renderMixPage==='function')   renderMixPage();
+    if(typeof renderNavRight==='function') renderNavRight();
+  }});
+  return;
     _slBackupData(pg, 'pre-restore');
     _slSaveRecords(pg, recs); // normalise + dedup through gateway — never raw localStorage
     if(pg==='pnl' && typeof repairPnLUploadLog==='function') repairPnLUploadLog();
@@ -494,11 +559,12 @@ function _slResolveOrphans(pg){
   if(!orphans.length){ slAlert('No orphaned records found.','info'); return; }
   const MS = MONTHS_SHORT;
   const list = orphans.map(r=>r.loc+' · '+MS[r.month]+' '+r.year).join('\n');
-  if(!confirm(
-    'Found '+orphans.length+' record(s) with no matching upload log entry:\n\n'+list+
-    '\n\nThese records may have been imported before the log system existed, or the log entry was lost.\n\n'+
-    'Remove them permanently? A backup will be taken first.'
-  )) return;
+  _slConfirm({title:'Remove Orphan Records',message:'Found <b>'+orphans.length+'</b> record(s) with no matching upload log entry.<br><br>These may have been imported before the log system existed, or the log entry was lost.<br><br>Remove them permanently? A backup will be taken first.',confirmText:'Remove Orphans',confirmColor:'#dc2626',onConfirm:function(){
+  _execOrphanResolve(pg,orphans);
+  }});
+  return;
+}
+function _execOrphanResolve(pg,orphans){
   _slBackupData(pg,'pre-orphan-resolve');
   const uploads = getUploads();
   const logKeys = new Set();
@@ -1481,7 +1547,7 @@ function delUpload(pg, localIdx){
       const mLbl = MFULL_DU[item.month]||item.month;
       confirmMsg = `Remove P&L data for:\n\n  📍 ${item.loc} · ${stLbl}\n  📅 ${mLbl} ${item.year}\n\nThis record will be archived before deletion.\nAre you sure?`;
     }
-    if(!confirm(confirmMsg)) return;
+    _slConfirm({title:'Delete P&L Record',message:confirmMsg.replace(/\n/g,'<br>'),confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){
     pnlBackupData('pre-delete-upload');
     if(item.isBulk && item.months){
       pnlArchiveBulk(item.state, item.loc, item.months);
@@ -1498,6 +1564,7 @@ function delUpload(pg, localIdx){
     const gIdx = all.indexOf(item);
     if(gIdx > -1){ all.splice(gIdx, 1); saveUploads(all); }
     renderUpload(pg);
+  }});
     return;
   }
 
@@ -1515,7 +1582,10 @@ function pnlClearAll(){
   const recs = getPnLRecords();
   const uploads = getUploads().filter(x=>x.page==='pnl');
   if(!recs.length && !uploads.length){ _slAlert('No P&L data to clear.', 'info'); return; }
-  if(!confirm(`Delete ALL P&L data?\n\n  ${recs.length} record(s)\n  ${uploads.length} upload log entries\n\nA backup will be saved before clearing.\nAre you sure?`)) return;
+  _slConfirm({title:'\u26A0\uFE0F Delete ALL P&L Data',message:'This will permanently delete:<br><br><b>'+recs.length+' record(s)</b><br><b>'+uploads.length+' upload log entries</b><br><br>A backup will be saved before clearing.<br>Are you sure?',confirmText:'Delete Everything',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteAllPnl(); }});
+  return;
+}
+function _execDeleteAllPnl(){
   pnlBackupData('pre-clear-all');
   savePnLRecords([]);
   saveUploads(getUploads().filter(x=>x.page!=='pnl'));
@@ -1535,7 +1605,7 @@ function delDataRecord(pg, state, loc, year, month){
   if(pg==='pnl'){
     const monthLabel = MFULL_DEL[month]||month;
     const stateLabel = state==='FL' ? 'Florida' : state==='NY' ? 'New York' : state;
-    if(!confirm(`Remove P&L data for:\n\n  📍 ${loc} · ${stateLabel}\n  📅 ${monthLabel} ${year}\n\nThis record will be archived (recoverable via backup restore) before deletion.\nAre you sure?`)) return;
+    _slConfirm({title:'Delete P&L Record',message:'Remove P&L data for:<br><br>' + loc + ' · ' + stateLabel + '<br>' + monthLabel + ' ' + year + '<br><br>This record will be archived (recoverable via backup restore).',confirmText:'Delete Record',confirmColor:'#dc2626',onConfirm:function(){
     pnlBackupData('pre-delete');
     pnlArchiveRecord(state, loc, year, month);
     try {
@@ -1546,8 +1616,8 @@ function delDataRecord(pg, state, loc, year, month){
     } catch(e){ console.error('[SL] delDataRecord pnl log error:',e); }
     if(typeof PX!=='undefined' && PX.loc===loc && PX.month===month) PX.month=null;
     renderUpload(pg);
-    return;
-  }
+  }});
+    return;  }
 
   // ── mix / sales: standard hard-delete (no bulk import risk)
   try {
@@ -1574,8 +1644,16 @@ function delDataRecord(pg, state, loc, year, month){
   --surf:#fcfaf4;
   --mustard:#e2d5b8;
   --soft-pink:#f7e0d2;
+  /* ── Design Tokens ── */
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px;
+  --shadow-sm:0 2px 8px rgba(33,35,32,.08);
+  --shadow-md:0 8px 24px rgba(33,35,32,.12);
+  --shadow-lg:0 20px 48px rgba(33,35,32,.18);
+  --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:32px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+.sl-skip-link{position:absolute;top:-100%;left:16px;background:#1e3a5f;color:#fff;padding:8px 16px;border-radius:0 0 8px 8px;z-index:9999;font-size:13px;font-weight:700;text-decoration:none;transition:top .2s;}
+.sl-skip-link:focus{top:0;}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
 button{font-family:inherit;cursor:pointer;}
 
@@ -1621,7 +1699,7 @@ button{font-family:inherit;cursor:pointer;}
 .hcard.c1::before{background:linear-gradient(90deg,#9b292c,#c94548);}
 .hcard.c2::before{background:linear-gradient(90deg,#8a7040,#c4a860);}
 .hcard.c3::before{background:linear-gradient(90deg,#7a6058,#a08070);}
-.hcard:hover{border-color:var(--accent);transform:translateY(-5px);box-shadow:0 16px 40px rgba(155,41,44,.16);}
+.hcard:hover{border-color:var(--accent);transform:translateY(-5px);box-shadow:var(--shadow-md);}
 
 .hcard-icon{font-size:52px;margin-bottom:20px;display:block;}
 .hcard-title{font-family:'Cooper Black','Ultra',serif;font-size:20px;font-weight:400;color:#212320;margin-bottom:8px;letter-spacing:.5px;}
@@ -1690,7 +1768,7 @@ button{font-family:inherit;cursor:pointer;}
 .cc-wrap{position:relative;height:220px;}
 
 /* TABLE */
-.tcard{background:var(--surf);border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:24px;}
+.tcard{background:var(--surf);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:var(--space-lg);box-shadow:var(--shadow-sm);}
 .thdr{padding:14px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .ttitle{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
@@ -1698,15 +1776,18 @@ button{font-family:inherit;cursor:pointer;}
 .leg-dot{width:9px;height:9px;border-radius:3px;}
 .tscroll{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:12.5px;}
-thead th{background:#f0ece3;padding:8px 10px;text-align:right;font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th{background:#f0ece3;padding:8px 10px;text-align:right;font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:62px;z-index:10;}
 thead th:first-child{text-align:left;min-width:150px;padding-left:20px;}
 thead th.mhdr{cursor:pointer;position:relative;}
 thead th.mhdr:hover{background:#f0e8e0;color:var(--accent);}
 .edit-ico{opacity:0;font-size:10px;margin-left:4px;transition:opacity .15s;}
 thead th.mhdr:hover .edit-ico{opacity:1;}
-tbody tr:hover{background:#faf7f2;}
+tbody tr{transition:background .12s ease;}
+tbody tr:hover{background:#f5f0e8;}
 tbody td{padding:8px 10px;border-bottom:1px solid #f0ece3;text-align:right;white-space:nowrap;vertical-align:middle;}
 tbody td:first-child{text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:#7a6f66;padding-left:20px;background:#faf7f2;}
+tbody tr:nth-child(even){background:#fdfcfa;}
+tbody tr:nth-child(even):hover{background:#f5f0e8;}
 tr.grp td{background:#ede8de;padding:9px 10px 9px 20px;font-family:'Oswald',sans-serif;font-weight:700;font-size:11px;color:#3d3530;text-transform:uppercase;letter-spacing:.5px;border-top:2px solid #ddd7cc;}
 tr.sub td{background:#faf7f2;}
 tr.sub td:first-child{padding-left:28px;color:#a89e96;font-weight:500;text-transform:none;letter-spacing:0;font-size:11px;}
@@ -1750,12 +1831,13 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 ══════════════════════════════════════ */
 .overlay{display:none;position:fixed;inset:0;background:rgba(33,35,32,.72);z-index:500;align-items:center;justify-content:center;}
 .overlay.open{display:flex;}
-.modal{background:var(--surf);border-radius:18px;padding:0;width:580px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(33,35,32,.3);}
+.modal{background:var(--surf);border-radius:var(--radius-xl);padding:0;width:580px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);}
 .modal.wide{width:820px;}
 .mhd{padding:24px 28px 0;flex-shrink:0;}
 .mhd h2{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#212320;margin-bottom:4px;letter-spacing:.3px;}
 .mhd p{font-size:12px;color:var(--muted);margin-bottom:20px;}
 .mbody{padding:0 28px 24px;overflow-y:auto;flex:1;}
+.mbody thead th{top:0;}
 .mft{padding:16px 28px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
@@ -1770,12 +1852,24 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .btncl{padding:10px 20px;border-radius:9px;border:1.5px solid var(--border);background:var(--surf);font-weight:600;font-size:13px;}
 .btnsv{padding:10px 22px;border-radius:9px;border:none;background:var(--accent);color:white;font-weight:700;font-size:13px;}
 .btnsv:hover{background:var(--accent2);}
+/* ── Canonical Button System ── */
+.sl-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;border:1.5px solid transparent;font-family:inherit;line-height:1.3;white-space:nowrap;}
+.sl-btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.sl-btn-primary{background:#1e3a5f;color:#fff;border-color:#1e3a5f;}
+.sl-btn-primary:hover:not(:disabled){background:#16304f;border-color:#16304f;}
+.sl-btn-danger{background:#b91c1c;color:#fff;border-color:#b91c1c;}
+.sl-btn-danger:hover:not(:disabled){background:#991b1b;border-color:#991b1b;}
+.sl-btn-secondary{background:transparent;color:#1e3a5f;border-color:#d1d5db;}
+.sl-btn-secondary:hover:not(:disabled){background:#f0f4f8;border-color:#1e3a5f;}
+.sl-btn-sm{padding:6px 14px;font-size:11px;border-radius:7px;}
+.sl-btn-lg{padding:12px 28px;font-size:15px;border-radius:10px;font-family:'Oswald',sans-serif;letter-spacing:.04em;}
 .calc-note{background:#f0ece3;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:14px;}
 .calc-note strong{color:var(--text);}
 
 /* Targets grid */
 .tgt-grid{overflow-x:auto;}
 .tgt-grid table{min-width:700px;}
+.tgt-grid{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .tgt-grid thead th{padding:8px 10px;text-align:center;font-size:10px;}
 .tgt-grid thead th:first-child{text-align:left;padding-left:12px;}
 .tgt-grid tbody td{padding:6px 8px;border-bottom:1px solid #f0ece3;}
@@ -2199,15 +2293,18 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .mx-cmp-foot-cell { padding:12px 16px; font-size:12px; font-weight:700; color:var(--text); }
 .mx-cmp-empty  { padding:40px; text-align:center; color:var(--muted); font-style:italic; font-size:13px; }
 /* ── P&L table structure */
-.pnl-tbl-wrap   { background:var(--surf); border-radius:16px; overflow:hidden; border:1px solid var(--border); margin-bottom:32px; }
+.pnl-tbl-wrap   { background:var(--surf); border-radius:16px; overflow:visible; border:1px solid var(--border); margin-bottom:32px; }
 .pnl-tbl-hdr    { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
 .pnl-tbl-hdr-title { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
 .pnl-tbl        { width:100%; border-collapse:collapse; }
 .pnl-tbl thead tr { background:#f5f0e8; }
+.pnl-tbl thead th { position:sticky; top:62px; z-index:10; background:#f5f0e8; }
 .pnl-tbl th     { text-align:left; padding:8px 20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
 .pnl-tbl th.num { text-align:right; }
 .pnl-tbl-row-h2 td { padding:7px 20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); background:#f5f0e8; }
-.pnl-tbl-row-s  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; }
+.pnl-tbl-row-s  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; transition:background .12s ease; }
+.pnl-tbl tr:hover td { background:#f5f0e8; }
+.pnl-tbl tr.pnl-tbl-row-b:hover td { background:#e8e4dc; }
 .pnl-tbl-row-ss td { border-top:1px dashed #e8e2d8; padding:7px 20px 7px 0; font-size:12px; color:#475569; background:#fdfcfa; }
 .pnl-tbl-row-b  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; background:#f0ede7; }
 .pnl-tbl-row-t  td { border-top:1px solid var(--border); padding:9px 20px 9px 0; font-size:13px; font-weight:700; }
@@ -2447,6 +2544,90 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   /* Ask Me input */
   .ask-input-wrap{ flex-direction:column; }
   .ask-btn{ width:100%; }
+
+  /* ── Admin panel: full stack ── */
+  .adm-layout { flex-direction:column; }
+  .adm-user-list { width:100%; min-width:0; border-right:none; border-bottom:1px solid #e8e2d8; max-height:180px; }
+  .adm-user-scroll { max-height:130px; }
+  .adm-user-item { padding:8px 12px; }
+  .adm-user-avatar { width:26px; height:26px; font-size:10px; }
+  .adm-perm-body { padding:16px 12px 24px; }
+  .adm-perm-user-hdr { flex-direction:column; align-items:flex-start; gap:8px; }
+  .adm-perm-user-avatar { width:36px; height:36px; font-size:14px; }
+  .adm-perm-user-name { font-size:15px; }
+  .adm-perm-grid { grid-template-columns:1fr 1fr; gap:8px; }
+
+  /* ── Store Maintenance ── */
+  .maint-cards-grid { grid-template-columns:1fr; gap:10px; padding:14px 0; }
+  .maint-card { border-radius:10px; }
+  .maint-filter-bar { padding:10px 12px; gap:8px; }
+  .maint-fpill { font-size:10px; padding:4px 10px; }
+  .maint-tab-btn { font-size:11px; padding:10px 12px; }
+
+  /* ── New Stores ── */
+  .ns-filters { flex-direction:column; gap:6px; padding:10px 12px; }
+  .ns-filter-sel { width:100%; }
+  .ns-card { padding:12px 14px; }
+  .ns-card-meta { flex-direction:column; gap:6px; }
+  .ns-detail-panel { padding:16px 12px; width:100%; border-radius:10px; }
+
+  /* ── HR module ── */
+  .hr-land-grid { grid-template-columns:1fr; gap:12px; padding:16px 12px; }
+
+  /* ── Assessment items ── */
+  .ea-item-row { flex-direction:column; gap:4px; padding:8px 0; }
+  .ea-score-btn { width:30px; height:24px; font-size:11px; }
+
+  /* ── Event Calculator ── */
+  .order-table { font-size:11px; }
+  .order-table th, .order-table td { padding:6px 8px; }
+
+  /* ── Portfolio cards ── */
+  .pf-cards { grid-template-columns:1fr 1fr; gap:8px; }
+  .pf-kpi-tgt-grid { grid-template-columns:1fr; }
+
+  /* ── Inventory tabs wrap ── */
+  .inv-tab-btn { font-size:10px; padding:4px 8px; }
+
+  /* ── Data Center modals ── */
+  .ns-detail-panel, .sl-modal-content { border-radius:8px !important; }
+
+  /* ── Breadcrumb + back buttons ── */
+  button[onclick="goHome()"] { font-size:11px !important; padding:10px 8px 10px 0 !important; }
+
+  /* ── P&L waterfall ── */
+  .pnl-wf-row { grid-template-columns:100px 1fr 90px; font-size:9px; }
+  .pnl-wf-amt { font-size:10px; }
+
+  /* ── Global: prevent horizontal overflow ── */
+  body { overflow-x:hidden; }
+  #pg-kpi, #pg-sales, #pg-mix, #pg-pnl, #pg-maint,
+  #pg-events, #pg-inventory, #pg-newstores, #pg-hr,
+  #pg-assess, #pg-stores, #pg-portfolio, #pg-admin,
+  #pg-marketing { overflow-x:hidden; }
+
+  /* ── Data coverage table ── */
+  .cov-wrap { border-radius:8px; }
+  .cov-panel-hdr { flex-direction:column; align-items:flex-start; }
+
+  /* ── Global filter selects ── */
+  .rc-sel, select.rc-sel { font-size:12px; padding:6px 8px; min-width:100px !important; }
+
+  /* ── Period banner in inventory ── */
+  #inv-period-banner { flex-direction:column; align-items:flex-start !important; }
+  #inv-period-pills { margin-left:0 !important; }
+}
+
+/* ══ MOBILE — Event & Filter refinements ═══════════ */
+@media(max-width:480px){
+  .ev-info-bar { flex-direction:column; align-items:stretch !important; }
+  .ev-info-bar > div { min-width:0 !important; width:100% !important; }
+  .ev-info-bar select, .ev-info-bar input { width:100% !important; box-sizing:border-box; }
+  #ev-summary-grid { grid-template-columns:1fr !important; }
+  #ev-detail-table { font-size:10px; }
+  #ev-detail-table th, #ev-detail-table td { padding:4px 3px; }
+  .inv-selectors select { width:100%; }
+  .inv-hist-card { padding:12px; }
 }
 
 /* ══ MAINTENANCE TRACKER ═════════════════════════════ */
@@ -2457,7 +2638,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .ns-filters{display:flex;gap:8px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;}
 .ns-filter-sel{padding:6px 10px;font-size:11px;border:1.5px solid #d1d5db;border-radius:6px;background:#fff;font-weight:600;color:#374151;cursor:pointer;}
 .ns-filter-sel:focus{border-color:#1e3a5f;outline:none;}
-.ns-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,box-shadow .2s;}
+.ns-card{background:#fff;border:1.5px solid #e8e2d8;border-radius:var(--radius-md);padding:var(--space-md) 18px;margin-bottom:var(--space-sm);cursor:pointer;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm);}
 .ns-card:hover{border-color:#1e3a5f;box-shadow:0 2px 8px rgba(30,58,95,.08);}
 .ns-card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
 .ns-card-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;}
@@ -2496,7 +2677,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 /* ── Cards grid ── */
 .maint-cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;padding:24px 0; }
 /* ── Card shell ── */
-.maint-card { background:#fff;border-radius:14px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e8e2d8;display:flex;flex-direction:column;transition:box-shadow .2s,transform .15s;overflow:hidden; }
+.maint-card { background:#fff;border-radius:var(--radius-lg);padding:0;box-shadow:var(--shadow-sm);border:1px solid #e8e2d8;display:flex;flex-direction:column;transition:box-shadow .2s,transform .15s;overflow:hidden; }
 .maint-card:hover { box-shadow:0 6px 22px rgba(0,0,0,.11);transform:translateY(-1px); }
 /* ── Card sections ── */
 .maint-card-body { padding:16px 18px 14px;display:flex;flex-direction:column;gap:11px;flex:1; }
@@ -2604,7 +2785,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .inv-save-btn { margin-left:auto; background:var(--accent); color:#fff; border:none; border-radius:12px; padding:12px 28px; font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:.5px; cursor:pointer; transition:all .2s; }
 .inv-save-btn:hover { background:#7a1f22; }
 .inv-no-items { text-align:center; padding:48px; color:var(--muted); font-size:14px; }
-.inv-hist-card { background:var(--surf); border:1px solid var(--brd); border-radius:16px; padding:20px; margin-bottom:12px; cursor:pointer; transition:all .2s; }
+.inv-hist-card { background:var(--surf); border:1px solid var(--brd); border-radius:var(--radius-lg); padding:20px; margin-bottom:var(--space-md); cursor:pointer; transition:all .2s; box-shadow:var(--shadow-sm); }
 .inv-hist-card:hover { border-color:var(--accent); }
 .inv-hist-card-hdr { display:flex; justify-content:space-between; align-items:center; }
 .inv-hist-card-date { font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; color:#212320; }
@@ -2635,6 +2816,54 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   .inv-pane { padding:14px; }
   .inv-selectors { flex-direction:column; gap:14px; }
   .inv-tab-btn { font-size:11px; padding:5px 10px; }
+
+  /* ── Admin panel: stack sidebar above main ── */
+  .adm-layout { flex-direction:column; }
+  .adm-user-list { width:100%; min-width:0; border-right:none; border-bottom:1px solid #e8e2d8; max-height:200px; }
+  .adm-user-scroll { max-height:140px; }
+  .adm-perm-body { padding:20px 16px 30px; }
+  .adm-perm-user-hdr { flex-direction:column; align-items:flex-start; gap:10px; }
+  .adm-perm-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+
+  /* ── Store Maintenance cards ── */
+  .maint-cards-grid { grid-template-columns:1fr; gap:14px; }
+  .maint-filter-bar { padding:12px 14px; gap:10px; }
+
+  /* ── New Stores ── */
+  .ns-filters { padding:10px 14px; }
+  .ns-card-hdr { flex-wrap:wrap; }
+  .ns-progress-wrap { max-width:none; }
+  .ns-detail-panel { padding:20px 16px; width:98%; }
+  .ns-detail-row { flex-direction:column; gap:6px; }
+
+  /* ── HR module ── */
+  .hr-land-grid { grid-template-columns:1fr; gap:16px; padding:20px 14px; }
+
+  /* ── Assessment ── */
+  .ea-item-row { flex-direction:column; gap:6px; }
+
+  /* ── Event Calculator ── */
+  .order-table { font-size:12px; }
+
+  /* ── Portfolio ── */
+  .pf-cards { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+  .pf-kpi-tgt-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+
+  /* ── Global table scroll ── */
+  .tscroll, .cov-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+  /* ── Global modals ── */
+  .ns-detail-panel, .sl-modal-content, .overlay .modal,
+  [style*="max-width:620px"], [style*="max-width:600px"] {
+    width:96% !important; max-width:96vw !important;
+    padding:16px !important;
+  }
+
+  /* ── P&L anomaly grid ── */
+  .pnl-anomaly-grid { grid-template-columns:1fr; }
+
+  /* ── DM Report ── */
+  .rpt-grid { grid-template-columns:1fr !important; }
 }
 /* ── Data Coverage Panel ── */
 .cov-wrap{margin-top:24px;border:1px solid var(--brd);border-radius:12px;overflow:hidden;background:#fff;}
@@ -2645,6 +2874,9 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .cov-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#64748b;}
 .cov-legend-swatch{width:14px;height:14px;border-radius:3px;display:inline-block;flex-shrink:0;}
 .cov-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.cov-table thead th{position:sticky;top:62px;z-index:12;background:#1e3a5f;}
+.cov-table tbody tr{transition:background .12s ease;}
+.cov-table tbody tr:hover td{background:#f5f0e8;}
 .cov-table{border-collapse:collapse;font-size:10px;min-width:100%;}
 .cov-table th,.cov-table td{border:1px solid #e8e2d8;padding:0;text-align:center;line-height:1;}
 .cov-table .cov-loc-col{text-align:left;padding:5px 12px;white-space:nowrap;background:#fafaf7;font-size:11px;font-weight:700;color:#374151;min-width:130px;position:sticky;left:0;z-index:2;border-right:2px solid #d1c9bb;}
@@ -2731,7 +2963,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .sl-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
   display:flex;align-items:center;justify-content:center;padding:20px;animation:sl-mo-in .15s ease;}
 @keyframes sl-mo-in{from{opacity:0}to{opacity:1}}
-.sl-modal-box{background:#fff;border-radius:16px;max-width:580px;width:100%;max-height:82vh;
+.sl-modal-box{background:#fff;border-radius:var(--radius-lg);max-width:580px;width:100%;max-height:82vh;
   overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.3);}
 .sl-modal-hdr{padding:20px 24px 14px;border-bottom:1px solid #e5e7eb;flex-shrink:0;}
 .sl-modal-hdr-title{font-size:16px;font-weight:800;color:#111827;}
@@ -2784,6 +3016,27 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 7px;font-weight:600;}
 .sl-ic-err-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#991b1b;
   background:#fff1f2;border:1px solid #fca5a5;border-radius:4px;padding:2px 7px;font-weight:600;}
+/* ── PDF Preview Modal ── */
+.sl-pdf-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;animation:sl-ds-in .2s ease;}
+.sl-pdf-box{background:#fff;border-radius:var(--radius-lg,16px);width:94%;max-width:900px;height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg,0 20px 48px rgba(33,35,32,.18));overflow:hidden;}
+.sl-pdf-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e8e2d8;flex-shrink:0;}
+.sl-pdf-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#212320;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sl-pdf-actions{display:flex;gap:8px;}
+.sl-pdf-iframe{flex:1;border:none;width:100%;background:#f5f0e8;}
+@media(max-width:480px){
+  .sl-pdf-box{width:100%;height:100vh;border-radius:0;}
+  .sl-pdf-title{font-size:13px;max-width:180px;}
+}
+/* ── Visual Utility Classes ── */
+.sl-section{margin-bottom:var(--space-xl);}
+.sl-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);}
+.sl-card-lg{border-radius:var(--radius-lg);box-shadow:var(--shadow-md);}
+/* ── Chart Container Responsive ── */
+.sl-chart-wrap{position:relative;width:100%;min-height:180px;}
+@media(max-width:480px){
+  .sl-chart-wrap{min-height:140px;}
+  canvas{max-width:100% !important;}
+}
 /* ── Data State System ── */
 .sl-ds-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:40px 24px;text-align:center;border-radius:12px;border:1.5px dashed;gap:6px;
@@ -2807,6 +3060,11 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .sl-ds-error{background:#fff1f2;border-color:#fca5a5;color:#b91c1c;}
 .sl-ds-error .sl-ds-title{color:#991b1b;}
 .sl-ds-error .sl-ds-btn{background:#dc2626;color:#fff;}
+/* loading — data is being fetched */
+.sl-ds-loading{background:#f0f9ff;border-color:#93c5fd;color:#1e40af;}
+.sl-ds-loading .sl-ds-title{color:#1e3a8a;}
+.sl-ds-loading .sl-ds-icon{animation:sl-ds-spin 1s linear infinite;}
+@keyframes sl-ds-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 /* inline compact variant */
 .sl-ds-wrap.sl-ds-sm{padding:20px 16px;}
 .sl-ds-wrap.sl-ds-sm .sl-ds-icon{font-size:22px;}
@@ -2837,6 +3095,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-perm-panel{flex:1;overflow:hidden;padding:0;display:flex;flex-direction:column;min-height:0;}
 .adm-perm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:13px;gap:10px;}
 .adm-perm-body{padding:28px 32px 40px;flex:1;overflow-y:auto;min-height:0;}
+.adm-perm-body thead th{top:0;}
 .adm-perm-user-hdr{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #e8e2d8;}
 .adm-perm-user-avatar{width:44px;height:44px;border-radius:10px;background:rgba(126,32,35,.1);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#7e2023;flex-shrink:0;text-transform:uppercase;}
 .adm-perm-user-name{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;letter-spacing:.02em;}
@@ -2891,14 +3150,18 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pf-performer.worst .pf-performer-name{color:#9a3412;}
 .pf-tbl-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid #e8e2d8;background:#fff;}
 .pf-tbl{width:100%;border-collapse:collapse;font-size:13px;}
-.pf-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:12px 16px;text-align:right;border-bottom:1.5px solid #e8e2d8;white-space:nowrap;cursor:pointer;user-select:none;}
+.pf-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:12px 16px;text-align:right;border-bottom:1.5px solid #e8e2d8;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:62px;z-index:10;background:#fff;}
 .pf-tbl th:first-child{text-align:left;}
 .pf-tbl th:hover{color:#1e3a5f;}
 .pf-tbl th.sort-on{color:#7e2023;}
 .pf-tbl td{padding:11px 16px;text-align:right;border-bottom:1px solid #f1ede6;color:#374151;white-space:nowrap;}
 .pf-tbl td:first-child{text-align:left;font-weight:600;color:#1e293b;}
 .pf-tbl tr:last-child td{border-bottom:none;}
-.pf-tbl tr:hover td{background:#faf5ef;}
+.pf-tbl tr{transition:background .12s ease;}
+.pf-tbl tr:hover td{background:#f0ebe3;}
+/* ── Heatmap readability ── */
+#kpi-heatmap table td{min-width:56px;}
+#kpi-heatmap table tr:hover td{filter:brightness(.95);}
 .pf-hs-pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;font-family:'Oswald',sans-serif;}
 .pf-hs-green{background:#dcfce7;color:#166534;}
 .pf-hs-yellow{background:#fef9c3;color:#854d0e;}
@@ -3070,7 +3333,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 <div style="height:3px;background:linear-gradient(90deg,#9b292c 0%,#c94548 40%,#e2d5b8 100%);"></div>
 
 <!-- ═══ NAVBAR ═══ -->
-<nav class="nb">
+<a href="#pg-home" class="sl-skip-link" tabindex="0">Skip to content</a>
+<nav class="nb" role="navigation" aria-label="Main navigation">
   <div class="nb-brand" onclick="goHome()">
     <div class="nb-icon"><img src="data:image/png;base64,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" alt="Skinny Louie" style="width:44px;height:44px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 1px 3px rgba(0,0,0,.3));"></div>
     <div>
@@ -3366,7 +3630,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ═══ CUSTOM ALERT / CONFIRM MODALS ═══ -->
-<div id="sl-alert-modal" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
+<div id="sl-alert-modal" role="alert" aria-live="assertive" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:20px;padding:40px 44px;max-width:380px;width:88%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
     <div id="sl-alert-icon" style="font-size:42px;margin-bottom:14px;line-height:1;"></div>
     <div id="sl-alert-msg" style="font-size:15px;color:#212320;line-height:1.55;margin-bottom:28px;font-weight:500;font-family:inherit;"></div>
@@ -3386,7 +3650,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ═══ MODAL: MONTHLY REPORT ═══ -->
-<div class="overlay" id="ov-report">
+<div class="overlay" id="ov-report" role="dialog" aria-modal="true" aria-label="Report card">
 <div class="modal" style="max-width:440px;">
   <div class="mhd">
     <h2>📄 Monthly Report</h2>
@@ -3403,7 +3667,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ═══ MODAL: ALERT RULES ═══ -->
-<div class="overlay" id="ov-alert-rules">
+<div class="overlay" id="ov-alert-rules" role="dialog" aria-modal="true" aria-label="Alert rules">
 <div class="modal" style="max-width:540px;">
   <div class="mhd">
     <h2>🔔 Smart Alert Rules</h2>
@@ -3489,7 +3753,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ═══ MODAL: ADD/EDIT DATA ═══ -->
-<div class="overlay" id="ov-data">
+<div class="overlay" id="ov-data" role="dialog" aria-modal="true" aria-label="Add or edit data">
 <div class="modal">
   <div class="mhd">
     <h2 id="m-title">Add Monthly Data</h2>
@@ -3575,7 +3839,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ═══ MODAL: TARGETS ═══ -->
-<div class="overlay" id="ov-tgts">
+<div class="overlay" id="ov-tgts" role="dialog" aria-modal="true" aria-label="Target settings">
 <div class="modal wide">
   <div class="mhd">
     <h2>🎯 Set Monthly Targets</h2>
@@ -3592,7 +3856,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <!-- ══ DM Report Card Picker Modal ══ -->
-<div class="overlay" id="ov-rc-picker">
+<div class="overlay" id="ov-rc-picker" role="dialog" aria-modal="true" aria-label="Report card picker">
 <div class="modal" style="max-width:460px;">
   <div class="mhd" style="background:linear-gradient(135deg,#7e2023,#9b292c);border-radius:18px 18px 0 0;padding:20px 24px;">
     <h2 style="color:#fff;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:0;">📋 Generate Report Card</h2>
@@ -5369,7 +5633,13 @@ function invRenderHistory(){
   if(store) counts = counts.filter(function(c){ return c.store===store; });
   if(period) counts = counts.filter(function(c){ return (c.period||'monthly')===period; });
   counts.sort(function(a,b){ return b.date.localeCompare(a.date); });
-  if(!counts.length){ body.innerHTML='<div class="inv-no-items">No inventory counts saved yet.</div>'; return; }
+  if(!counts.length){
+    var hasFilters = city || store || period;
+    body.innerHTML = hasFilters
+      ? _slStateHtml('filtered', {icon:'📦', title:'No counts match these filters', msg:'Try adjusting your state, store, or period filters.', actionFn:"document.getElementById('inv-hist-city').value='';document.getElementById('inv-hist-store').value='';document.getElementById('inv-hist-period').value='';invRenderHistory()", actionLabel:'Clear filters'})
+      : _slStateHtml('empty', {icon:'📦', title:'No inventory counts saved yet', msg:'Complete an inventory count to see history here.'});
+    return;
+  }
   var items = invGetItems();
   var prices = invGetPrices();
   body.innerHTML = counts.map(function(c,i){
@@ -5519,7 +5789,7 @@ function invGeneratePDF(id){
   doc.text('$'+grandTotal.toFixed(2), W-M, y+1, {align:'right'});
 
   var fname = 'Inventory_'+count.store.replace(/\s+/g,'-')+'_'+count.date+'.pdf';
-  doc.save(fname);
+  _slPdfPreview(doc, fname);
 }
 
 function invAnalyticsUpdateStores(){
@@ -6048,7 +6318,7 @@ async function renderAdminPage(){
   const scroll = document.getElementById('adm-user-scroll');
   if(!scroll) return;
 
-  scroll.innerHTML = '<div class="adm-loading">Loading users…</div>';
+  scroll.innerHTML = _slStateHtml('loading', {title:'Loading users…', small:true});
   const empty  = document.getElementById('adm-perm-empty');
   const editor = document.getElementById('adm-perm-editor');
   if(empty)  empty.style.display = 'flex';
@@ -6064,9 +6334,7 @@ async function renderAdminPage(){
     if(error) throw error;
 
     if(!profiles || !profiles.length){
-      scroll.innerHTML = `<div style="padding:16px;font-size:12px;color:#b91c1c;line-height:1.6;">
-        No users found. Make sure profile records exist in the <code>profiles</code> table.
-      </div>`;
+      scroll.innerHTML = _slStateHtml('empty', {icon:'👥', title:'No users found', msg:'Make sure profile records exist in the profiles table.', small:true});
       return;
     }
 
@@ -6372,7 +6640,10 @@ function _admSetActionMsg(msg, type){
 // Long-term: move these calls to a Supabase Edge Function or backend API endpoint
 // that holds the service_role key server-side and validates the calling user is admin.
 async function _adminDeleteUser(userId, displayName){
-  if(!confirm(`Delete user "${displayName}"?\n\nThis cannot be undone. Their profile and login will be permanently removed.`)) return;
+  _slConfirm({title:'\u26A0\uFE0F Delete User',message:'Delete user <b>'+_dcEsc(displayName)+'</b>?<br><br>This cannot be undone. Their profile and login will be permanently removed.',confirmText:'Delete User',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteUser(uid); }});
+  return;
+}
+function _execDeleteUser(uid){
   try {
     const { error } = await _supa.auth.admin.deleteUser(userId);
     if(error) throw error;
@@ -7675,7 +7946,7 @@ function _runDMReportCardInner(rcState, rcLoc, rcYear, rcMonth){
 
   // ── Save
   const fname=`DM-ReportCard-${loc.replace(/\s+/g,'-')}-${curMonth>=0?MSHORT[curMonth]:''}${rcYear}.pdf`;
-  doc.save(fname);
+  _slPdfPreview(doc, fname);
 }
 
 // ══════════════════════════════════════════════════
@@ -13547,7 +13818,10 @@ function pnlRestoreFromBackup(){
     const recs = JSON.parse(backup);
     if(!recs.length){ slAlert('Backup exists but is empty — nothing to restore.','error'); return; }
     const when = new Date(backupAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-    if(!confirm(`Restore ${recs.length} P&L record(s) from backup taken at ${when}${reason?' (reason: '+reason+')':''}?\n\nThis will overwrite the current P&L data. Your current data will be saved as the new backup before restoring.`)) return;
+    _slConfirm({title:'Restore P&L Backup',message:'Restore <b>'+recs.length+'</b> P&L record(s) from backup taken at <b>'+when+'</b>'+(reason?' (reason: '+reason+')':'')+'?<br><br>This will overwrite the current P&L data. Your current data will be saved as the new backup before restoring.',confirmText:'Restore Backup',confirmColor:'#1e3a5f',onConfirm:function(){ _execRestorePnl(recs,when,reason); }});
+    return;
+  }
+  function _execRestorePnl(recs,when,reason){
     // Save current as new backup before overwriting
     pnlBackupData('pre-restore');
     _slSaveRecords('pnl', recs); // normalise + dedup through gateway — never raw localStorage
@@ -16321,7 +16595,7 @@ function mnOpenCreate(){
         </select>
       </div>`;
   modal.innerHTML=`
-    <div class="maint-modal-backdrop" onclick="mnCloseModal('create')"></div>
+    <div class="maint-modal-backdrop" onclick="mnCloseModal('create')" role="dialog" aria-modal="true" aria-label="Create work order"></div>
     <div class="maint-modal-box">
       <div class="maint-modal-hdr">
         <span>🔧 New Work Order</span>
@@ -16422,7 +16696,10 @@ function mnSelPrio(p){
   });
 }
 
-async function mnSubmitCreate(){
+async function mnCreateWOAfterConfirm(state,loc,date,prio,cat,title,desc,assignedTo,dueDate){
+  return mnSubmitCreate(true);
+}
+async function mnSubmitCreate(skipDupCheck){
   const title      = document.getElementById('mn-c-title')?.value?.trim()||'';
   const loc        = document.getElementById('mn-c-loc')?.value||'';
   const state      = document.getElementById('mn-c-state')?.value||'';
@@ -16448,11 +16725,9 @@ async function mnSubmitCreate(){
     r.status !== 'finished' &&
     r.title.toLowerCase() === normTitle
   );
-  if(dup){
-    const proceed = confirm(
-      `A similar open work order already exists at ${loc}:\n\n"${dup.title}"\nStatus: ${MN_STAT_LABEL[dup.status]}\n\nCreate a duplicate anyway?`
-    );
-    if(!proceed) return;
+  if(dup && !skipDupCheck){
+        _slConfirm({title:'Duplicate Work Order',message:'A similar open work order already exists at '+loc+':<br><br><b>'+dup.title+'</b><br>Status: '+MN_STAT_LABEL[dup.status]+'<br><br>Create a duplicate anyway?',confirmText:'Create Anyway',confirmColor:'#1e3a5f',onConfirm:function(){ mnCreateWOAfterConfirm(state,loc,date,prio,cat,title,desc,assignedTo,dueDate); }});
+    return;
   }
 
   const btn = document.querySelector('#maint-modal-create .maint-modal-ftr button:last-child');
@@ -16590,7 +16865,10 @@ async function mnSubmitTech(id){
 }
 
 function mnReopenOrder(id){
-  if(!confirm('Reopen this work order?')) return;
+  _slConfirm({title:'Reopen Work Order',message:'Reopen this work order and set status back to open?',confirmText:'Reopen',confirmColor:'#1e3a5f',onConfirm:function(){ _execReopenWO(woId); }});
+  return;
+}
+function _execReopenWO(woId){
   const recs = getMaintRecords();
   const idx  = recs.findIndex(r=>r.id===id);
   if(idx===-1){
@@ -16738,12 +17016,59 @@ function mnCloseModal(which){
 // ══════════════════════════════════════════════════
 //  INTELLIGENT FALLBACK BANNER UTILITIES
 // ══════════════════════════════════════════════════
+// ── PDF Preview Modal ─────────────────────────────────────────────────────
+// Shows a full-screen preview of a jsPDF document before downloading
+// Usage: replace doc.save(fname) with _slPdfPreview(doc, fname)
+function _slPdfPreview(doc, fname){
+  var blobUrl = doc.output('bloburl');
+  var overlay = document.createElement('div');
+  overlay.className = 'sl-pdf-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','PDF Preview');
+  overlay.onclick = function(e){ if(e.target === overlay){ document.body.removeChild(overlay); URL.revokeObjectURL(blobUrl); } };
+
+  overlay.innerHTML = '<div class="sl-pdf-box">'
+    +'<div class="sl-pdf-hdr">'
+    +'<div class="sl-pdf-title">' + fname + '</div>'
+    +'<div class="sl-pdf-actions">'
+    +'<button class="sl-btn sl-btn-secondary sl-btn-sm" onclick="this.closest(\'.sl-pdf-overlay\').click()">Close</button>'
+    +'<button class="sl-btn sl-btn-primary sl-btn-sm" id="sl-pdf-dl-btn">Download</button>'
+    +'</div></div>'
+    +'<iframe class="sl-pdf-iframe" src="' + blobUrl + '"></iframe>'
+    +'</div>';
+
+  document.body.appendChild(overlay);
+  document.getElementById('sl-pdf-dl-btn').onclick = function(){ doc.save(fname); };
+}
+
+// ── Focus Trap Utility (Accessibility) ──────────────────────────────────────
+function _slTrapFocus(container){
+  if(!container) return null;
+  const focusable = container.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])');
+  if(!focusable.length) return null;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  function handler(e){
+    if(e.key !== 'Tab') return;
+    if(e.shiftKey){
+      if(document.activeElement === first){ e.preventDefault(); last.focus(); }
+    } else {
+      if(document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  }
+  container.addEventListener('keydown', handler);
+  first.focus();
+  return function(){ container.removeEventListener('keydown', handler); };
+}
+
 // ── Unified data-state HTML builder ──────────────────────────────────────────
-// state: 'empty' | 'filtered' | 'error'
+// state: 'loading' | 'empty' | 'filtered' | 'error'
 // opts : { icon?, title, msg?, actionFn?, actionLabel?, small? }
 function _slStateHtml(state, opts){
   const o = opts || {};
   const defaults = {
+    loading:  { icon:'⚙️', title:'Loading data…' },
     empty:    { icon:'📭', title:'No data for this selection' },
     filtered: { icon:'🔍', title:'Data exists but is hidden by current filters' },
     error:    { icon:'⚠️', title:'Error loading data' },
@@ -17487,7 +17812,7 @@ function renderPortfolioPage(){
   if(!wrap)return;
   const stores=_pfBuildData();
   if(!stores.length){
-    wrap.innerHTML=`<div class="pf-empty">No KPI data available for ${_pfYear} in your allowed stores.<br>Make sure store data is entered in the KPI dashboard.</div>`;
+    wrap.innerHTML=_slStateHtml('empty',{icon:'\u{1F4CA}',title:'No KPI data available for '+_pfYear,msg:'Make sure store data is entered in the KPI dashboard for your allowed stores.'});
     return;
   }
 
@@ -17741,7 +18066,7 @@ function dcRenderEquipment(){
   var h='';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
   h+='<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">EQUIPMENT LIST — '+DC.loc+'</div>';
-  h+='<button onclick="dcAddEquipment()" style="padding:8px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">+ Add Equipment</button>';
+  h+='<button onclick="dcAddEquipment()" class="sl-btn sl-btn-primary sl-btn-sm">+ Add Equipment</button>';
   h+='</div>';
 
   if(!items.length){
@@ -17801,7 +18126,7 @@ function dcOpenEquipmentModal(idx){
     '<input id="dc-eq-photo-data" type="hidden" value="'+(item.photo||'')+'">'+
     '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
     '<button onclick="dcCloseModal()" style="padding:10px 22px;background:#f1f0ee;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;">Cancel</button>'+
-    '<button onclick="dcSaveEquipment('+idx+')" style="padding:10px 22px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'+
+    '<button onclick="dcSaveEquipment('+idx+')" class="sl-btn sl-btn-primary">Save</button>'+
     '</div></div>';
 }
 
@@ -17832,7 +18157,10 @@ function dcSaveEquipment(idx){
 }
 
 function dcDeleteEquipment(idx){
-  if(!confirm('Delete this equipment entry?')) return;
+  _slConfirm({title:'Delete Equipment',message:'Delete this equipment entry? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteEquipment(id,loc); }});
+  return;
+}
+function _execDeleteEquipment(id,loc){
   var data=dcGetLoc(DC.state,DC.loc);
   data.equipment.splice(idx,1);
   dcSaveLoc(DC.state,DC.loc,data);
@@ -17851,7 +18179,7 @@ function dcRenderContacts(){
   var h='';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
   h+='<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">CONTACTS — '+DC.loc+'</div>';
-  h+='<button onclick="dcAddContact()" style="padding:8px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">+ Add Contact</button>';
+  h+='<button onclick="dcAddContact()" class="sl-btn sl-btn-primary sl-btn-sm">+ Add Contact</button>';
   h+='</div>';
 
   if(!items.length){
@@ -17908,7 +18236,7 @@ function dcOpenContactModal(idx){
     '<textarea id="dc-ct-notes" rows="3" placeholder="Any extra info..." style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:20px;box-sizing:border-box;resize:vertical;">'+_dcEsc(c.notes||'')+'</textarea>'+
     '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
     '<button onclick="dcCloseModal()" style="padding:10px 22px;background:#f1f0ee;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;">Cancel</button>'+
-    '<button onclick="dcSaveContact('+idx+')" style="padding:10px 22px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'+
+    '<button onclick="dcSaveContact('+idx+')" class="sl-btn sl-btn-primary">Save</button>'+
     '</div></div>';
 }
 
@@ -17929,7 +18257,10 @@ function dcSaveContact(idx){
 }
 
 function dcDeleteContact(idx){
-  if(!confirm('Delete this contact?')) return;
+  _slConfirm({title:'Delete Contact',message:'Delete this contact? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteContact(id,loc); }});
+  return;
+}
+function _execDeleteContact(id,loc){
   var data=dcGetLoc(DC.state,DC.loc);
   data.contacts.splice(idx,1);
   dcSaveLoc(DC.state,DC.loc,data);
@@ -17979,7 +18310,7 @@ function renderNSFilters(){
   h += '</select>';
   h += '<div style="flex:1;"></div>';
   if(_slRole==='admin'){
-    h += '<button onclick="nsOpenNew()" style="padding:7px 16px;font-size:11px;font-weight:700;background:#1e3a5f;color:#fff;border:none;border-radius:6px;cursor:pointer;">+ New Deal</button>';
+    h += '<button onclick="nsOpenNew()" class="sl-btn sl-btn-primary sl-btn-sm">+ New Deal</button>';
   }
   document.getElementById('ns-filters').innerHTML = h;
 }
@@ -18007,7 +18338,10 @@ function renderNSList(){
   deals.sort(function(a,b){ return b.progress - a.progress; });
 
   if(deals.length === 0){
-    wrap.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;"><div style="font-size:40px;margin-bottom:12px;">🏗</div><div style="font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;">No deals found</div><div style="font-size:12px;">Add a new deal or adjust your filters.</div></div>';
+    var nsHasFilters = NS.filterCity !== 'ALL' || NS.filterStatus !== 'ALL' || NS.filterProgress !== 'ALL';
+    wrap.innerHTML = nsHasFilters
+      ? _slStateHtml('filtered', {icon:'\u{1F3D7}', title:'No deals match these filters', msg:'Try adjusting your state, status, or progress filters.', actionFn:"NS.filterCity='ALL';NS.filterStatus='ALL';NS.filterProgress='ALL';renderNSFilters();renderNSList()", actionLabel:'Clear filters'})
+      : _slStateHtml('empty', {icon:'\u{1F3D7}', title:'No deals found', msg:'Add a new deal to start tracking your pipeline.'});
     return;
   }
 
@@ -18059,7 +18393,7 @@ function nsOpenDetail(idx){
 function _nsShowDetail(d){
   var isNew = NS.editIdx === null;
   var modal = document.getElementById('ns-detail-modal');
-  var h = '<div class="ns-detail-overlay" onclick="if(event.target===this)nsCloseDetail();">';
+  var h = '<div class="ns-detail-overlay" onclick="if(event.target===this)nsCloseDetail();" role="dialog" aria-modal="true" aria-label="Deal details">';
   h += '<div class="ns-detail-panel">';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">';
   h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;">'+(isNew?'New Deal':'Edit Deal')+'</div>';
@@ -18133,7 +18467,7 @@ function _nsShowDetail(d){
   h += '<div style="display:flex;gap:8px;">';
   h += '<button onclick="nsCloseDetail()" style="padding:8px 18px;font-size:12px;font-weight:700;background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;">Cancel</button>';
   if(_slRole==='admin'){
-    h += '<button onclick="nsSaveDeal()" style="padding:8px 18px;font-size:12px;font-weight:700;background:#1e3a5f;color:#fff;border:none;border-radius:6px;cursor:pointer;">Save</button>';
+    h += '<button onclick="nsSaveDeal()" class="sl-btn sl-btn-primary sl-btn-sm">Save</button>';
   }
   h += '</div></div>';
 
@@ -18236,7 +18570,10 @@ function nsSaveDeal(){
 
 function nsDeleteDeal(){
   if(NS.editIdx == null) return;
-  if(!confirm('Delete this deal? This cannot be undone.')) return;
+  _slConfirm({title:'Delete Deal',message:'Delete this deal? This cannot be undone.',confirmText:'Delete Deal',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteDeal(dealId); }});
+  return;
+}
+function _execDeleteDeal(dealId){
   NS.deals.splice(NS.editIdx, 1);
   _nsSave();
   nsCloseDetail();
@@ -18408,7 +18745,7 @@ function _admToggleUserActivity(){
 async function _admLoadUserActivity(){
   var wrap = document.getElementById('adm-user-activity');
   if(!wrap || !_admCtx.userId) return;
-  wrap.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px;">Loading...</div>';
+  wrap.innerHTML = _slStateHtml('loading', {title:'Loading contacts\u2026', small:true});
   try {
     var res = await _supa.from('activity_logs').select('*').eq('user_id', _admCtx.userId).order('login_at', { ascending: false }).limit(100);
     if(res.error) throw res.error;
@@ -19713,7 +20050,7 @@ function evGeneratePDF(savedEvent){
   doc.text(totalUnits+' TOTAL UNITS',W-M,y+1,{align:'right'});
 
   var fname='Event_'+ev.name.replace(/[^a-zA-Z0-9]/g,'-')+'_'+ev.date+'.pdf';
-  doc.save(fname);
+  _slPdfPreview(doc, fname);
 }
 
 function evPrintSaved(id){
@@ -20449,7 +20786,7 @@ migrate();
   <!-- CALCULATOR PANE -->
   <div id="ev-pane-calc" style="padding:20px 24px 40px;">
     <!-- Event Info Bar -->
-    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:20px;padding:16px 20px;background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;">
+    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:20px;padding:16px 20px;background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;" class="ev-info-bar">
       <div style="flex:1;min-width:200px;">
         <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Event Name</label>
         <input id="ev-name" type="text" placeholder="e.g. Kaseya Center Game Night" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;font-weight:600;box-sizing:border-box;">
@@ -20485,7 +20822,7 @@ migrate();
         <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:4px;">Total Revenue Goal ($)</label>
         <input type="number" id="ev-rev-target" value="5000" min="0" step="100" oninput="evCalc()" style="padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:20px;font-weight:800;color:#7e2023;width:200px;">
       </div>
-      <div style="overflow-x:auto;"><table class="order-table" style="min-width:600px;">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="order-table" style="min-width:500px;">
         <thead><tr>
           <th>Product</th>
           <th style="text-align:right;width:90px;">Price ($)</th>
@@ -20500,7 +20837,7 @@ migrate();
     <!-- Units Mode -->
     <div id="ev-mode-units" style="display:none;background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:20px;margin-bottom:20px;">
       <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">UNIT COUNT</div>
-      <div style="overflow-x:auto;"><table class="order-table" style="min-width:500px;">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="order-table" style="min-width:400px;">
         <thead><tr>
           <th>Product</th>
           <th style="text-align:right;width:90px;">Price ($)</th>
@@ -20540,7 +20877,7 @@ migrate();
 
     <!-- Action buttons -->
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <button onclick="evSaveEvent()" style="padding:12px 28px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:.04em;">SAVE EVENT</button>
+      <button onclick="evSaveEvent()" class="sl-btn sl-btn-primary sl-btn-lg">SAVE EVENT</button>
       <button onclick="evGeneratePDF()" style="padding:12px 28px;background:rgba(126,32,35,.1);color:#7e2023;border:1.5px solid rgba(126,32,35,.3);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:.04em;">GENERATE PDF</button>
     </div>
   </div>
