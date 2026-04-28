@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub v84</title>
-<!-- BUILD: 2026-04-28-v86 -->
+<!-- BUILD: 2026-04-28-v87 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -6204,13 +6204,12 @@ function goPNL(){
   S.page='pnl'; render();
 }
 function goAdmin(){
-  if(!_hasPermission('admin')) return;
+  if(!_hasPermission('admin')){ _showAccessDenied('User Management'); return; }
   S.page = 'admin';
   render();
-  renderAdminPage();
 }
 function goPortfolio(){
-  if(!_hasPermission('portfolio')) return;
+  if(!_hasPermission('portfolio')){ _showAccessDenied('Store Intelligence'); return; }
   S.page = 'portfolio';
   render();
 }
@@ -6564,9 +6563,9 @@ async function _adminSavePerms(){
     console.log('[Admin] Saved for', (fullName || _admCtx.displayName), '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
     _admSetActionMsg('Saved for ' + (fullName || _admCtx.displayName), 'ok');
     // Refresh user list to show updated name
-    var savedId = _admCtx.userId, savedRole = newRole, savedState = _admCtx.state;
+    var savedId = _admCtx.userId, savedName = fullName || _admCtx.displayName || 'User', savedRole = newRole, savedState = _admCtx.state;
     await renderAdminPage();
-    _adminSelectUser(savedId, fullName || _admCtx.displayName, savedRole, savedState);
+    _adminSelectUser(savedId, savedName, savedRole, savedState);
   } catch(e){
     console.error('[Admin] _adminSavePerms error:', e);
     _admSetActionMsg('Save failed: ' + (e.message||e), 'err');
@@ -6733,7 +6732,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',portfolio:'Store Intelligence',newstores:'New Stores',hr:'HR Dashboard',marketing:'Marketing',events:'Event Calculator',stores:'Louie Spots',assess:'Excellence Assessment',dm_report:'DM Report'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
