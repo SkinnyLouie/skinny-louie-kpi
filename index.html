@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Skinny Louie · Performance Hub v84</title>
-<!-- BUILD: 2026-04-28-v85 -->
+<!-- BUILD: 2026-04-28-v86 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1827,6 +1827,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .cs-title{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;margin-bottom:8px;color:#212320;letter-spacing:.5px;text-transform:uppercase;}
 .cs-desc{font-size:14px;color:var(--muted);text-align:center;max-width:420px;line-height:1.6;}
 
+/* ── Order Table (Event Calculator) ── */
+.order-table{width:100%;border-collapse:collapse;font-size:13px;}
+.order-table thead th{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:2px solid #d1c9bc;background:#faf7f2;white-space:nowrap;}
+.order-table tbody td{padding:10px 12px;border-bottom:1px solid #eee8de;color:#212320;font-weight:600;}
+.order-table tbody tr:hover td{background:#f5f0e8;}
+
 /* ══════════════════════════════════════
    MODALS
 ══════════════════════════════════════ */
@@ -3515,10 +3521,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <span class="hcard-icon">🎉</span>
       <div class="hcard-title">Event Calculator</div>
       <div class="hcard-desc">Prep calculators, equipment lists, and cost breakdowns for private events and catering operations.</div>
-      <div class="hcard-tag">Coming Soon</div>
-      <div style="position:absolute;inset:0;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);">
-        <span style="font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5a3a7e;background:rgba(90,58,126,.12);border:1.5px solid rgba(90,58,126,.3);border-radius:99px;padding:6px 18px;text-transform:uppercase;">🔒 Coming Soon</span>
-      </div>
+      <div class="hcard-tag">Active · All Locations</div>
     </div>
     <div id="hcard-assess" class="hcard c3" onclick="goAssess()" style="cursor:pointer;">
       <span class="hcard-icon">📋</span>
@@ -19767,8 +19770,14 @@ function evSetMode(m){
   EV_MODE=m;
   document.getElementById('ev-mode-revenue').style.display=m==='revenue'?'':'none';
   document.getElementById('ev-mode-units').style.display=m==='units'?'':'none';
-  document.getElementById('ev-btn-revenue').classList.toggle('on',m==='revenue');
-  document.getElementById('ev-btn-units').classList.toggle('on',m==='units');
+  var revBtn=document.getElementById('ev-btn-revenue');
+  var unitBtn=document.getElementById('ev-btn-units');
+  revBtn.classList.toggle('on',m==='revenue');
+  unitBtn.classList.toggle('on',m==='units');
+  revBtn.style.color=m==='revenue'?'':'#4a3f38';
+  revBtn.style.background=m==='revenue'?'':'#f0ece4';
+  unitBtn.style.color=m==='units'?'':'#4a3f38';
+  unitBtn.style.background=m==='units'?'':'#f0ece4';
   evCalc();
 }
 
@@ -20813,9 +20822,9 @@ migrate();
     </div>
 
     <!-- Mode Toggle -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #d1c9bc;width:fit-content;">
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #c9bfb0;width:fit-content;background:#f0ece4;">
       <button class="yr-pill on" id="ev-btn-revenue" onclick="evSetMode('revenue')" style="border-radius:8px 0 0 8px;padding:10px 22px;">Revenue Target</button>
-      <button class="yr-pill" id="ev-btn-units" onclick="evSetMode('units')" style="border-radius:0 8px 8px 0;padding:10px 22px;">Unit Count</button>
+      <button class="yr-pill" id="ev-btn-units" onclick="evSetMode('units')" style="border-radius:0 8px 8px 0;padding:10px 22px;color:#4a3f38;background:#f0ece4;border-color:#c9bfb0;">Unit Count</button>
     </div>
 
     <!-- Revenue Mode -->
@@ -20823,7 +20832,7 @@ migrate();
       <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">REVENUE TARGET</div>
       <div style="margin-bottom:16px;">
         <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:4px;">Total Revenue Goal ($)</label>
-        <input type="number" id="ev-rev-target" value="5000" min="0" step="100" oninput="evCalc()" style="padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:20px;font-weight:800;color:#7e2023;width:200px;">
+        <input type="number" id="ev-rev-target" value="5000" min="0" step="100" oninput="evCalc()" style="padding:12px 16px;border:2px solid #c9bfb0;border-radius:10px;font-size:22px;font-weight:800;color:#7e2023;width:220px;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#7e2023'" onblur="this.style.borderColor='#c9bfb0'">
       </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="order-table" style="min-width:500px;">
         <thead><tr>
