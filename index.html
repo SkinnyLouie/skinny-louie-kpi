@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v89</title>
-<!-- BUILD: 2026-04-28-v89 -->
+<title>Skinny Louie · Performance Hub v93</title>
+<!-- BUILD: 2026-04-28-v93 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1654,11 +1654,11 @@ function delDataRecord(pg, state, loc, year, month){
 *{box-sizing:border-box;margin:0;padding:0;}
 .sl-skip-link{position:absolute;top:-100%;left:16px;background:#1e3a5f;color:#fff;padding:8px 16px;border-radius:0 0 8px 8px;z-index:9999;font-size:13px;font-weight:700;text-decoration:none;transition:top .2s;}
 .sl-skip-link:focus{top:0;}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-text-size-adjust:100%;}
 button{font-family:inherit;cursor:pointer;}
 
 /* ── NAVBAR ── */
-.nb{background:var(--nav);color:white;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:0 4px 18px rgba(100,15,15,.5);}
+.nb{background:var(--nav);color:white;padding:0 28px;padding-left:max(28px,env(safe-area-inset-left));padding-right:max(28px,env(safe-area-inset-right));height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:0 4px 18px rgba(100,15,15,.5);}
 .nb-brand{display:flex;align-items:center;gap:12px;cursor:pointer;}
 .nb-icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
 .nb-title{font-family:'Cooper Black','Ultra',serif;font-weight:400;font-size:17px;letter-spacing:.3px;color:#fcfaf4;}
@@ -1716,7 +1716,7 @@ button{font-family:inherit;cursor:pointer;}
    KPI PAGE
 ══════════════════════════════════════ */
 #pg-kpi,#pg-sales,#pg-mix,#pg-pnl,#pg-inv{display:none;}
-.loc-bar{background:#fcfaf4;border-bottom:1px solid var(--border);padding:0 28px;display:flex;overflow-x:auto;scrollbar-width:none;align-items:center;gap:0;}
+.loc-bar{background:#fcfaf4;border-bottom:1px solid var(--border);padding:0 28px;display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-items:center;gap:0;}
 .loc-bar::-webkit-scrollbar{display:none;}
 .loc-tab{padding:14px 15px;border:none;background:transparent;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .15s;}
 .loc-tab:hover{color:var(--text);}
@@ -1928,6 +1928,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .upl-pill.on-state{background:var(--surf);color:var(--muted);border-color:var(--border);}
 .upl-pill.on,.upl-pill.on-state.on{background:var(--accent);color:#fcfaf4;border-color:var(--accent);}
 .upl-selectors{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:0;}
+@media(max-width:480px){ .upl-selectors{grid-template-columns:1fr;gap:10px;} .upl-page{padding:20px 14px;} .upl-card{padding:18px 14px;} .upl-title{font-size:20px;} }
 .upl-selectors .fg{display:flex;flex-direction:column;gap:6px;}
 .upl-months{display:flex;gap:6px;flex-wrap:wrap;}
 .upl-month-pill{padding:6px 12px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
@@ -2453,6 +2454,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
    MOBILE — Tablet (max 768px)
 ══════════════════════════════════════════════ */
 @media(max-width:768px){
+  :root{ --nb-h:56px; }
   /* Navbar */
   .nb{ padding:0 14px; height:56px; }
   .nb-brand{ gap:8px; }
@@ -2565,6 +2567,11 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   .adm-perm-user-avatar { width:36px; height:36px; font-size:14px; }
   .adm-perm-user-name { font-size:15px; }
   .adm-perm-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .adm-email-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .adm-email-scope-opt { min-width:0; flex:1; padding:8px 4px; font-size:10px; }
+  .adm-email-scope-stores { gap:4px; }
+  .adm-email-scope-store { padding:5px 8px; font-size:10px; }
+  .adm-email-master { padding:12px 14px; }
 
   /* ── Store Maintenance ── */
   .maint-cards-grid { grid-template-columns:1fr; gap:10px; padding:14px 0; }
@@ -2625,6 +2632,22 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   /* ── Period banner in inventory ── */
   #inv-period-banner { flex-direction:column; align-items:flex-start !important; }
   #inv-period-pills { margin-left:0 !important; }
+}
+
+/* == MOBILE -- Sticky header offset fix == */
+@media(max-width:768px){
+  thead th{ top:56px !important; }
+  .pnl-tbl thead th{ top:56px !important; }
+  .cov-table thead th{ top:56px !important; }
+  .pf-topbar{ top:56px !important; }
+  .pf-tbl th{ top:56px !important; }
+}
+@media(max-width:480px){
+  thead th{ top:52px !important; }
+  .pnl-tbl thead th{ top:52px !important; }
+  .cov-table thead th{ top:52px !important; }
+  .pf-topbar{ top:52px !important; }
+  .pf-tbl th{ top:52px !important; }
 }
 
 /* ══ MOBILE — Event & Filter refinements ═══════════ */
@@ -2833,6 +2856,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   .adm-perm-body { padding:20px 16px 30px; }
   .adm-perm-user-hdr { flex-direction:column; align-items:flex-start; gap:10px; }
   .adm-perm-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+  .adm-email-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
 
   /* ── Store Maintenance cards ── */
   .maint-cards-grid { grid-template-columns:1fr; gap:14px; }
@@ -2870,6 +2894,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
   /* ── P&L anomaly grid ── */
   .pnl-anomaly-grid { grid-template-columns:1fr; }
+  .pnl-dash-cards { grid-template-columns:1fr 1fr !important; gap:8px !important; }
+  .pnl-wf-row { grid-template-columns:100px 1fr 80px !important; }
 
   /* ── DM Report ── */
   .rpt-grid { grid-template-columns:1fr !important; }
@@ -2906,6 +2932,162 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .cov-no-recs{padding:24px;text-align:center;color:var(--muted);font-size:12px;}
 /* year separator inside table */
 .cov-yr-sep{border-left:2px solid #334155!important;}
+
+/* ══ Tablet range (768-1024px) ══ */
+@media(min-width:481px) and (max-width:1024px){
+  .home-grid{ grid-template-columns:1fr 1fr; }
+  .cards{ grid-template-columns:repeat(3, 1fr); }
+  .pf-cards{ grid-template-columns:repeat(2, 1fr); }
+  .hr-land-grid{ grid-template-columns:1fr 1fr; }
+  .maint-cards-grid{ grid-template-columns:1fr 1fr; }
+  .adm-perm-grid{ grid-template-columns:repeat(3, 1fr); }
+  .adm-email-grid{ grid-template-columns:repeat(3, 1fr); }
+  .adm-email-scope-row{ flex-wrap:wrap; }
+  .adm-email-scope-opt{ min-width:120px; }
+  .ns-detail-panel{ width:96%; }
+  .sl-modal-box{ max-width:90vw; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   v92 MOBILE EXCELLENCE — Comprehensive responsive block
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Global touch targets: min 44px for all interactive elements ── */
+@media(max-width:768px){
+  button, .loc-tab, .yr-pill, .upl-pill, .maint-tab-btn, .maint-fpill,
+  .ns-filter-sel, .inv-tab-btn, select, .pf-view-btn{
+    min-height:44px;
+  }
+  /* Inputs & selects: readable and touch-friendly */
+  input[type="text"], input[type="number"], input[type="email"],
+  input[type="password"], input[type="date"], input[type="tel"],
+  input[type="url"], textarea, select{
+    font-size:16px !important; /* prevents iOS zoom on focus */
+    min-height:44px;
+    padding:10px 12px;
+  }
+  /* All tables: horizontal scroll wrapper */
+  .tscroll, .cov-scroll, .inv-count-table-wrap,
+  [style*="overflow-x"]{
+    -webkit-overflow-scrolling:touch;
+  }
+  /* Ensure no table overflows its container */
+  table{ max-width:100%; }
+  /* Card grids: no overlap */
+  .cards{ gap:10px; }
+  .home-grid{ gap:14px; }
+  /* Modals: always fit screen */
+  .sl-modal-box, .maint-modal-box{
+    max-width:96vw !important;
+    max-height:90vh !important;
+    margin:8px;
+  }
+  .sl-modal-body{ max-height:60vh; }
+  /* PDF preview: full width on tablet */
+  .sl-pdf-box{ width:98% !important; }
+  /* Breadcrumb bar padding */
+  [style*="padding:0 24px"][style*="border-bottom:1px solid"]{
+    padding-left:14px !important;
+    padding-right:14px !important;
+  }
+}
+
+/* ── Phone-specific (375px target) ── */
+@media(max-width:480px){
+  /* Global text: prevent clipping */
+  h2, h3, .hcard-title, .kcard-val, .pf-topbar-title,
+  .sl-pdf-title, .ttitle, .thdr{
+    word-break:break-word;
+    overflow-wrap:break-word;
+  }
+  /* Location tabs: scrollable row, no wrap overflow */
+  .loc-bar{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    flex-wrap:nowrap !important;
+    padding:0 8px;
+  }
+  .loc-bar::-webkit-scrollbar{ display:none; }
+  .loc-tab{
+    white-space:nowrap;
+    flex-shrink:0;
+    padding:10px 12px;
+    font-size:11px;
+    min-height:44px;
+  }
+  /* KPI compare bar */
+  .cmp-bar{ flex-wrap:wrap; gap:6px; padding:8px 10px; }
+  .cmp-bar button{ font-size:10px; padding:6px 10px; min-height:36px; }
+  /* Tables: ensure horizontal scroll */
+  .tcard{ overflow:hidden; }
+  .tscroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table th, table td{ white-space:nowrap; padding:6px 8px; font-size:11px; }
+  /* P&L Dashboard metric cards */
+  .pnl-dash-cards{ grid-template-columns:1fr 1fr !important; gap:8px !important; }
+  .pnl-bench-row{ gap:8px; }
+  /* Charts: prevent overflow */
+  canvas{ max-width:100% !important; }
+  .cc-wrap{ margin:0 -4px; }
+  /* Inventory selectors */
+  .inv-selectors{ flex-direction:column; gap:10px; }
+  .inv-selectors select{ width:100%; }
+  /* HR grid */
+  .hr-land-card{ padding:16px 14px; }
+  .hr-profile-grid{ grid-template-columns:1fr !important; }
+  /* New Stores detail panel */
+  .ns-detail-panel{ padding:14px 12px !important; width:100% !important; max-height:90vh; overflow-y:auto; }
+  /* Data Center modals */
+  .dc-modal-inner{ padding:16px 12px !important; width:95vw !important; }
+  /* Maintenance cards */
+  .maint-card{ padding:14px 12px; }
+  .maint-card-title{ font-size:13px; }
+  /* Marketing feature cards */
+  #pg-marketing [style*="min-width:140px"]{ min-width:100px !important; }
+  #pg-marketing [style*="gap:16px"]{ gap:10px !important; }
+  #pg-marketing h2{ font-size:22px !important; }
+  /* Portfolio cards */
+  .pf-cards{ grid-template-columns:1fr !important; gap:10px; }
+  .pf-card{ padding:14px; }
+  .pf-topbar{ padding:10px 12px; gap:8px; flex-wrap:wrap; }
+  .pf-topbar-title{ font-size:13px; }
+  .pf-view-btn{ font-size:10px; padding:6px 10px; }
+  /* Store Intelligence table */
+  .pf-tbl-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .pf-tbl{ min-width:600px; }
+  .pf-tbl th, .pf-tbl td{ padding:8px 10px; font-size:11px; }
+  /* DM Report grid */
+  .rpt-grid{ grid-template-columns:1fr !important; gap:10px !important; }
+  /* Confirm/alert modals */
+  .sl-modal-box{ border-radius:12px !important; }
+  .sl-modal-hdr{ padding:14px 16px 10px; }
+  .sl-modal-body{ padding:14px 16px; }
+  .sl-modal-footer{ padding:10px 16px; flex-wrap:wrap; }
+  .sl-modal-footer button{ flex:1; min-width:100px; min-height:44px; }
+  /* slAlert + slConfirm: bigger text */
+  .sl-modal-hdr-title{ font-size:15px; }
+  /* Stores (Louie Spots) modal */
+  #stores-modal [style*="max-width:500px"]{ max-width:96vw !important; }
+  #stores-modal [style*="max-width:480px"]{ max-width:96vw !important; }
+  /* Event Calculator */
+  .ev-tabs{ flex-wrap:wrap; }
+  .ev-tab-btn{ flex:1; min-width:100px; text-align:center; min-height:44px; }
+  .ev-mode-btn{ min-height:44px; font-size:12px; }
+  #ev-summary-grid{ gap:8px !important; }
+  .ev-summary-card{ padding:12px !important; }
+  .order-table{ font-size:10px; }
+  .order-table th, .order-table td{ padding:5px 4px; }
+  /* Global: page containers padding */
+  #pg-kpi, #pg-sales, #pg-mix, #pg-pnl, #pg-maint,
+  #pg-events, #pg-inventory, #pg-newstores, #pg-hr,
+  #pg-assess, #pg-stores, #pg-marketing{
+    overflow-x:hidden;
+  }
+  /* Coverage table location column */
+  .cov-table .cov-loc-col{ min-width:90px; font-size:10px; padding:4px 8px; }
+  /* Access Denied overlay */
+  #_perm-denied-overlay [style*="max-width:380px"]{ max-width:90vw !important; padding:24px 20px !important; }
+}
 
 /* ── Intelligent Fallback Banner ── */
 .sl-fallback-banner{
@@ -3082,7 +3264,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 /* ── Admin Panel ─────────────────────────────────────────── */
 /* position:fixed pins the panel directly to the viewport, eliminating any
    dependency on ancestor height, body overflow, or navbar calc accuracy.
-   top:65px = 3px accent bar + 62px navbar. */
+   top:62px = navbar height (no accent bar). */
 #pg-admin{display:none;position:fixed;top:62px;left:0;right:0;bottom:0;background:#faf9f7;overflow:hidden;flex-direction:column;z-index:500;}
 .adm-hdr{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-shrink:0;}
 .adm-hdr-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;}
@@ -3265,6 +3447,37 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .adm-invite-input:focus{outline:none;border-color:#7e2023;}
 .adm-invite-btn{background:#7e2023;color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;padding:8px 20px;border-radius:7px;border:none;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
 .adm-invite-btn:hover{opacity:.88;}
+/* ── Email Subscription Center (v93) ── */
+.adm-email-master{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;margin-bottom:16px;}
+.adm-email-master.on{border-color:#166534;background:#f0fdf4;}
+.adm-email-master-label{flex:1;}
+.adm-email-master-name{font-size:13px;font-weight:700;color:#1e293b;}
+.adm-email-master.on .adm-email-master-name{color:#166534;}
+.adm-email-master-desc{font-size:10px;color:#94a3b8;margin-top:1px;}
+.adm-email-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:16px;}
+.adm-email-card{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .15s;user-select:none;position:relative;}
+.adm-email-card:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-email-card.on{border-color:#7e2023;background:#fff5f0;}
+.adm-email-card.on .adm-email-card-name{color:#7e2023;font-weight:700;}
+.adm-email-card.selected{box-shadow:0 0 0 2px #1e3a5f;border-color:#1e3a5f;}
+.adm-email-card-icon{font-size:20px;flex-shrink:0;}
+.adm-email-card-info{flex:1;min-width:0;}
+.adm-email-card-name{font-size:13px;font-weight:600;color:#334155;}
+.adm-email-card-desc{font-size:10px;color:#94a3b8;margin-top:1px;}
+.adm-email-card-scope{font-size:9px;font-weight:700;color:#64748b;background:#f1f5f9;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;}
+.adm-email-card.on .adm-email-card-scope{color:#7e2023;background:rgba(126,32,35,.08);}
+.adm-email-scope-panel{background:#faf9f7;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px;margin-bottom:20px;display:none;}
+.adm-email-scope-panel.open{display:block;}
+.adm-email-scope-hdr{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1e3a5f;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.adm-email-scope-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.adm-email-scope-opt{flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border:1.5px solid #e8e2d8;border-radius:8px;cursor:pointer;background:#fff;transition:all .15s;font-size:11px;font-weight:600;color:#64748b;}
+.adm-email-scope-opt:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-email-scope-opt.on{border-color:#7e2023;background:#fff5f0;color:#7e2023;font-weight:700;}
+.adm-email-scope-stores{display:flex;flex-wrap:wrap;gap:6px;}
+.adm-email-scope-store{padding:6px 10px;border:1.5px solid #e8e2d8;border-radius:6px;cursor:pointer;background:#fff;font-size:11px;font-weight:600;color:#374151;transition:all .15s;}
+.adm-email-scope-store:hover{border-color:#c8b89a;background:#fffbf5;}
+.adm-email-scope-store.on{border-color:#7e2023;background:#fff5f0;color:#7e2023;font-weight:700;}
+.adm-email-disabled{opacity:.45;pointer-events:none;}
 .adm-msg{font-size:12px;margin-top:8px;}
 .adm-msg.ok{color:#166534;}
 .adm-msg.err{color:#b91c1c;}
@@ -3327,6 +3540,17 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .ea-section-hdr:hover{background:#faf9f7;}
 .ea-section-body{padding:0 20px 16px;display:none;}
 .ea-section-body.open{display:block;}
+@media(max-width:768px){
+  #ea-form-sections{padding:14px 12px !important;}
+  #ea-form-summary{width:100% !important;border-left:none !important;border-top:1px solid #e8e2d8;max-height:none !important;}
+  .ea-section-hdr{padding:12px 14px;}
+  .ea-section-body{padding:0 14px 12px;}
+  .ea-score-btn{min-width:34px;min-height:34px;}
+}
+@media(max-width:480px){
+  .ea-item-btns{gap:2px;}
+  .ea-score-btn{width:32px;height:32px;font-size:11px;min-width:32px;min-height:32px;}
+}
 .ea-pct-bar{height:6px;border-radius:3px;background:#f1ece3;overflow:hidden;flex:1;}
 .ea-pct-fill{height:100%;border-radius:3px;transition:width .3s;}
 .ea-summary-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1ece3;font-size:12px;}
@@ -3637,7 +3861,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
 <!-- ═══ CUSTOM ALERT / CONFIRM MODALS ═══ -->
 <div id="sl-alert-modal" role="alert" aria-live="assertive" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:20px;padding:40px 44px;max-width:380px;width:88%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
+  <div style="background:#fff;border-radius:20px;padding:28px 20px;max-width:380px;width:92%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
     <div id="sl-alert-icon" style="font-size:42px;margin-bottom:14px;line-height:1;"></div>
     <div id="sl-alert-msg" style="font-size:15px;color:#212320;line-height:1.55;margin-bottom:28px;font-weight:500;font-family:inherit;"></div>
     <button onclick="slAlertClose()" style="background:#7e2023;color:#fff;border:none;border-radius:10px;padding:12px 40px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;">OK</button>
@@ -3645,7 +3869,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 </div>
 
 <div id="sl-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(33,35,32,.5);z-index:99999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:20px;padding:40px 44px;max-width:380px;width:88%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
+  <div style="background:#fff;border-radius:20px;padding:28px 20px;max-width:380px;width:92%;text-align:center;box-shadow:0 32px 80px rgba(33,35,32,.3);">
     <div id="sl-confirm-icon" style="font-size:38px;margin-bottom:14px;line-height:1;"></div>
     <div id="sl-confirm-msg" style="font-size:15px;color:#212320;line-height:1.55;margin-bottom:28px;font-weight:500;font-family:inherit;"></div>
     <div style="display:flex;gap:12px;justify-content:center;">
@@ -4138,7 +4362,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_email_subs_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -5429,7 +5653,7 @@ function invRenderCount(){
     { key:'disp', label:'🧹 Disposable & Cleaning Inventory' },
     { key:'merch', label:'👕 Merch Inventory' }
   ];
-  var html = '<table class="inv-count-table"><thead><tr>'
+  var html = '<div class="tscroll"><table class="inv-count-table"><thead><tr>'
     +'<th style="width:38%">Item</th>'
     +'<th style="width:15%;text-align:center;">Qty</th>'
     +'<th style="width:14%;text-align:center;">Par</th>'
@@ -6101,7 +6325,7 @@ function invRenderPriceTable(){
     {key:'disp',label:'🧹 Disposable & Cleaning'},
     {key:'merch',label:'👕 Merch'}
   ];
-  var html = '<table class="inv-count-table"><thead><tr>'
+  var html = '<div class="tscroll"><table class="inv-count-table"><thead><tr>'
     +'<th>Item</th><th>Category</th>'
     +'<th style="text-align:right;">🌴 FL Price</th>'
     +'<th style="text-align:right;">🗽 NY Price</th>'
@@ -6207,11 +6431,13 @@ function goAdmin(){
   if(!_hasPermission('admin')){ _showAccessDenied('User Management'); return; }
   S.page = 'admin';
   render();
+  renderAdminPage();
 }
 function goPortfolio(){
   if(!_hasPermission('portfolio')){ _showAccessDenied('Store Intelligence'); return; }
   S.page = 'portfolio';
   render();
+  renderPortfolioPage();
 }
 
 // ══════════════════════════════════════════════════
@@ -6238,7 +6464,7 @@ const _ADM_MODULES = [
 ];
 
 // Session state for admin editor
-let _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set() };
+let _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set(), emailSubs: null, emailSelReport: null };
 
 // Location scope options — maps to user_scopes.scope values
 const SCOPE_OPTIONS = [
@@ -6328,7 +6554,7 @@ async function renderAdminPage(){
   var editor = document.getElementById('adm-perm-editor');
   if(empty)  empty.style.display = 'flex';
   if(editor) editor.style.display = 'none';
-  _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set() };
+  _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set(), emailSubs: null, emailSelReport: null };
 
   if(!_supa){
     scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#b91c1c;font-size:13px;">Supabase not connected. Refresh the page.</div>';
@@ -6428,6 +6654,15 @@ async function _adminSelectUser(userId, displayName, role, state){
     if(actWrap){ actWrap.style.display='none'; actWrap.innerHTML=''; }
     var actBtn = document.getElementById('adm-activity-toggle');
     if(actBtn) actBtn.textContent = 'Show History';
+    // Load email subscriptions
+    _admCtx.emailSubs = null;
+    _admCtx.emailSelReport = null;
+    _admLoadEmailSubs(userId).then(function(subs){
+      _admCtx.emailSubs = subs;
+      _renderAdmEmailMaster();
+      _renderAdmEmailGrid();
+      _renderAdmEmailScopePanel();
+    });
     // Update sub-label with live scope value
     const subEl = document.getElementById('adm-sel-sub');
     const scopeLabel = _admCtx.scope === 'ALL' ? 'All States' : _admCtx.scope === 'FL' ? 'Florida' : 'New York';
@@ -6566,7 +6801,12 @@ async function _adminSavePerms(){
         return;
       }
     }
-    console.log('[Admin] Saved for', (fullName || _admCtx.displayName), '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations]);
+    // Save email subscriptions
+    if(_admCtx.emailSubs){
+      var emailOk = await _admSaveEmailSubs(_admCtx.userId, _admCtx.emailSubs);
+      if(!emailOk) console.warn('[Admin] Email subs save failed (non-fatal)');
+    }
+    console.log('[Admin] Saved for', (fullName || _admCtx.displayName), '| perms:', [..._admCtx.perms], '| scope:', _admCtx.scope, '| locations:', [..._admCtx.locations], '| emailSubs:', JSON.stringify(_admCtx.emailSubs));
     _admSetActionMsg('Saved for ' + (fullName || _admCtx.displayName), 'ok');
     // Refresh user list to show updated name
     var savedId = _admCtx.userId, savedName = fullName || _admCtx.displayName || 'User', savedRole = newRole, savedState = _admCtx.state;
@@ -6677,6 +6917,199 @@ function _adminInviteUser(){
   // no-op: invite path is not available via anon key.
   // Left in place for future backend integration via Edge Function.
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  EMAIL SUBSCRIPTION CENTER (v93)
+// ═══════════════════════════════════════════════════════════════════
+const _ADM_REPORTS = [
+  { id:'daily_ops',       label:'Daily Operations',       icon:'\u{1F4CA}', desc:'Sales, orders, tickets, voids, discounts — every morning' },
+  { id:'weekly_ops',      label:'Weekly Operations',      icon:'\u{1F4C5}', desc:'Weekly rollup with trend comparison' },
+  { id:'monthly_exec',    label:'Monthly Executive',      icon:'\u{1F4CB}', desc:'P&L summary, KPIs, and variance analysis' },
+  { id:'critical_alerts', label:'Critical Alerts',        icon:'\u{1F6A8}', desc:'Void spikes, sync failures, anomalies' },
+  { id:'expansion',       label:'Expansion / New Stores', icon:'\u{1F3D7}', desc:'Pipeline updates and milestone alerts' },
+  { id:'hr_summary',      label:'HR Summary',             icon:'\u{1F465}', desc:'Headcount, terminations, weekly digest' },
+];
+
+const _EMAIL_SCOPE_OPTS = [
+  { value:'ALL',    label:'All Stores',      icon:'\u{1F30E}' },
+  { value:'FL',     label:'Florida Only',    icon:'\u{1F334}' },
+  { value:'NY',     label:'New York Only',   icon:'\u{1F5FD}' },
+  { value:'CUSTOM', label:'Selected Stores', icon:'\u{2705}' },
+];
+
+function _admDefaultEmailSubs(){
+  var obj = { enabled: false, reports: {} };
+  _ADM_REPORTS.forEach(function(r){ obj.reports[r.id] = { on: false, scope: 'ALL', stores: [] }; });
+  return obj;
+}
+
+// Load email subs for a user from the app_data store
+async function _admLoadEmailSubs(userId){
+  try {
+    var res = await _supa.from('app_data').select('value').eq('key','sl_email_subs_v1').single();
+    if(res.error || !res.data) return _admDefaultEmailSubs();
+    var all = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
+    if(all && all[userId]) return all[userId];
+    return _admDefaultEmailSubs();
+  } catch(e){
+    console.warn('[EmailSubs] load error:', e);
+    return _admDefaultEmailSubs();
+  }
+}
+
+// Save email subs for a user back to app_data
+async function _admSaveEmailSubs(userId, subs){
+  try {
+    var res = await _supa.from('app_data').select('value').eq('key','sl_email_subs_v1').single();
+    var all = {};
+    if(!res.error && res.data){
+      all = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
+    }
+    all[userId] = subs;
+    await _supa.from('app_data').upsert({ key: 'sl_email_subs_v1', value: all, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    return true;
+  } catch(e){
+    console.error('[EmailSubs] save error:', e);
+    return false;
+  }
+}
+
+function _renderAdmEmailMaster(){
+  var el = document.getElementById('adm-email-master');
+  if(!el) return;
+  var on = _admCtx.emailSubs && _admCtx.emailSubs.enabled;
+  el.className = 'adm-email-master' + (on ? ' on' : '');
+  var chk = document.getElementById('adm-email-master-chk');
+  if(chk) chk.checked = !!on;
+  // Enable/disable the grid below
+  var grid = document.getElementById('adm-email-grid');
+  if(grid) grid.className = 'adm-email-grid' + (on ? '' : ' adm-email-disabled');
+  var scopePanel = document.getElementById('adm-email-scope-panel');
+  if(scopePanel && !on) scopePanel.className = 'adm-email-scope-panel';
+}
+
+function _admToggleEmailMaster(){
+  if(!_admCtx.userId || !_admCtx.emailSubs) return;
+  _admCtx.emailSubs.enabled = !_admCtx.emailSubs.enabled;
+  _renderAdmEmailMaster();
+  _admSetActionMsg('');
+}
+
+function _renderAdmEmailGrid(){
+  var grid = document.getElementById('adm-email-grid');
+  if(!grid) return;
+  var subs = _admCtx.emailSubs;
+  if(!subs){ grid.innerHTML = ''; return; }
+  grid.innerHTML = _ADM_REPORTS.map(function(r){
+    var rpt = subs.reports[r.id] || { on: false, scope: 'ALL', stores: [] };
+    var on = rpt.on;
+    var sel = _admCtx.emailSelReport === r.id;
+    var scopeLabel = rpt.scope === 'ALL' ? 'All Stores' : rpt.scope === 'FL' ? 'Florida' : rpt.scope === 'NY' ? 'New York' : rpt.stores.length + ' store(s)';
+    return '<div class="adm-email-card' + (on ? ' on' : '') + (sel ? ' selected' : '') + '" onclick="_admEmailCardClick(\x27' + r.id + '\x27)">'
+      + '<span class="adm-email-card-icon">' + r.icon + '</span>'
+      + '<div class="adm-email-card-info">'
+      + '<div class="adm-email-card-name">' + r.label + '</div>'
+      + '<div class="adm-email-card-desc">' + r.desc + '</div>'
+      + (on ? '<span class="adm-email-card-scope">' + scopeLabel + '</span>' : '')
+      + '</div>'
+      + '<div class="adm-toggle-wrap">'
+      + '<div class="adm-toggle">'
+      + '<input type="checkbox" ' + (on ? 'checked' : '') + ' tabindex="-1" style="pointer-events:none;" />'
+      + '<div class="adm-toggle-slider"></div>'
+      + '</div></div></div>';
+  }).join('');
+  // Also update disabled state
+  var masterOn = subs.enabled;
+  grid.className = 'adm-email-grid' + (masterOn ? '' : ' adm-email-disabled');
+}
+
+function _admEmailCardClick(reportId){
+  if(!_admCtx.userId || !_admCtx.emailSubs) return;
+  var rpt = _admCtx.emailSubs.reports[reportId];
+  if(!rpt){ rpt = { on: false, scope: 'ALL', stores: [] }; _admCtx.emailSubs.reports[reportId] = rpt; }
+  // Toggle on/off
+  rpt.on = !rpt.on;
+  // If turning on, auto-select for scope editing
+  if(rpt.on){
+    _admCtx.emailSelReport = reportId;
+  } else if(_admCtx.emailSelReport === reportId){
+    _admCtx.emailSelReport = null;
+  }
+  _renderAdmEmailGrid();
+  _renderAdmEmailScopePanel();
+  _admSetActionMsg('');
+}
+
+function _admSelectReportForScope(reportId){
+  if(!_admCtx.userId || !_admCtx.emailSubs) return;
+  var rpt = _admCtx.emailSubs.reports[reportId];
+  if(!rpt || !rpt.on) return; // can only configure scope for enabled reports
+  _admCtx.emailSelReport = (_admCtx.emailSelReport === reportId) ? null : reportId;
+  _renderAdmEmailGrid();
+  _renderAdmEmailScopePanel();
+}
+
+function _renderAdmEmailScopePanel(){
+  var panel = document.getElementById('adm-email-scope-panel');
+  if(!panel) return;
+  var rid = _admCtx.emailSelReport;
+  if(!rid || !_admCtx.emailSubs || !_admCtx.emailSubs.reports[rid] || !_admCtx.emailSubs.reports[rid].on){
+    panel.className = 'adm-email-scope-panel';
+    panel.innerHTML = '';
+    return;
+  }
+  panel.className = 'adm-email-scope-panel open';
+  var rpt = _admCtx.emailSubs.reports[rid];
+  var rLabel = '';
+  _ADM_REPORTS.forEach(function(r){ if(r.id === rid) rLabel = r.label; });
+
+  var html = '<div class="adm-email-scope-hdr"><span>Scope for: ' + rLabel + '</span>'
+    + '<button onclick="_admSelectReportForScope(\x27' + rid + '\x27)" style="margin-left:auto;font-size:10px;font-weight:700;background:#f0f4f8;color:#64748b;border:1px solid #d1d5db;border-radius:5px;padding:3px 8px;cursor:pointer;">Close</button></div>';
+
+  // Scope options
+  html += '<div class="adm-email-scope-row">';
+  _EMAIL_SCOPE_OPTS.forEach(function(opt){
+    var on = rpt.scope === opt.value;
+    html += '<div class="adm-email-scope-opt' + (on ? ' on' : '') + '" onclick="_admSetReportScope(\x27' + rid + '\x27,\x27' + opt.value + '\x27)">'
+      + '<span style="font-size:18px;">' + opt.icon + '</span>'
+      + '<span>' + opt.label + '</span></div>';
+  });
+  html += '</div>';
+
+  // If CUSTOM scope, show store pills
+  if(rpt.scope === 'CUSTOM'){
+    var allStores = (LOC_MAP['FL'] || []).concat(LOC_MAP['NY'] || []);
+    html += '<div class="adm-email-scope-stores">';
+    allStores.forEach(function(s){
+      var on = (rpt.stores || []).indexOf(s) !== -1;
+      html += '<span class="adm-email-scope-store' + (on ? ' on' : '') + '" onclick="_admToggleReportStore(\x27' + rid + '\x27,\x27' + s + '\x27)">' + s + '</span>';
+    });
+    html += '</div>';
+  }
+
+  panel.innerHTML = html;
+}
+
+function _admSetReportScope(reportId, scope){
+  if(!_admCtx.emailSubs || !_admCtx.emailSubs.reports[reportId]) return;
+  _admCtx.emailSubs.reports[reportId].scope = scope;
+  if(scope !== 'CUSTOM') _admCtx.emailSubs.reports[reportId].stores = [];
+  _renderAdmEmailGrid();
+  _renderAdmEmailScopePanel();
+  _admSetActionMsg('');
+}
+
+function _admToggleReportStore(reportId, store){
+  if(!_admCtx.emailSubs || !_admCtx.emailSubs.reports[reportId]) return;
+  var rpt = _admCtx.emailSubs.reports[reportId];
+  if(!rpt.stores) rpt.stores = [];
+  var idx = rpt.stores.indexOf(store);
+  if(idx !== -1) rpt.stores.splice(idx, 1);
+  else rpt.stores.push(store);
+  _renderAdmEmailGrid();
+  _renderAdmEmailScopePanel();
+  _admSetActionMsg('');
+}
 function setYear(y){ S.year=y; S.cmpLocs=[]; S.cmpMonth=null; if(S.loc!=='ALL'&&!locD(S.loc)) S.loc='ALL'; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=_allowedLocs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
@@ -6704,7 +7137,7 @@ function render(){
   requestAnimationFrame(function(){ window.scrollTo(0, 0); });
   ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
-  var _pgEl=document.getElementById('pg-'+S.page); _pgEl.style.display=(S.page==='home'||S.page==='admin')?'flex':'block'; if(S.page==='admin'){_pgEl.style.flexDirection='column';}
+  var _pgEl=document.getElementById('pg-'+S.page); if(_pgEl){ _pgEl.style.display=(S.page==='home'||S.page==='admin')?'flex':'block'; if(S.page==='admin'){_pgEl.style.flexDirection='column';} }
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
   if(S.page==='mix'){ try{ if(typeof renderMixPage!=='undefined') renderMixPage(); }catch(e){ console.error('renderMixPage',e); } }
   else if(S.page==='sales'){ try{ if(typeof renderSalesPage!=='undefined') renderSalesPage(); }catch(e){ console.error('renderSalesPage',e); } }
@@ -8205,7 +8638,7 @@ function renderCharts(){
   ctx.textAlign='center';
   ctx.textBaseline='bottom';
   for(let i=1;i<vals.length;i++){
-    if(!vals[i]||!vals[i-1])continue;
+    if(vals[i]==null||vals[i-1]==null||vals[i-1]===0)continue;
     const pct=(vals[i]-vals[i-1])/vals[i-1]*100;
     const sign=pct>=0?'+':'';
     const txt=sign+pct.toFixed(1)+'%';
@@ -8239,7 +8672,8 @@ const salesDatasets=[{
     pointStyle:'circle',pointRadius:3,pointBackgroundColor:'rgba(30,58,95,.7)',
     spanGaps:true,order:1,tension:0
   });
-  chSales=new Chart(document.getElementById('ch-sales'),{
+  var _chSalesEl=document.getElementById('ch-sales'); if(!_chSalesEl) return;
+  chSales=new Chart(_chSalesEl,{
     type:'bar',
     data:{labels:MONTHS,datasets:salesDatasets},
     options:{
@@ -8266,7 +8700,8 @@ const salesDatasets=[{
     plugins:[momPlugin]
   });
 
-  chPct=new Chart(document.getElementById('ch-pct'),{type:'line',data:{labels:MONTHS,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},usePointStyle:true,pointStyleWidth:8,filter:(item)=>!item.text.includes(otherYear)||S.seasonOverlay}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+'%'}}},scales:{y:{beginAtZero:true,grid:{color:'#f0ece3'},ticks:{callback:v=>v+'%',font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  var _chPctEl=document.getElementById('ch-pct'); if(!_chPctEl) return;
+  chPct=new Chart(_chPctEl,{type:'line',data:{labels:MONTHS,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},usePointStyle:true,pointStyleWidth:8,filter:(item)=>!item.text.includes(otherYear)||S.seasonOverlay}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+'%'}}},scales:{y:{beginAtZero:true,grid:{color:'#f0ece3'},ticks:{callback:v=>v+'%',font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
 
 // ══════════════════════════════════════════════════
@@ -8405,7 +8840,7 @@ function renderLocTable(wrap){
   const ytdDP=ts>0&&tdc>0?tdc/ts:null;
 
   // Build rows
-  let h=`<table><thead><tr><th>KPI</th>${mhdrs}<th style="background:#ede8de;color:#212320;">YTD / AVG</th></tr></thead><tbody>`;
+  let h=`<div class="tscroll"><table><thead><tr><th>KPI</th>${mhdrs}<th style="background:#ede8de;color:#212320;">YTD / AVG</th></tr></thead><tbody>`;
 
   // ── NET SALES ──
   h+=`<tr class="grp"><td colspan="14">💰 Net Sales</td></tr>`;
@@ -9158,7 +9593,7 @@ function openTargetsModal(){
     {key:'delivery',label:'Delivery Target ($)',   unit:'$'},
     {key:'ns',      label:'Total Net Sales Target ($)', unit:'$'}
   ];
-  let h=`<table><thead><tr><th style="text-align:left;padding-left:12px;">KPI</th>`;
+  let h=`<div class="tscroll"><table><thead><tr><th style="text-align:left;padding-left:12px;">KPI</th>`;
   MONTHS.forEach(m=>h+=`<th>${m}</th>`);
   h+=`</tr></thead><tbody>`;
   // Section header — KPI %
@@ -14771,6 +15206,7 @@ function updatePnLHomeBadge(){
 function renderPnLDashboard(rec, locRecs){
   const el=document.getElementById('pnl-dashboard-view');
   if(!el) return;
+  if(!rec){ el.innerHTML='<div style="padding:40px;text-align:center;color:#94a3b8;">No P&L data available for this selection.</div>'; return; }
   const ns=rec.netSales||1;
   const MSHORT=MONTHS_SHORT;
 
@@ -18123,7 +18559,7 @@ function dcOpenEquipmentModal(idx){
   if(!modal) return;
   modal.style.display='flex';
   modal.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;" onclick="dcCloseModal()"></div>'+
-    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:28px 32px;max-width:440px;width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
+    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:20px 16px;max-width:440px;width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
     '<div style="font-family:\'Oswald\',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">'+(idx>=0?'EDIT':'ADD')+' EQUIPMENT</div>'+
     '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Title *</label>'+
     '<input id="dc-eq-title" type="text" value="'+_dcEscAttr(item.title||'')+'" placeholder="e.g. Walk-in Cooler" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
@@ -18147,18 +18583,20 @@ function dcPreviewPhoto(input){
   if(file.size>5*1024*1024){ slAlert('Photo must be under 5 MB.','warning'); input.value=''; return; }
   var reader=new FileReader();
   reader.onload=function(e){
-    document.getElementById('dc-eq-photo-data').value=e.target.result;
-    document.getElementById('dc-eq-photo-preview').innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #e8e2d8;">';
+    var dataEl=document.getElementById('dc-eq-photo-data');
+    var prevEl=document.getElementById('dc-eq-photo-preview');
+    if(dataEl) dataEl.value=e.target.result;
+    if(prevEl) prevEl.innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #e8e2d8;">';
   };
   reader.readAsDataURL(file);
 }
 
 function dcSaveEquipment(idx){
-  var title=document.getElementById('dc-eq-title').value.trim();
+  var title=(document.getElementById('dc-eq-title')||{value:''}).value.trim();
   if(!title){ slAlert('Equipment title is required.','warning'); return; }
-  var brand=document.getElementById('dc-eq-brand').value.trim();
-  var serial=document.getElementById('dc-eq-serial').value.trim();
-  var photo=document.getElementById('dc-eq-photo-data').value||'';
+  var brand=(document.getElementById('dc-eq-brand')||{value:''}).value.trim();
+  var serial=(document.getElementById('dc-eq-serial')||{value:''}).value.trim();
+  var photo=(document.getElementById('dc-eq-photo-data')||{value:''}).value||'';
   var data=dcGetLoc(DC.state,DC.loc);
   var item={title:title,brand:brand,serial:serial,photo:photo,updatedAt:new Date().toISOString()};
   if(idx>=0){ data.equipment[idx]=item; } else { data.equipment.push(item); }
@@ -18232,7 +18670,7 @@ function dcOpenContactModal(idx){
   if(!modal) return;
   modal.style.display='flex';
   modal.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;" onclick="dcCloseModal()"></div>'+
-    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:28px 32px;max-width:440px;width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
+    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:20px 16px;max-width:440px;width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
     '<div style="font-family:\'Oswald\',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">'+(idx>=0?'EDIT':'ADD')+' CONTACT</div>'+
     '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Name *</label>'+
     '<input id="dc-ct-name" type="text" value="'+_dcEscAttr(c.name||'')+'" placeholder="e.g. John Smith" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
@@ -18251,12 +18689,12 @@ function dcOpenContactModal(idx){
 }
 
 function dcSaveContact(idx){
-  var name=document.getElementById('dc-ct-name').value.trim();
+  var name=(document.getElementById('dc-ct-name')||{value:''}).value.trim();
   if(!name){ slAlert('Contact name is required.','warning'); return; }
-  var role=document.getElementById('dc-ct-role').value.trim();
-  var phone=document.getElementById('dc-ct-phone').value.trim();
-  var email=document.getElementById('dc-ct-email').value.trim();
-  var notes=document.getElementById('dc-ct-notes').value.trim();
+  var role=(document.getElementById('dc-ct-role')||{value:''}).value.trim();
+  var phone=(document.getElementById('dc-ct-phone')||{value:''}).value.trim();
+  var email=(document.getElementById('dc-ct-email')||{value:''}).value.trim();
+  var notes=(document.getElementById('dc-ct-notes')||{value:''}).value.trim();
   var data=dcGetLoc(DC.state,DC.loc);
   if(!data.contacts) data.contacts=[];
   var c={name:name,role:role,phone:phone,email:email,notes:notes,updatedAt:new Date().toISOString()};
@@ -18498,8 +18936,8 @@ function nsClickUpload(id){
   if(el) el.click();
 }
 function nsCloseDetail(){
-  document.getElementById('ns-detail-modal').style.display = 'none';
-  document.getElementById('ns-detail-modal').innerHTML = '';
+  var m=document.getElementById('ns-detail-modal');
+  if(m){ m.style.display='none'; m.innerHTML=''; }
 }
 
 function nsUpdateMapPreview(){
@@ -18579,10 +19017,10 @@ function nsSaveDeal(){
 
 function nsDeleteDeal(){
   if(NS.editIdx == null) return;
-  _slConfirm({title:'Delete Deal',message:'Delete this deal? This cannot be undone.',confirmText:'Delete Deal',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteDeal(dealId); }});
-  return;
+  _slConfirm({title:'Delete Deal',message:'Delete this deal? This cannot be undone.',confirmText:'Delete Deal',confirmColor:'#dc2626',onConfirm:function(){ _execDeleteDeal(); }});
 }
-function _execDeleteDeal(dealId){
+function _execDeleteDeal(){
+  if(NS.editIdx==null||NS.editIdx<0||NS.editIdx>=NS.deals.length) return;
   NS.deals.splice(NS.editIdx, 1);
   _nsSave();
   nsCloseDetail();
@@ -18819,6 +19257,7 @@ function goAssess(){
 
 function eaBuildFilters(){
   var cityEl = document.getElementById('ea-flt-city');
+  if(!cityEl) return;
   var h = '<option value="ALL">All States</option>';
   Object.keys(LOC_MAP).forEach(function(c){
     var stores = LOC_MAP[c] || [];
@@ -18835,7 +19274,7 @@ function eaBuildFilters(){
   _eaLoad().forEach(function(a){ if(a.month) months[a.month] = true; });
   var mh = '<option value="ALL">All Months</option>';
   Object.keys(months).sort().reverse().forEach(function(m){ mh += '<option value="'+m+'">'+m+'</option>'; });
-  mEl.innerHTML = mh;
+  if(mEl) mEl.innerHTML = mh;
   // Anyone with assess permission can create new
   var btnNew = document.getElementById('ea-btn-new');
   if(btnNew) btnNew.style.display = '';
@@ -18930,7 +19369,7 @@ function eaStartNew(){
   m.onclick = function(e){ if(e.target===m) m.remove(); };
   var lblS = 'font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;';
   var inpS = 'width:100%;box-sizing:border-box;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;';
-  var h = '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:460px;">';
+  var h = '<div style="background:#fff;border-radius:16px;padding:20px 16px;width:95%;max-width:460px;">';
   h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">New Excellence Assessment</div>';
   // State
   h += '<div style="margin-bottom:14px;"><label style="'+lblS+'">State *</label><select id="ea-new-city" onchange="eaNewCityChanged()" style="'+inpS+'">';
@@ -19289,7 +19728,7 @@ function eaRenderTracker(){
     h += '<div style="margin-bottom:24px;">';
     h += '<div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:12px;">'+year+' Quarterly Assessment Tracker</div>';
     h += '<div style="overflow-x:auto;">';
-    h += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+    h += '<div class="tscroll"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
     h += '<thead><tr style="background:#1e3a5f;color:#fff;">';
     h += '<th style="padding:10px 14px;text-align:left;font-family:Oswald,sans-serif;font-weight:700;">Store</th>';
     ['Q1','Q2','Q3','Q4'].forEach(function(q){ h += '<th style="padding:10px 14px;text-align:center;font-family:Oswald,sans-serif;font-weight:700;min-width:100px;">'+q+'</th>'; });
@@ -19378,7 +19817,7 @@ function eaRenderAnalytics(){
   var latest = {};
   all.forEach(function(a){ if(!latest[a.store] || a.month > latest[a.store].month) latest[a.store] = a; });
   var ranked = Object.values(latest).sort(function(a,b){ return (b.overall_score||0) - (a.overall_score||0); });
-  h += '<table style="width:100%;max-width:600px;border-collapse:collapse;font-size:12px;">';
+  h += '<div class="tscroll"><table style="width:100%;max-width:600px;border-collapse:collapse;font-size:12px;">';
   h += '<thead><tr style="background:#1e3a5f;color:#fff;"><th style="padding:8px 14px;text-align:left;">#</th><th style="padding:8px 14px;text-align:left;">Store</th><th style="padding:8px 14px;text-align:left;">Quarter</th><th style="padding:8px 14px;text-align:right;">Score</th><th style="padding:8px 14px;text-align:left;">Rating</th></tr></thead><tbody>';
   ranked.forEach(function(a, i){
     var sc = a.overall_score || 0;
@@ -19570,7 +20009,7 @@ function _stShowModal(store){
   var isEdit = !!store;
   var modal = document.getElementById('stores-modal');
   var h = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1001;" onclick="if(event.target===this)storesCloseModal();">';
-  h += '<div style="background:#fff;border-radius:16px;padding:28px;width:95%;max-width:500px;max-height:85vh;overflow-y:auto;">';
+  h += '<div style="background:#fff;border-radius:16px;padding:20px 16px;width:95%;max-width:500px;max-height:85vh;overflow-y:auto;">';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">';
   h += '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;">'+(isEdit?'Edit Store':'Add New Store')+'</div>';
   h += '<button onclick="storesCloseModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">\u2715</button>';
@@ -19615,6 +20054,7 @@ function _stShowModal(store){
 
 function storesCloseModal(){
   var modal = document.getElementById('stores-modal');
+  if(!modal) return;
   modal.innerHTML = '';
   modal.style.display = 'none';
 }
@@ -19629,10 +20069,7 @@ async function storesSave(editId){
   if(!name || !address){ _slAlert('Store Name and Address are required.', 'warning'); return; }
   // Show geocoding status
   var geoEl = document.getElementById('st-geocode-status');
-  geoEl.style.display = 'block';
-  geoEl.style.background = '#f0f9ff';
-  geoEl.style.color = '#1e3a5f';
-  geoEl.textContent = 'Locating address on map...';
+  if(geoEl){ geoEl.style.display='block'; geoEl.style.background='#f0f9ff'; geoEl.style.color='#1e3a5f'; geoEl.textContent='Locating address on map...'; }
   var saveBtn = document.getElementById('st-btn-save');
   if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Geocoding...'; }
   try {
@@ -19761,26 +20198,29 @@ var EV_CASES = {
 var EV_MODE = 'revenue';
 
 function evShowTab(tab){
-  document.getElementById('ev-pane-calc').style.display = tab==='calc'?'':'none';
-  document.getElementById('ev-pane-saved').style.display = tab==='saved'?'':'none';
-  document.getElementById('ev-t-calc').classList.toggle('active', tab==='calc');
-  document.getElementById('ev-t-saved').classList.toggle('active', tab==='saved');
-  if(tab==='calc' && !document.getElementById('ev-rev-tbody').innerHTML) evBuildTables();
+  var pc=document.getElementById('ev-pane-calc');
+  var ps=document.getElementById('ev-pane-saved');
+  var tc=document.getElementById('ev-t-calc');
+  var ts=document.getElementById('ev-t-saved');
+  if(pc) pc.style.display = tab==='calc'?'':'none';
+  if(ps) ps.style.display = tab==='saved'?'':'none';
+  if(tc) tc.classList.toggle('active', tab==='calc');
+  if(ts) ts.classList.toggle('active', tab==='saved');
+  var tbody=document.getElementById('ev-rev-tbody');
+  if(tab==='calc' && tbody && !tbody.innerHTML) evBuildTables();
   if(tab==='saved') evRenderSaved();
 }
 
 function evSetMode(m){
   EV_MODE=m;
-  document.getElementById('ev-mode-revenue').style.display=m==='revenue'?'':'none';
-  document.getElementById('ev-mode-units').style.display=m==='units'?'':'none';
+  var mr=document.getElementById('ev-mode-revenue');
+  var mu=document.getElementById('ev-mode-units');
+  if(mr) mr.style.display=m==='revenue'?'':'none';
+  if(mu) mu.style.display=m==='units'?'':'none';
   var revBtn=document.getElementById('ev-btn-revenue');
   var unitBtn=document.getElementById('ev-btn-units');
-  revBtn.classList.toggle('on',m==='revenue');
-  unitBtn.classList.toggle('on',m==='units');
-  revBtn.style.color=m==='revenue'?'':'#4a3f38';
-  revBtn.style.background=m==='revenue'?'':'#f0ece4';
-  unitBtn.style.color=m==='units'?'':'#4a3f38';
-  unitBtn.style.background=m==='units'?'':'#f0ece4';
+  if(revBtn){ revBtn.classList.toggle('on',m==='revenue'); revBtn.style.color=m==='revenue'?'':'#4a3f38'; revBtn.style.background=m==='revenue'?'':'#f0ece4'; }
+  if(unitBtn){ unitBtn.classList.toggle('on',m==='units'); unitBtn.style.color=m==='units'?'':'#4a3f38'; unitBtn.style.background=m==='units'?'':'#f0ece4'; }
   evCalc();
 }
 
@@ -20078,9 +20518,10 @@ function goEvents(){
   if(!_hasPermission('events')){ _showAccessDenied('Event Calculator'); return; }
   S.page='events';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
-  document.getElementById('pg-events').style.display='';
+  var evPage=document.getElementById('pg-events');
+  if(evPage) evPage.style.display='';
   evShowTab('calc');
-  evBuildTables();
+  renderNavRight();
   window.scrollTo(0, 0);
 }
 
@@ -20092,8 +20533,9 @@ function goMarketing(){
   if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
   S.page='marketing';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
-  document.getElementById('pg-marketing').style.display='';
-  window.scrollTo(0, 0); // v81h: scroll after render
+  var pg=document.getElementById('pg-marketing'); if(pg) pg.style.display='';
+  renderNavRight();
+  window.scrollTo(0, 0);
 }
 
 // ══════════════════════════════════════════════════
@@ -20181,7 +20623,7 @@ function _slConfirm(opts){
   overlay.id = 'sl-confirm-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;animation:slFadeIn .15s ease;';
   var box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:16px;padding:28px 32px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px 16px;width:94%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
   box.innerHTML = '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#1e3a5f;margin-bottom:10px;">'
     + title + '</div>'
     + '<div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:24px;">' + message + '</div>'
@@ -20231,7 +20673,7 @@ function _slAlert(optsOrMsg, typeHint){
   overlay.id = 'sl-alert-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;animation:slFadeIn .15s ease;';
   var box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:16px;padding:32px 32px 24px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px 16px;width:94%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:slScaleIn .2s ease;';
   box.innerHTML = '<div style="font-size:36px;margin-bottom:12px;">' + icon + '</div>'
     + '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:' + c.accent + ';margin-bottom:8px;">' + title + '</div>'
     + '<div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:24px;white-space:pre-line;">' + message + '</div>'
@@ -20573,8 +21015,8 @@ function hrSaveNew(){
     if(!manager){ _slAlert('Manager Name is required.', 'warning'); return; }
     rec.last_day = lastDay;
     rec.manager_name = manager;
-    rec.sevenshifts_terminated = document.getElementById('hr-f-7shifts').value === 'yes';
-    rec.qb_terminated = document.getElementById('hr-f-qb').value === 'yes';
+    rec.sevenshifts_terminated = (document.getElementById('hr-f-7shifts')||{}).value === 'yes';
+    rec.qb_terminated = (document.getElementById('hr-f-qb')||{}).value === 'yes';
   }
 
   var all = _hrLoad();
@@ -20735,7 +21177,7 @@ migrate();
   </div>
   <div id="ea-view-form" style="display:none;">
     <div id="ea-form-topbar" style="display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fff;border-bottom:1px solid #e8e2d8;flex-wrap:wrap;"></div>
-    <div style="display:flex;gap:0;max-width:100%;">
+    <div style="display:flex;gap:0;max-width:100%;flex-wrap:wrap;">
       <div id="ea-form-sections" style="flex:1;padding:20px 24px;min-width:0;max-height:calc(100vh - 180px);overflow-y:auto;"></div>
       <div id="ea-form-summary" style="width:340px;flex-shrink:0;padding:20px;background:#fff;border-left:1px solid #e8e2d8;max-height:calc(100vh - 180px);overflow-y:auto;"></div>
     </div>
@@ -20949,7 +21391,7 @@ migrate();
 </div>
 
 <!-- ═══ ADMIN PAGE ═══ -->
-<div id="pg-admin" style="display:none;">
+<div id="pg-admin">
   <div class="adm-hdr">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
     <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
@@ -21008,6 +21450,22 @@ migrate();
           <!-- Permission toggles -->
           <div class="adm-perm-section-title">Dashboard Access</div>
           <div class="adm-perm-grid" id="adm-perm-grid"></div>
+          <!-- Email Subscription Center (v93) -->
+          <div class="adm-perm-section-title" style="margin-top:8px;">Automated Reports</div>
+          <div class="adm-email-master" id="adm-email-master" onclick="_admToggleEmailMaster()" style="cursor:pointer;">
+            <div class="adm-email-master-label">
+              <div class="adm-email-master-name">Email Delivery</div>
+              <div class="adm-email-master-desc">Master switch — disable to stop all automated emails for this user</div>
+            </div>
+            <div class="adm-toggle-wrap">
+              <div class="adm-toggle">
+                <input type="checkbox" id="adm-email-master-chk" tabindex="-1" style="pointer-events:none;" />
+                <div class="adm-toggle-slider"></div>
+              </div>
+            </div>
+          </div>
+          <div class="adm-email-grid" id="adm-email-grid"></div>
+          <div class="adm-email-scope-panel" id="adm-email-scope-panel"></div>
           <!-- Per-user Activity Log -->
           <div class="adm-perm-section-title" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;">Activity Log <button id="adm-activity-toggle" onclick="_admToggleUserActivity()" style="font-size:10px;font-weight:700;background:#f0f4f8;color:#1e3a5f;border:1px solid #c7d2e0;border-radius:5px;padding:4px 10px;cursor:pointer;">Show History</button></div>
           <div id="adm-user-activity" style="display:none;background:#faf9f7;border:1px solid #e8e2d8;border-radius:10px;max-height:350px;overflow-y:auto;margin-bottom:12px;"></div>
