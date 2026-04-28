@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v81</title>
-<!-- BUILD: 2026-04-27-v81g -->
+<title>Skinny Louie · Performance Hub v83</title>
+<!-- BUILD: 2026-04-27-v83 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -3632,7 +3632,8 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);font-weight:700;padding:6px 12px 6px 0;display:flex;align-items:center;gap:4px;">← Back</button>
     <span class="inv-page-title">📦 INVENTORY</span>
     <div class="inv-tabs">
-      <button class="inv-tab-btn active" id="inv-t-count" onclick="invShowTab('count')">📝 Count</button>
+      <button class="inv-tab-btn active" id="inv-t-count" onclick="invShowTab('count');INV.period='monthly';invUpdatePeriodPills();">📅 Monthly Inventory</button>
+      <button class="inv-tab-btn" id="inv-t-daily" onclick="invShowTab('count');INV.period='daily';invUpdatePeriodPills();">📝 Daily Inventory</button>
       <button class="inv-tab-btn" id="inv-t-history" onclick="invShowTab('history')">📋 History</button>
       <button class="inv-tab-btn" id="inv-t-analytics" onclick="invShowTab('analytics')">📊 Analytics</button>
       <button class="inv-tab-btn" id="inv-t-variance" onclick="invShowTab('variance')">📐 Variance</button>
@@ -3642,6 +3643,17 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
   <!-- COUNT PANE -->
   <div id="inv-pane-count" class="inv-pane">
+    <div id="inv-period-banner" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,rgba(30,58,95,.06),rgba(30,58,95,.02));border:1.5px solid rgba(30,58,95,.15);border-radius:10px;">
+      <span id="inv-period-icon" style="font-size:24px;">📅</span>
+      <div>
+        <div id="inv-period-title" style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">MONTHLY INVENTORY</div>
+        <div id="inv-period-desc" style="font-size:11px;color:#64748b;">End-of-month full count for all items.</div>
+      </div>
+      <div id="inv-period-pills" style="margin-left:auto;display:flex;gap:6px;">
+        <button class="yr-pill on" id="inv-pp-monthly" onclick="INV.period='monthly';invUpdatePeriodPills();">Monthly</button>
+        <button class="yr-pill" id="inv-pp-daily" onclick="INV.period='daily';invUpdatePeriodPills();">Daily</button>
+      </div>
+    </div>
     <div class="inv-selectors">
       <div class="inv-sel-group">
         <label>State</label>
@@ -3690,6 +3702,11 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       </select>
       <select id="inv-hist-store" class="rc-sel" onchange="invRenderHistory()" style="min-width:180px;">
         <option value="">All Stores</option>
+      </select>
+      <select id="inv-hist-period" class="rc-sel" onchange="invRenderHistory()" style="min-width:140px;">
+        <option value="">All Periods</option>
+        <option value="monthly">📅 Monthly</option>
+        <option value="daily">📝 Daily</option>
       </select>
     </div>
     <div id="inv-history-body"></div>
@@ -3851,7 +3868,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4961,7 +4978,6 @@ function goInv(){
 }
 function goNewStores(){
   if(!_hasPermission('newstores')){ _showAccessDenied('New Stores Status'); return; }
-  window.scrollTo(0, 0); // v81g
   _nsLoad();
   _nsImportInitialData();
   S.page='newstores';
@@ -4969,6 +4985,7 @@ function goNewStores(){
   document.getElementById('pg-newstores').style.display='';
   renderNSFilters();
   renderNSList();
+  window.scrollTo(0, 0); // v81h: scroll after render
 }
 
 function goMaint(){
@@ -4990,9 +5007,34 @@ function goMaint(){
 }
 
 function invInit(){
+  INV.period = INV.period || 'monthly';
   invShowTab('count');
   invInitCount();
   invRenderSetup();
+  invUpdatePeriodPills();
+}
+
+function invUpdatePeriodPills(){
+  var pm = document.getElementById('inv-pp-monthly');
+  var pd = document.getElementById('inv-pp-daily');
+  var ti = document.getElementById('inv-period-title');
+  var ds = document.getElementById('inv-period-desc');
+  var ic = document.getElementById('inv-period-icon');
+  var tm = document.getElementById('inv-t-count');
+  var td = document.getElementById('inv-t-daily');
+  if(pm) pm.classList.toggle('on', INV.period==='monthly');
+  if(pd) pd.classList.toggle('on', INV.period==='daily');
+  if(tm) tm.classList.toggle('active', INV.period==='monthly');
+  if(td) td.classList.toggle('active', INV.period==='daily');
+  if(INV.period==='daily'){
+    if(ti) ti.textContent='DAILY INVENTORY';
+    if(ds) ds.textContent='Quick daily spot-check for key items.';
+    if(ic) ic.textContent='📝';
+  } else {
+    if(ti) ti.textContent='MONTHLY INVENTORY';
+    if(ds) ds.textContent='End-of-month full count for all items.';
+    if(ic) ic.textContent='📅';
+  }
 }
 
 function invShowTab(tab){
@@ -5003,6 +5045,17 @@ function invShowTab(tab){
     var btn = document.getElementById('inv-t-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
   });
+  // daily tab uses count pane
+  var dailyBtn = document.getElementById('inv-t-daily');
+  if(tab==='count'){
+    var countPane = document.getElementById('inv-pane-count');
+    if(countPane) countPane.style.display='block';
+    if(dailyBtn) dailyBtn.classList.toggle('active', INV.period==='daily');
+    var countBtn = document.getElementById('inv-t-count');
+    if(countBtn) countBtn.classList.toggle('active', INV.period==='monthly');
+  } else {
+    if(dailyBtn) dailyBtn.classList.remove('active');
+  }
   if(tab==='history') invRenderHistory();
   if(tab==='analytics'){ invAnalyticsUpdateStores(); invRenderAnalytics(); }
   if(tab==='setup') invRenderSetup();
@@ -5285,6 +5338,7 @@ function invSaveCount(){
   var record = {
     id: Date.now().toString(36)+Math.random().toString(36).slice(2),
     city: INV.city, store: store, date: date,
+    period: INV.period || 'monthly',
     counts: counts, totals: totals,
     saved_at: new Date().toISOString()
   };
@@ -5299,6 +5353,7 @@ function invRenderHistory(){
   if(!body) return;
   var city = (document.getElementById('inv-hist-city')||{}).value||'';
   var store = (document.getElementById('inv-hist-store')||{}).value||'';
+  var period = (document.getElementById('inv-hist-period')||{}).value||'';
   var storeSel = document.getElementById('inv-hist-store');
   if(storeSel){
     var allC = invGetCounts();
@@ -5312,6 +5367,7 @@ function invRenderHistory(){
   var counts = invGetCounts();
   if(city) counts = counts.filter(function(c){ return c.city===city; });
   if(store) counts = counts.filter(function(c){ return c.store===store; });
+  if(period) counts = counts.filter(function(c){ return (c.period||'monthly')===period; });
   counts.sort(function(a,b){ return b.date.localeCompare(a.date); });
   if(!counts.length){ body.innerHTML='<div class="inv-no-items">No inventory counts saved yet.</div>'; return; }
   var items = invGetItems();
@@ -5331,9 +5387,12 @@ function invRenderHistory(){
         +'<td style="padding:6px 12px;font-size:12px;text-align:right;font-weight:700;">$'+total.toFixed(2)+'</td></tr>';
     }).join('');
     var cityLabel = c.city==='FL'?'🌴 Florida':'🗽 New York';
+    var periodTag = (c.period||'monthly')==='daily'
+      ? '<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(45,122,79,.12);color:#2d7a4f;border:1px solid rgba(45,122,79,.25);margin-left:8px;vertical-align:middle;">DAILY</span>'
+      : '<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(30,58,95,.1);color:#1e3a5f;border:1px solid rgba(30,58,95,.2);margin-left:8px;vertical-align:middle;">MONTHLY</span>';
     return '<div class="inv-hist-card" onclick="invToggleHD(\'inv-hd-'+i+'\')">'
       +'<div class="inv-hist-card-hdr">'
-      +'<div><div class="inv-hist-card-date">'+c.date+' — '+c.store+'</div><div class="inv-hist-card-store">'+cityLabel+'</div></div>'
+      +'<div><div class="inv-hist-card-date">'+c.date+' — '+c.store+periodTag+'</div><div class="inv-hist-card-store">'+cityLabel+'</div></div>'
       +'<div style="font-family:\'Oswald\',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">$'+grand.toFixed(2)+'</div>'
       +'</div>'
       +'<div class="inv-hist-totals">'
@@ -5801,7 +5860,7 @@ function exportSnapshot(){
   if(btn){ btn.textContent='Generating…'; btn.disabled=true; }
 
   // 1. Collect all app localStorage data
-  const KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
+  const KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1'];
   const snap = {};
   KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) snap[k]=v; });
 
@@ -6336,7 +6395,7 @@ function _adminInviteUser(){
   // no-op: invite path is not available via anon key.
   // Left in place for future backend integration via Edge Function.
 }
-function setYear(y){ S.year=y; S.loc='ALL'; S.cmpLocs=[]; S.cmpMonth=null; render(); }
+function setYear(y){ S.year=y; S.cmpLocs=[]; S.cmpMonth=null; if(S.loc!=='ALL'&&!locD(S.loc)) S.loc='ALL'; render(); }
 function setState(st){ if(_slState && _slState!=='all' && st!==_slState) return; S.state=st; S.loc='ALL'; S.cmpLocs=[]; S.cmpMode=false; S.cmpMonth=null;
   const ls=_allowedLocs(); if(ls.length&&st!=='ALL')S.loc=ls[0]; render(); }
 function setLoc(l){
@@ -6359,7 +6418,8 @@ function toggleCmp(){
 // ══════════════════════════════════════════════════
 function render(){
   if(!_slUser) return; // wait for auth
-  window.scrollTo(0, 0); // v81g: reset scroll on every page change
+  // v81h: scroll after paint so browser has rendered new page content
+  requestAnimationFrame(function(){ window.scrollTo(0, 0); });
   ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   document.getElementById('pg-'+S.page).style.display = (S.page==='home' || S.page==='admin') ? 'flex' : 'block';
@@ -9810,7 +9870,7 @@ function doImportMix(){
 }
 
 // ── Mix state setters (separate from KPI S state)
-function mxSetYear(y){ MX.year=y; MX.loc=null; MX.month=null; MX.activeTab='ALL'; try{ renderMixPage(); }catch(e){ console.error(e); } renderNavRight(); }
+function mxSetYear(y){ MX.year=y; MX.month=null; MX.activeTab='ALL'; var keep=MX.loc&&getPMixRecords().some(function(r){return r.state===MX.state&&r.loc===MX.loc&&r.year===y;}); if(!keep) MX.loc=null; try{ renderMixPage(); }catch(e){ console.error(e); } renderNavRight(); }
 function mxSetState(st){ MX.state=st; MX.loc=null; MX.month=null; MX.activeTab='ALL'; try{ renderMixPage(); }catch(e){ console.error(e); } renderNavRight(); }
 function mxSetLoc(loc){ MX.loc=loc; MX.month=null; MX.activeTab='ALL'; renderMixPage(); }
 function mxSetMonth(m){ MX.month=m; MX.activeTab='ALL'; renderMixPage(); }
@@ -14104,7 +14164,7 @@ function doImportPnl(){
 }
 
 // ── Navigation helpers
-function pxSetYear(y){ PX.year=y; PX.loc=null; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; try{ renderPnLPage(); }catch(e){ console.error(e); } renderNavRight(); }
+function pxSetYear(y){ PX.year=y; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; var keep=PX.loc&&getPnLRecords().some(function(r){return r.state===PX.state&&r.loc===PX.loc&&r.year===y;}); if(!keep) PX.loc=null; try{ renderPnLPage(); }catch(e){ console.error(e); } renderNavRight(); }
 function pxSetState(st){ PX.state=st; PX.loc=null; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; try{ renderPnLPage(); }catch(e){ console.error(e); } renderNavRight(); }
 function pxSetLoc(l){ PX.loc=l; PX.month=null; PX.cmpMode=false; PX.cmpMonth=null; renderPnLPage(); renderNavRight(); }
 function pxSetMonth(m){ PX.month=m; renderPnLPage(); }
@@ -16221,7 +16281,20 @@ function mnShowTab(tab){
   document.querySelectorAll('.maint-tab-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('maint-t-'+tab);
   if(btn) btn.classList.add('active');
-  renderMaintOrders();
+  // Show/hide panes
+  var po=document.getElementById('maint-pane-orders');
+  var ph=document.getElementById('maint-pane-history');
+  var pd=document.getElementById('maint-pane-datacenter');
+  var fi=document.getElementById('maint-filters');
+  if(tab==='datacenter'){
+    if(po)po.style.display='none'; if(ph)ph.style.display='none'; if(pd)pd.style.display='';
+    if(fi)fi.style.display='none';
+    dcRender();
+  } else {
+    if(pd)pd.style.display='none';
+    if(fi)fi.style.display='';
+    renderMaintOrders();
+  }
 }
 
 function mnOpenCreate(){
@@ -17600,6 +17673,273 @@ document.addEventListener('keydown', function(e){
 });
 
 
+
+// ═══════════════════════════════════════════════════════════════════
+//  DATA CENTER — Equipment List + Contacts per Location (v82)
+// ═══════════════════════════════════════════════════════════════════
+var DC = { state:'FL', loc:null, section:'equipment' };
+
+function dcGetAll(){
+  try { var d=JSON.parse(localStorage.getItem('sl_datacenter_v1')||'{}'); return typeof d==='object'&&d!==null?d:{}; }
+  catch(e){ return {}; }
+}
+function dcSave(data){ localStorage.setItem('sl_datacenter_v1', JSON.stringify(data)); }
+function dcKey(state,loc){ return (state||'FL')+'|'+(loc||''); }
+function dcGetLoc(state,loc){
+  var all=dcGetAll(); var k=dcKey(state,loc);
+  if(!all[k]) all[k]={equipment:[],contacts:[]};
+  return all[k];
+}
+function dcSaveLoc(state,loc,locData){
+  var all=dcGetAll(); all[dcKey(state,loc)]=locData; dcSave(all);
+}
+
+function dcRender(){
+  var el=document.getElementById('maint-pane-datacenter');
+  if(!el) return;
+  // Use MN.state for state filter
+  var st=MN.state==='ALL'?'FL':MN.state;
+  if(!DC.state||DC.state==='ALL') DC.state=st;
+  // Build loc list from LOC_MAP
+  var locs=LOC_MAP[DC.state]||[];
+  if(!DC.loc&&locs.length) DC.loc=locs[0];
+
+  var stPills=['FL','NY'].map(function(s){
+    return '<button class="maint-fpill '+(DC.state===s?'on':'')+'" onclick="DC.state=\''+s+'\';DC.loc=null;dcRender();">'+
+      (s==='FL'?'Florida':'New York')+'</button>';
+  }).join('');
+
+  var locOpts=locs.map(function(l){
+    return '<option value="'+l+'"'+(DC.loc===l?' selected':'')+'>'+l+'</option>';
+  }).join('');
+
+  var secPills=[
+    {id:'equipment',icon:'🔩',label:'Equipment List'},
+    {id:'contacts',icon:'📇',label:'Contacts'}
+  ].map(function(s){
+    return '<button class="maint-fpill '+(DC.section===s.id?'on':'')+'" onclick="DC.section=\''+s.id+'\';dcRender();">'+s.icon+' '+s.label+'</button>';
+  }).join('');
+
+  var html='<div style="padding:20px 0;">';
+  html+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">';
+  html+='<div class="maint-filter-pills">'+stPills+'</div>';
+  html+='<select class="maint-store-sel" onchange="DC.loc=this.value;dcRender();" style="min-width:180px;">'+locOpts+'</select>';
+  html+='<div class="maint-filter-pills" style="margin-left:auto;">'+secPills+'</div>';
+  html+='</div>';
+
+  if(DC.section==='equipment') html+=dcRenderEquipment();
+  else html+=dcRenderContacts();
+
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ── Equipment List ─────────────────────────────────────────────────
+function dcRenderEquipment(){
+  var data=dcGetLoc(DC.state,DC.loc);
+  var items=data.equipment||[];
+  var h='';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+  h+='<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">EQUIPMENT LIST — '+DC.loc+'</div>';
+  h+='<button onclick="dcAddEquipment()" style="padding:8px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">+ Add Equipment</button>';
+  h+='</div>';
+
+  if(!items.length){
+    h+='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">';
+    h+='<div style="font-size:48px;margin-bottom:12px;">🔩</div>';
+    h+='<div style="font-weight:700;font-size:14px;color:#64748b;">No equipment registered yet</div>';
+    h+='<div style="font-size:12px;margin-top:6px;">Click <strong>+ Add Equipment</strong> to register your first item.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">';
+  items.forEach(function(item,idx){
+    var photoHtml=item.photo
+      ? '<div style="width:100%;height:160px;border-radius:8px 8px 0 0;overflow:hidden;background:#f1f0ee;"><img src="'+item.photo+'" style="width:100%;height:100%;object-fit:cover;" alt="'+_dcEsc(item.title)+'"></div>'
+      : '<div style="width:100%;height:80px;border-radius:8px 8px 0 0;background:#f1f0ee;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:32px;">📷</div>';
+    h+='<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;overflow:hidden;">';
+    h+=photoHtml;
+    h+='<div style="padding:14px 16px;">';
+    h+='<div style="font-weight:800;font-size:14px;color:#1e3a5f;margin-bottom:4px;">'+_dcEsc(item.title||'Untitled')+'</div>';
+    h+='<div style="font-size:12px;color:#64748b;margin-bottom:6px;">'+_dcEsc(item.brand||'—')+'</div>';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">';
+    h+='<span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">S/N</span>';
+    h+='<span style="font-size:12px;font-weight:600;color:#334155;font-family:monospace;">'+_dcEsc(item.serial||'—')+'</span>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:8px;">';
+    h+='<button onclick="dcEditEquipment('+idx+')" style="flex:1;padding:6px;background:#f1f0ee;border:none;border-radius:6px;font-size:11px;font-weight:700;color:#1e3a5f;cursor:pointer;">Edit</button>';
+    h+='<button onclick="dcDeleteEquipment('+idx+')" style="padding:6px 12px;background:none;border:1px solid #fca5a5;border-radius:6px;font-size:11px;font-weight:700;color:#dc2626;cursor:pointer;">Delete</button>';
+    h+='</div>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+function dcAddEquipment(){ dcOpenEquipmentModal(-1); }
+function dcEditEquipment(idx){ dcOpenEquipmentModal(idx); }
+
+function dcOpenEquipmentModal(idx){
+  var data=dcGetLoc(DC.state,DC.loc);
+  var item=idx>=0?(data.equipment[idx]||{}):{};
+  var modal=document.getElementById('maint-modal-create');
+  if(!modal) return;
+  modal.style.display='flex';
+  modal.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;" onclick="dcCloseModal()"></div>'+
+    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:28px 32px;max-width:440px;width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
+    '<div style="font-family:\'Oswald\',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">'+(idx>=0?'EDIT':'ADD')+' EQUIPMENT</div>'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Title *</label>'+
+    '<input id="dc-eq-title" type="text" value="'+_dcEscAttr(item.title||'')+'" placeholder="e.g. Walk-in Cooler" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Brand</label>'+
+    '<input id="dc-eq-brand" type="text" value="'+_dcEscAttr(item.brand||'')+'" placeholder="e.g. True Manufacturing" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Serial Number</label>'+
+    '<input id="dc-eq-serial" type="text" value="'+_dcEscAttr(item.serial||'')+'" placeholder="e.g. ABC-123456" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;font-family:monospace;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Photo</label>'+
+    '<div id="dc-eq-photo-preview" style="margin-bottom:8px;">'+(item.photo?'<img src="'+item.photo+'" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #e8e2d8;">':'')+'</div>'+
+    '<input id="dc-eq-photo" type="file" accept="image/*" onchange="dcPreviewPhoto(this)" style="font-size:12px;margin-bottom:20px;">'+
+    '<input id="dc-eq-photo-data" type="hidden" value="'+(item.photo||'')+'">'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
+    '<button onclick="dcCloseModal()" style="padding:10px 22px;background:#f1f0ee;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;">Cancel</button>'+
+    '<button onclick="dcSaveEquipment('+idx+')" style="padding:10px 22px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'+
+    '</div></div>';
+}
+
+function dcPreviewPhoto(input){
+  if(!input.files||!input.files[0]) return;
+  var file=input.files[0];
+  if(file.size>5*1024*1024){ alert('Photo must be under 5MB'); input.value=''; return; }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    document.getElementById('dc-eq-photo-data').value=e.target.result;
+    document.getElementById('dc-eq-photo-preview').innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #e8e2d8;">';
+  };
+  reader.readAsDataURL(file);
+}
+
+function dcSaveEquipment(idx){
+  var title=document.getElementById('dc-eq-title').value.trim();
+  if(!title){ alert('Title is required'); return; }
+  var brand=document.getElementById('dc-eq-brand').value.trim();
+  var serial=document.getElementById('dc-eq-serial').value.trim();
+  var photo=document.getElementById('dc-eq-photo-data').value||'';
+  var data=dcGetLoc(DC.state,DC.loc);
+  var item={title:title,brand:brand,serial:serial,photo:photo,updatedAt:new Date().toISOString()};
+  if(idx>=0){ data.equipment[idx]=item; } else { data.equipment.push(item); }
+  dcSaveLoc(DC.state,DC.loc,data);
+  dcCloseModal();
+  dcRender();
+}
+
+function dcDeleteEquipment(idx){
+  if(!confirm('Delete this equipment entry?')) return;
+  var data=dcGetLoc(DC.state,DC.loc);
+  data.equipment.splice(idx,1);
+  dcSaveLoc(DC.state,DC.loc,data);
+  dcRender();
+}
+
+function dcCloseModal(){
+  var modal=document.getElementById('maint-modal-create');
+  if(modal) modal.style.display='none';
+}
+
+// ── Contacts ───────────────────────────────────────────────────────
+function dcRenderContacts(){
+  var data=dcGetLoc(DC.state,DC.loc);
+  var items=data.contacts||[];
+  var h='';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+  h+='<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">CONTACTS — '+DC.loc+'</div>';
+  h+='<button onclick="dcAddContact()" style="padding:8px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">+ Add Contact</button>';
+  h+='</div>';
+
+  if(!items.length){
+    h+='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">';
+    h+='<div style="font-size:48px;margin-bottom:12px;">📇</div>';
+    h+='<div style="font-weight:700;font-size:14px;color:#64748b;">No contacts saved yet</div>';
+    h+='<div style="font-size:12px;margin-top:6px;">Click <strong>+ Add Contact</strong> to add a vendor rep, landlord, or key contact.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">';
+  items.forEach(function(c,idx){
+    var initials=(c.name||'??').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+    h+='<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px;">';
+    h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">';
+    h+='<div style="width:40px;height:40px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">'+initials+'</div>';
+    h+='<div><div style="font-weight:800;font-size:14px;color:#1e3a5f;">'+_dcEsc(c.name||'')+'</div>';
+    h+='<div style="font-size:11px;color:#94a3b8;font-weight:600;">'+_dcEsc(c.role||'')+'</div></div>';
+    h+='</div>';
+    if(c.phone) h+='<div style="font-size:12px;color:#334155;margin-bottom:4px;"><span style="color:#94a3b8;margin-right:6px;">Phone</span> <a href="tel:'+_dcEscAttr(c.phone)+'" style="color:#1e3a5f;text-decoration:none;font-weight:600;">'+_dcEsc(c.phone)+'</a></div>';
+    if(c.email) h+='<div style="font-size:12px;color:#334155;margin-bottom:4px;"><span style="color:#94a3b8;margin-right:6px;">Email</span> <a href="mailto:'+_dcEscAttr(c.email)+'" style="color:#1e3a5f;text-decoration:none;font-weight:600;">'+_dcEsc(c.email)+'</a></div>';
+    if(c.notes) h+='<div style="font-size:11px;color:#64748b;margin-top:8px;padding:8px 10px;background:#faf9f7;border-radius:6px;">'+_dcEsc(c.notes)+'</div>';
+    h+='<div style="display:flex;gap:8px;margin-top:12px;">';
+    h+='<button onclick="dcEditContact('+idx+')" style="flex:1;padding:6px;background:#f1f0ee;border:none;border-radius:6px;font-size:11px;font-weight:700;color:#1e3a5f;cursor:pointer;">Edit</button>';
+    h+='<button onclick="dcDeleteContact('+idx+')" style="padding:6px 12px;background:none;border:1px solid #fca5a5;border-radius:6px;font-size:11px;font-weight:700;color:#dc2626;cursor:pointer;">Delete</button>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+function dcAddContact(){ dcOpenContactModal(-1); }
+function dcEditContact(idx){ dcOpenContactModal(idx); }
+
+function dcOpenContactModal(idx){
+  var data=dcGetLoc(DC.state,DC.loc);
+  var c=idx>=0?(data.contacts[idx]||{}):{};
+  var modal=document.getElementById('maint-modal-create');
+  if(!modal) return;
+  modal.style.display='flex';
+  modal.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;" onclick="dcCloseModal()"></div>'+
+    '<div style="position:relative;z-index:1001;background:#fff;border-radius:14px;padding:28px 32px;max-width:440px;width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.2);">'+
+    '<div style="font-family:\'Oswald\',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:20px;">'+(idx>=0?'EDIT':'ADD')+' CONTACT</div>'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Name *</label>'+
+    '<input id="dc-ct-name" type="text" value="'+_dcEscAttr(c.name||'')+'" placeholder="e.g. John Smith" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Role / Company</label>'+
+    '<input id="dc-ct-role" type="text" value="'+_dcEscAttr(c.role||'')+'" placeholder="e.g. Landlord, HVAC Vendor" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Phone</label>'+
+    '<input id="dc-ct-phone" type="tel" value="'+_dcEscAttr(c.phone||'')+'" placeholder="e.g. (305) 555-1234" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Email</label>'+
+    '<input id="dc-ct-email" type="email" value="'+_dcEscAttr(c.email||'')+'" placeholder="e.g. john@vendor.com" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">'+
+    '<label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Notes</label>'+
+    '<textarea id="dc-ct-notes" rows="3" placeholder="Any extra info..." style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;margin-bottom:20px;box-sizing:border-box;resize:vertical;">'+_dcEsc(c.notes||'')+'</textarea>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
+    '<button onclick="dcCloseModal()" style="padding:10px 22px;background:#f1f0ee;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#64748b;cursor:pointer;">Cancel</button>'+
+    '<button onclick="dcSaveContact('+idx+')" style="padding:10px 22px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'+
+    '</div></div>';
+}
+
+function dcSaveContact(idx){
+  var name=document.getElementById('dc-ct-name').value.trim();
+  if(!name){ alert('Name is required'); return; }
+  var role=document.getElementById('dc-ct-role').value.trim();
+  var phone=document.getElementById('dc-ct-phone').value.trim();
+  var email=document.getElementById('dc-ct-email').value.trim();
+  var notes=document.getElementById('dc-ct-notes').value.trim();
+  var data=dcGetLoc(DC.state,DC.loc);
+  if(!data.contacts) data.contacts=[];
+  var c={name:name,role:role,phone:phone,email:email,notes:notes,updatedAt:new Date().toISOString()};
+  if(idx>=0){ data.contacts[idx]=c; } else { data.contacts.push(c); }
+  dcSaveLoc(DC.state,DC.loc,data);
+  dcCloseModal();
+  dcRender();
+}
+
+function dcDeleteContact(idx){
+  if(!confirm('Delete this contact?')) return;
+  var data=dcGetLoc(DC.state,DC.loc);
+  data.contacts.splice(idx,1);
+  dcSaveLoc(DC.state,DC.loc,data);
+  dcRender();
+}
+
+// ── Escape helpers ─────────────────────────────────────────────────
+function _dcEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _dcEscAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
 // ══════════════════════════════════════════════════
 //  NEW STORES STATUS DASHBOARD
 // ══════════════════════════════════════════════════
@@ -18118,7 +18458,6 @@ function _eaEsc(s){ return s ? String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;
 
 function goAssess(){
   if(!_hasPermission('assess')){ _showAccessDenied('Excellence Assessment'); return; }
-  window.scrollTo(0, 0); // v81g
   S.page='assess';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-assess').style.display='';
@@ -18129,6 +18468,7 @@ function goAssess(){
   eaRenderTabs();
   eaBuildFilters();
   eaRenderList();
+  window.scrollTo(0, 0); // v81h: scroll after render
 }
 
 function eaBuildFilters(){
@@ -18740,7 +19080,6 @@ function _stId(){ return 'st_' + Date.now() + '_' + Math.random().toString(36).s
 
 function goStores(){
   if(!_hasPermission('stores')){ _showAccessDenied('Louie Spots'); return; }
-  window.scrollTo(0, 0); // v81g
   S.page='stores';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-stores').style.display='';
@@ -18753,6 +19092,7 @@ function goStores(){
   }
   // Init maps if not yet done
   setTimeout(function(){ _stInitMaps(); storesRender(); }, 100);
+  window.scrollTo(0, 0); // v81h: scroll after render
 }
 
 function _stInitMaps(){
@@ -19030,23 +19370,378 @@ function storesDeletePin(id){
 // ══════════════════════════════════════════════════
 //  EVENT CALCULATOR MODULE
 // ══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════
+//  EVENT CALCULATOR — Full calculator + save/PDF (v82c)
+// ═══════════════════════════════════════════════════════════════════
+var EV_PRODUCTS = [
+  { id:'slc_s',    name:'Skinny Louie Cheese Burger', size:'Single', price:12.99, mix:15 },
+  { id:'slc_d',    name:'Skinny Louie Cheese Burger', size:'Double', price:15.99, mix:15 },
+  { id:'classic_s',name:'Classic Burger',              size:'Single', price:10.99, mix:12 },
+  { id:'classic_d',name:'Classic Burger',              size:'Double', price:13.99, mix:13 },
+  { id:'bacon_s',  name:'Applewood Bacon Burger',      size:'Single', price:14.99, mix:10 },
+  { id:'bacon_d',  name:'Applewood Bacon Burger',      size:'Double', price:17.99, mix:15 },
+  { id:'vbb_d',    name:'The Very Best Burger',        size:'Double', price:18.99, mix:15 },
+  { id:'fries',    name:'Fries',                       size:'',       price:4.99,  mix:5  }
+];
+var EV_RECIPES = {
+  slc_s:     { 'Beef Patty 3oz':1, 'American Cheese':2, 'Pickles':2, 'Brioche Bun':1, 'Louie Sauce':0.4, 'Grilled Onions':0.6 },
+  slc_d:     { 'Beef Patty 3oz':2, 'American Cheese':3, 'Pickles':2, 'Brioche Bun':1, 'Louie Sauce':0.4, 'Grilled Onions':1.2 },
+  classic_s: { 'Beef Patty 3oz':1, 'American Cheese':1, 'Brioche Bun':1, 'Tomato':1, 'Lettuce':0.8, 'Raw Onions':0.2, 'Ketchup':0.5, 'Mustard':0.2 },
+  classic_d: { 'Beef Patty 3oz':2, 'American Cheese':2, 'Brioche Bun':1, 'Tomato':1, 'Lettuce':0.8, 'Raw Onions':0.2, 'Ketchup':0.5, 'Mustard':0.2 },
+  bacon_s:   { 'Beef Patty 3oz':1, 'American Cheese':1, 'Bacon':1, 'Brioche Bun':1, 'Louie Sauce':0.3 },
+  bacon_d:   { 'Beef Patty 3oz':2, 'American Cheese':2, 'Bacon':1, 'Brioche Bun':1, 'Louie Sauce':0.3 },
+  vbb_d:     { 'Beef Patty 3oz':2, 'Smoked Gouda':2, 'Brioche Bun':1, 'Jalape\u00f1o Relish':0.2, 'Truffle Sauce':0.3 },
+  fries:     { 'Fries (oz)':4.5 }
+};
+var EV_CASES = {
+  'Beef Patty 3oz':  { perCase:72,   unit:'patties', label:'Beef Patties' },
+  'Brioche Bun':     { perCase:84,   unit:'buns',    label:'Brioche Buns' },
+  'American Cheese': { perCase:640,  unit:'slices',  label:'American Cheese' },
+  'Smoked Gouda':    { perCase:252,  unit:'slices',  label:'Smoked Gouda' },
+  'Bacon':           { perCase:150,  unit:'slices',  label:'Bacon' },
+  'Pickles':         { perCase:900,  unit:'slices',  label:'Pickles' },
+  'Fries (oz)':      { perCase:72.4, unit:'oz/bag',  label:'Fries (frozen bags)' },
+  'Tomato':          { perCase:855,  unit:'slices',  label:'Tomato (95/case x 9 slices)' },
+  'Lettuce':         { perCase:160,  unit:'oz',      label:'Lettuce' },
+  'Grilled Onions':  { perCase:160,  unit:'oz',      label:'Grilled Onions' },
+  'Raw Onions':      { perCase:160,  unit:'oz',      label:'Raw Onions' },
+  'Louie Sauce':     { perCase:160,  unit:'oz',      label:'Louie Sauce (1 batch)' },
+  'Truffle Sauce':   { perCase:128,  unit:'oz',      label:'Truffle Sauce' },
+  'Jalape\u00f1o Relish': { perCase:128, unit:'oz', label:'Jalape\u00f1o Relish' },
+  'Ketchup':         { perCase:114,  unit:'oz',      label:'Ketchup' },
+  'Mustard':         { perCase:105,  unit:'oz',      label:'Mustard' }
+};
+var EV_MODE = 'revenue';
+
+function evShowTab(tab){
+  document.getElementById('ev-pane-calc').style.display = tab==='calc'?'':'none';
+  document.getElementById('ev-pane-saved').style.display = tab==='saved'?'':'none';
+  document.getElementById('ev-t-calc').classList.toggle('active', tab==='calc');
+  document.getElementById('ev-t-saved').classList.toggle('active', tab==='saved');
+  if(tab==='calc' && !document.getElementById('ev-rev-tbody').innerHTML) evBuildTables();
+  if(tab==='saved') evRenderSaved();
+}
+
+function evSetMode(m){
+  EV_MODE=m;
+  document.getElementById('ev-mode-revenue').style.display=m==='revenue'?'':'none';
+  document.getElementById('ev-mode-units').style.display=m==='units'?'':'none';
+  document.getElementById('ev-btn-revenue').classList.toggle('on',m==='revenue');
+  document.getElementById('ev-btn-units').classList.toggle('on',m==='units');
+  evCalc();
+}
+
+function evProductLabel(p){
+  return p.name+(p.size?' <span style="font-size:10px;color:#3b82f6;background:rgba(59,130,246,.1);padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;">'+p.size+'</span>':'');
+}
+
+function evBuildTables(){
+  var dateEl=document.getElementById('ev-date');
+  if(dateEl&&!dateEl.value) dateEl.value=new Date().toISOString().slice(0,10);
+
+  var h='';
+  EV_PRODUCTS.forEach(function(p){
+    h+='<tr><td style="font-weight:700;white-space:nowrap;">'+evProductLabel(p)+'</td>';
+    h+='<td><input type="number" id="ev-rp-'+p.id+'" value="'+p.price+'" step="0.01" min="0" oninput="evCalc()" style="width:80px;padding:7px;border:1.5px solid #d1c9bc;border-radius:6px;text-align:right;font-size:13px;"></td>';
+    h+='<td><input type="number" id="ev-rm-'+p.id+'" value="'+p.mix+'" step="1" min="0" max="100" oninput="evCalc()" style="width:70px;padding:7px;border:1.5px solid #d1c9bc;border-radius:6px;text-align:right;font-size:13px;"></td>';
+    h+='<td style="text-align:right;font-weight:700;color:#7e2023;" id="ev-rr-'+p.id+'"></td>';
+    h+='<td style="text-align:right;font-weight:700;color:#1e3a5f;" id="ev-ru-'+p.id+'"></td></tr>';
+  });
+  h+='<tr style="border-top:2px solid #7e2023;"><td style="font-weight:800;color:#7e2023;">TOTAL</td><td></td><td style="text-align:right;font-weight:800;" id="ev-rmt"></td><td style="text-align:right;font-weight:800;color:#7e2023;" id="ev-rrt"></td><td style="text-align:right;font-weight:800;color:#1e3a5f;" id="ev-rut"></td></tr>';
+  document.getElementById('ev-rev-tbody').innerHTML=h;
+
+  h='';
+  EV_PRODUCTS.forEach(function(p){
+    h+='<tr><td style="font-weight:700;white-space:nowrap;">'+evProductLabel(p)+'</td>';
+    h+='<td><input type="number" id="ev-up-'+p.id+'" value="'+p.price+'" step="0.01" min="0" oninput="evCalc()" style="width:80px;padding:7px;border:1.5px solid #d1c9bc;border-radius:6px;text-align:right;font-size:13px;"></td>';
+    h+='<td><input type="number" id="ev-uq-'+p.id+'" value="0" step="1" min="0" oninput="evCalc()" style="width:90px;padding:7px;border:1.5px solid #d1c9bc;border-radius:6px;text-align:right;font-size:13px;"></td>';
+    h+='<td style="text-align:right;font-weight:700;color:#7e2023;" id="ev-ur-'+p.id+'"></td></tr>';
+  });
+  h+='<tr style="border-top:2px solid #7e2023;"><td style="font-weight:800;color:#7e2023;">TOTAL</td><td></td><td style="text-align:right;font-weight:800;color:#1e3a5f;" id="ev-uqt"></td><td style="text-align:right;font-weight:800;color:#7e2023;" id="ev-urt"></td></tr>';
+  document.getElementById('ev-unit-tbody').innerHTML=h;
+
+  var th='<tr><th>Ingredient</th>';
+  EV_PRODUCTS.forEach(function(p){
+    var short=p.id==='fries'?'Fries':(p.name.split(' ')[0]+(p.size?' '+p.size[0]:''));
+    th+='<th style="text-align:right;font-size:10px;">'+short+'</th>';
+  });
+  th+='<th style="text-align:right;font-weight:800;color:#7e2023;">TOTAL</th></tr>';
+  document.getElementById('ev-detail-thead').innerHTML=th;
+  evCalc();
+}
+
+function evCalc(){
+  var units={},prices={},totalRev=0,totalUnits=0;
+  EV_PRODUCTS.forEach(function(p){
+    var el=document.getElementById((EV_MODE==='revenue'?'ev-rp':'ev-up')+'-'+p.id);
+    prices[p.id]=el?(parseFloat(el.value)||0):p.price;
+  });
+  if(EV_MODE==='revenue'){
+    var target=parseFloat((document.getElementById('ev-rev-target')||{}).value)||0;
+    var mixTotal=0;
+    EV_PRODUCTS.forEach(function(p){
+      var mixEl=document.getElementById('ev-rm-'+p.id);
+      var mix=mixEl?(parseFloat(mixEl.value)||0):p.mix;
+      mixTotal+=mix;
+      var rev=target*(mix/100);
+      var qty=prices[p.id]>0?Math.ceil(rev/prices[p.id]):0;
+      units[p.id]=qty; totalRev+=qty*prices[p.id]; totalUnits+=qty;
+      var rrEl=document.getElementById('ev-rr-'+p.id); if(rrEl) rrEl.textContent='\x24'+rev.toFixed(0);
+      var ruEl=document.getElementById('ev-ru-'+p.id); if(ruEl) ruEl.textContent=qty;
+    });
+    var mtEl=document.getElementById('ev-rmt'); if(mtEl){ mtEl.textContent=mixTotal+'%'; mtEl.style.color=mixTotal===100?'#16a34a':'#dc2626'; }
+    var rtEl=document.getElementById('ev-rrt'); if(rtEl) rtEl.textContent='\x24'+totalRev.toFixed(0);
+    var utEl=document.getElementById('ev-rut'); if(utEl) utEl.textContent=totalUnits;
+  } else {
+    EV_PRODUCTS.forEach(function(p){
+      var qEl=document.getElementById('ev-uq-'+p.id);
+      var qty=qEl?(parseInt(qEl.value)||0):0;
+      units[p.id]=qty;
+      var rev=qty*prices[p.id]; totalRev+=rev; totalUnits+=qty;
+      var urEl=document.getElementById('ev-ur-'+p.id); if(urEl) urEl.textContent='\x24'+rev.toFixed(2);
+    });
+    var uqtEl=document.getElementById('ev-uqt'); if(uqtEl) uqtEl.textContent=totalUnits;
+    var urtEl=document.getElementById('ev-urt'); if(urtEl) urtEl.textContent='\x24'+totalRev.toFixed(2);
+  }
+  var ingredients={};
+  EV_PRODUCTS.forEach(function(p){
+    var rec=EV_RECIPES[p.id]||{};
+    for(var ing in rec){
+      if(!ingredients[ing]) ingredients[ing]={total:0,byProduct:{}};
+      var amt=rec[ing]*units[p.id];
+      ingredients[ing].total+=amt;
+      ingredients[ing].byProduct[p.id]=(ingredients[ing].byProduct[p.id]||0)+amt;
+    }
+  });
+  var friesQty=units.fries||0, burgerUnits=totalUnits-friesQty;
+  var sg=document.getElementById('ev-summary-grid');
+  if(sg) sg.innerHTML=
+    '<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px;"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Total Revenue</div><div style="font-size:26px;font-weight:800;color:#7e2023;font-family:Oswald,sans-serif;">\x24'+totalRev.toLocaleString('en-US',{maximumFractionDigits:0})+'</div></div>'+
+    '<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px;"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Total Units</div><div style="font-size:26px;font-weight:800;color:#1e3a5f;font-family:Oswald,sans-serif;">'+totalUnits.toLocaleString()+'</div><div style="font-size:11px;color:#64748b;margin-top:4px;">'+burgerUnits+' burgers + '+friesQty+' fries</div></div>'+
+    '<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:10px;padding:16px;"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Avg Ticket</div><div style="font-size:26px;font-weight:800;color:#1e3a5f;font-family:Oswald,sans-serif;">\x24'+(totalUnits>0?(totalRev/totalUnits).toFixed(2):'0')+'</div></div>';
+  var mainOrder=['Beef Patty 3oz','Brioche Bun','American Cheese','Smoked Gouda','Bacon','Fries (oz)'];
+  var otherIngs=Object.keys(ingredients).filter(function(k){return mainOrder.indexOf(k)===-1;}).sort();
+  var allIngs=mainOrder.concat(otherIngs);
+  var oh='';
+  allIngs.forEach(function(ing){
+    if(!ingredients[ing]||ingredients[ing].total===0) return;
+    var total=ingredients[ing].total;
+    var cs=EV_CASES[ing]; if(!cs) return;
+    var cases=Math.ceil(total/cs.perCase);
+    var leftover=(cases*cs.perCase)-total;
+    var isMain=mainOrder.indexOf(ing)!==-1;
+    var needStr=ing==='Fries (oz)'?total.toFixed(1)+' oz':Math.ceil(total)+' '+cs.unit;
+    oh+='<tr'+(isMain?' style="font-weight:700"':'')+'>';
+    oh+='<td style="font-weight:700;">'+_dcEsc(cs.label||ing)+'</td>';
+    oh+='<td style="text-align:right;">'+needStr+'</td>';
+    oh+='<td style="text-align:right;">'+cs.perCase+' '+cs.unit+'/case</td>';
+    oh+='<td style="text-align:center;"><span style="font-size:22px;font-weight:800;color:#7e2023;">'+cases+'</span></td>';
+    oh+='<td style="text-align:right;"><span style="color:#16a34a;font-size:12px;">+'+(ing==='Fries (oz)'?leftover.toFixed(1)+' oz':Math.ceil(leftover)+' extra')+'</span></td>';
+    oh+='</tr>';
+  });
+  var otb=document.getElementById('ev-order-tbody'); if(otb) otb.innerHTML=oh;
+  var dh='';
+  allIngs.forEach(function(ing){
+    if(!ingredients[ing]||ingredients[ing].total===0) return;
+    var bp=ingredients[ing].byProduct;
+    var fmt=function(v){return v?(v%1===0?String(v):v.toFixed(1)):'\u2014';};
+    var cs=EV_CASES[ing];
+    dh+='<tr><td style="font-weight:700;">'+_dcEsc(cs?cs.label:ing)+'</td>';
+    EV_PRODUCTS.forEach(function(p){
+      dh+='<td style="text-align:right;font-size:12px;">'+fmt(bp[p.id])+'</td>';
+    });
+    dh+='<td style="text-align:right;font-weight:800;color:#7e2023;">'+fmt(ingredients[ing].total)+'</td></tr>';
+  });
+  var dtb=document.getElementById('ev-detail-tbody'); if(dtb) dtb.innerHTML=dh;
+  window._evLastCalc={units:units,prices:prices,totalRev:totalRev,totalUnits:totalUnits,ingredients:ingredients,mode:EV_MODE};
+}
+
+// ── Save / Load Events ─────────────────────────────────────────────
+function evGetEvents(){ try{return JSON.parse(localStorage.getItem('sl_events_v1')||'[]');}catch(e){return [];} }
+function evSaveEvents(arr){ localStorage.setItem('sl_events_v1',JSON.stringify(arr)); }
+
+function evSaveEvent(){
+  var name=(document.getElementById('ev-name')||{}).value||'';
+  var date=(document.getElementById('ev-date')||{}).value||'';
+  var loc=(document.getElementById('ev-location')||{}).value||'';
+  if(!name){ slAlert('Please enter an event name.','warning'); return; }
+  if(!date){ slAlert('Please select a date.','warning'); return; }
+  var lc=window._evLastCalc||{};
+  var ev={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2),
+    name:name,date:date,location:loc,
+    mode:lc.mode||EV_MODE,
+    totalRev:lc.totalRev||0, totalUnits:lc.totalUnits||0,
+    units:lc.units||{}, prices:lc.prices||{},
+    savedAt:new Date().toISOString()
+  };
+  var all=evGetEvents(); all.unshift(ev); evSaveEvents(all);
+  slAlert('Event "'+name+'" saved!','success');
+}
+
+function evDeleteEvent(id){
+  _slConfirm({title:'Delete Event',message:'Delete this saved event? This cannot be undone.',confirmText:'Delete',confirmColor:'#dc2626',onConfirm:function(){
+    evSaveEvents(evGetEvents().filter(function(e){return e.id!==id;}));
+    evRenderSaved();
+  }});
+}
+
+function evRenderSaved(){
+  var el=document.getElementById('ev-saved-list');
+  if(!el) return;
+  var events=evGetEvents();
+  if(!events.length){
+    el.innerHTML='<div style="text-align:center;padding:80px 20px;"><div style="font-size:48px;margin-bottom:12px;">\u{1F4CB}</div><div style="font-weight:700;font-size:14px;color:#64748b;">No saved events yet</div><div style="font-size:12px;color:#94a3b8;margin-top:6px;">Use the Calculator tab to plan an event, then click Save Event.</div></div>';
+    return;
+  }
+  var h='<div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:16px;letter-spacing:.03em;">SAVED EVENTS ('+events.length+')</div>';
+  events.forEach(function(ev){
+    h+='<div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">';
+    h+='<div style="flex:1;min-width:200px;">';
+    h+='<div style="font-weight:800;font-size:15px;color:#1e3a5f;">'+_dcEsc(ev.name)+'</div>';
+    h+='<div style="font-size:12px;color:#64748b;margin-top:4px;">'+ev.date+(ev.location?' \u00b7 '+_dcEsc(ev.location):'')+'</div>';
+    h+='</div>';
+    h+='<div style="text-align:right;min-width:120px;">';
+    h+='<div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:800;color:#7e2023;">\x24'+Math.round(ev.totalRev||0).toLocaleString()+'</div>';
+    h+='<div style="font-size:11px;color:#94a3b8;">'+(ev.totalUnits||0)+' units</div>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:8px;">';
+    h+='<button onclick="evPrintSaved(\x27'+ev.id+'\x27);event.stopPropagation();" style="padding:7px 14px;background:rgba(30,58,95,.08);border:1px solid rgba(30,58,95,.2);border-radius:8px;font-size:11px;font-weight:700;color:#1e3a5f;cursor:pointer;">\u{1F4C4} PDF</button>';
+    h+='<button onclick="evDeleteEvent(\x27'+ev.id+'\x27);event.stopPropagation();" style="padding:7px 14px;background:none;border:1px solid #fca5a5;border-radius:8px;font-size:11px;font-weight:700;color:#dc2626;cursor:pointer;">\u{1F5D1} Delete</button>';
+    h+='</div></div>';
+  });
+  el.innerHTML=h;
+}
+
+// ── PDF Generation ─────────────────────────────────────────────────
+function evGeneratePDF(savedEvent){
+  if(typeof window.jspdf==='undefined'&&typeof window.jsPDF==='undefined'){
+    slAlert('PDF library still loading. Try again.','warning'); return;
+  }
+  var ev=savedEvent||{
+    name:(document.getElementById('ev-name')||{}).value||'Event',
+    date:(document.getElementById('ev-date')||{}).value||new Date().toISOString().slice(0,10),
+    location:(document.getElementById('ev-location')||{}).value||''
+  };
+  var lc=savedEvent?null:window._evLastCalc;
+  var units,prices,totalRev,totalUnits,ingredients;
+  if(savedEvent){
+    units=savedEvent.units||{};prices=savedEvent.prices||{};totalRev=savedEvent.totalRev||0;totalUnits=savedEvent.totalUnits||0;
+    ingredients={};
+    EV_PRODUCTS.forEach(function(p){
+      var rec=EV_RECIPES[p.id]||{};
+      for(var ing in rec){
+        if(!ingredients[ing]) ingredients[ing]={total:0};
+        ingredients[ing].total+=rec[ing]*(units[p.id]||0);
+      }
+    });
+  } else {
+    if(!lc){ slAlert('Calculate first.','warning'); return; }
+    units=lc.units;prices=lc.prices;totalRev=lc.totalRev;totalUnits=lc.totalUnits;ingredients=lc.ingredients;
+  }
+
+  var JsPDF=window.jspdf?window.jspdf.jsPDF:window.jsPDF;
+  var doc=new JsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+  var W=215.9,M=14;
+  doc.setFillColor(126,32,35); doc.rect(0,0,W,28,"F");
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(252,250,244);
+  doc.text('SKINNY LOUIE',M,13);
+  doc.setFontSize(9); doc.setTextColor(220,180,120);
+  doc.text('EVENT ORDER SHEET',M,20);
+  doc.setFontSize(10); doc.setTextColor(252,250,244);
+  doc.text(ev.name,W-M,13,{align:'right'});
+  doc.setFontSize(8); doc.setTextColor(200,160,100);
+  doc.text(ev.date+(ev.location?' | '+ev.location:''),W-M,20,{align:'right'});
+
+  var y=36;
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(126,32,35);
+  doc.text('EVENT SUMMARY',M,y); y+=7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(33,35,32);
+  doc.text('Revenue: \x24'+Math.round(totalRev).toLocaleString()+'   |   Units: '+totalUnits+'   |   Avg: \x24'+(totalUnits>0?(totalRev/totalUnits).toFixed(2):'0'),M,y); y+=10;
+
+  doc.setFillColor(245,240,232); doc.rect(M,y-4,W-M*2,7,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(126,32,35);
+  doc.text('PRODUCT BREAKDOWN',M+2,y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(120,120,120);
+  doc.text('Product',M+2,y); doc.text('Units',M+120,y,{align:'right'}); doc.text('Revenue',W-M,y,{align:'right'}); y+=1;
+  doc.setDrawColor(200,200,200); doc.line(M,y,W-M,y); y+=5;
+  EV_PRODUCTS.forEach(function(p){
+    var qty=units[p.id]||0; if(!qty) return;
+    var rev=qty*(prices[p.id]||p.price);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(33,35,32);
+    doc.text(p.name+(p.size?' ('+p.size+')':''),M+2,y);
+    doc.text(String(qty),M+120,y,{align:'right'});
+    doc.text('\x24'+Math.round(rev).toLocaleString(),W-M,y,{align:'right'});
+    y+=6;
+  });
+  y+=4;
+
+  doc.setFillColor(245,240,232); doc.rect(M,y-4,W-M*2,7,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(126,32,35);
+  doc.text('SUPPLIER ORDER - WHAT TO BUY',M+2,y); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(120,120,120);
+  doc.text('Ingredient',M+2,y); doc.text('Needed',M+90,y,{align:'right'}); doc.text('Per Case',M+125,y,{align:'right'}); doc.text('CASES',M+155,y,{align:'right'}); doc.text('Leftover',W-M,y,{align:'right'}); y+=1;
+  doc.setDrawColor(200,200,200); doc.line(M,y,W-M,y); y+=5;
+
+  var mainOrder=['Beef Patty 3oz','Brioche Bun','American Cheese','Smoked Gouda','Bacon','Fries (oz)'];
+  var otherIngs=Object.keys(ingredients).filter(function(k){return mainOrder.indexOf(k)===-1;}).sort();
+  var allIngs=mainOrder.concat(otherIngs);
+  allIngs.forEach(function(ing){
+    if(!ingredients[ing]||ingredients[ing].total===0) return;
+    var total=ingredients[ing].total;
+    var cs=EV_CASES[ing]; if(!cs) return;
+    var cases=Math.ceil(total/cs.perCase);
+    var leftover=(cases*cs.perCase)-total;
+    if(y>255){doc.addPage();y=20;}
+    doc.setFont('helvetica',mainOrder.indexOf(ing)!==-1?'bold':'normal');
+    doc.setFontSize(8); doc.setTextColor(33,35,32);
+    doc.text(cs.label||ing,M+2,y);
+    doc.text(ing==='Fries (oz)'?total.toFixed(1)+' oz':Math.ceil(total)+' '+cs.unit,M+90,y,{align:'right'});
+    doc.text(cs.perCase+'/case',M+125,y,{align:'right'});
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(126,32,35);
+    doc.text(String(cases),M+155,y,{align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(22,163,74);
+    doc.text('+'+(ing==='Fries (oz)'?leftover.toFixed(1)+' oz':Math.ceil(leftover)+' extra'),W-M,y,{align:'right'});
+    y+=6;
+  });
+
+  y+=6; if(y>260){doc.addPage();y=20;}
+  doc.setFillColor(126,32,35); doc.rect(M,y-4,W-M*2,9,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(252,250,244);
+  doc.text('TOTAL REVENUE: \x24'+Math.round(totalRev).toLocaleString(),M+3,y+1);
+  doc.text(totalUnits+' TOTAL UNITS',W-M,y+1,{align:'right'});
+
+  var fname='Event_'+ev.name.replace(/[^a-zA-Z0-9]/g,'-')+'_'+ev.date+'.pdf';
+  doc.save(fname);
+}
+
+function evPrintSaved(id){
+  var ev=evGetEvents().filter(function(e){return e.id===id;})[0];
+  if(!ev){ slAlert('Event not found.','warning'); return; }
+  evGeneratePDF(ev);
+}
+
 function goEvents(){
   if(!_hasPermission('events')){ _showAccessDenied('Event Calculator'); return; }
-  window.scrollTo(0, 0); // v81g
   S.page='events';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-events').style.display='';
+  evShowTab('calc');
+  evBuildTables();
+  window.scrollTo(0, 0);
 }
+
 
 // ══════════════════════════════════════════════════
 //  MARKETING MODULE
 // ══════════════════════════════════════════════════
 function goMarketing(){
   if(!_hasPermission('marketing')){ _showAccessDenied('Marketing'); return; }
-  window.scrollTo(0, 0); // v81g
   S.page='marketing';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-marketing').style.display='';
+  window.scrollTo(0, 0); // v81h: scroll after render
 }
 
 // ══════════════════════════════════════════════════
@@ -19063,7 +19758,6 @@ function _hrId(){ return 'hr_' + Date.now() + '_' + Math.random().toString(36).s
 
 function goHR(){
   if(!_hasPermission('hr')){ _showAccessDenied('HR Dashboard'); return; }
-  window.scrollTo(0, 0); // v81g
   S.page='hr';
   document.querySelectorAll('[id^="pg-"]').forEach(function(el){el.style.display='none';});
   document.getElementById('pg-hr').style.display='';
@@ -19071,6 +19765,7 @@ function goHR(){
   HR.tab = 'pending';
   document.getElementById('hr-landing').style.display='';
   document.getElementById('hr-module-view').style.display='none';
+  window.scrollTo(0, 0); // v81h: scroll after render
   document.getElementById('hr-topbar-title').textContent = '\uD83D\uDC65 HR DASHBOARD';
 }
 
@@ -19599,12 +20294,14 @@ migrate();
     <div style="display:flex;gap:0;border-bottom:none;">
       <button class="maint-tab-btn active" id="maint-t-orders" onclick="mnShowTab('orders')">📋 Work Orders</button>
       <button class="maint-tab-btn" id="maint-t-history" onclick="mnShowTab('history')">🗂 History</button>
+      <button class="maint-tab-btn" id="maint-t-datacenter" onclick="mnShowTab('datacenter')">🗄 Data Center</button>
     </div>
   </div>
   <div id="maint-filters"></div>
   <div style="padding:0 24px 40px;">
     <div id="maint-pane-orders"></div>
     <div id="maint-pane-history" style="display:none;"></div>
+    <div id="maint-pane-datacenter" style="display:none;"></div>
   </div>
   <div id="maint-modal-create" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
   <div id="maint-modal-tech"   style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;"></div>
@@ -19743,37 +20440,116 @@ migrate();
 <div id="pg-events" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
   <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#fff;border-bottom:1px solid #e8e2d8;">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:14px 16px 14px 0;display:flex;align-items:center;gap:4px;">← Back</button>
-    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#5a3a7e;letter-spacing:.04em;margin-right:24px;">🎉 EVENT CALCULATOR</span>
-  </div>
-  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 140px);padding:40px 24px;">
-    <div style="text-align:center;max-width:600px;">
-      <div style="width:100px;height:100px;margin:0 auto 24px;border-radius:24px;background:linear-gradient(135deg,rgba(90,58,126,.08),rgba(90,58,126,.15));display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:48px;">🎉</span>
-      </div>
-      <h2 style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:#5a3a7e;letter-spacing:.04em;margin:0 0 8px;">Event Calculator</h2>
-      <div style="display:inline-block;background:linear-gradient(135deg,#5a3a7e,#7a52a3);color:#fff;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;padding:6px 20px;border-radius:99px;text-transform:uppercase;margin-bottom:24px;">Coming Soon</div>
-      <p style="font-size:14px;color:#64748b;line-height:1.7;margin:0 0 36px;">Plan and cost every detail for private events, catering, and special operations. Prep calculators, equipment checklists, and full cost breakdowns — all in one place.</p>
-      <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
-        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:14px;padding:24px 20px;flex:1;min-width:160px;max-width:200px;">
-          <div style="font-size:28px;margin-bottom:10px;">🧮</div>
-          <div style="font-size:13px;font-weight:700;color:#5a3a7e;">Prep Calculator</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.4;">Guest count, menu items, portions & ingredient quantities</div>
-        </div>
-        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:14px;padding:24px 20px;flex:1;min-width:160px;max-width:200px;">
-          <div style="font-size:28px;margin-bottom:10px;">🍽️</div>
-          <div style="font-size:13px;font-weight:700;color:#5a3a7e;">Equipment & Utensils</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.4;">Checklists for gear, serving ware & setup essentials</div>
-        </div>
-        <div style="background:#fff;border:1px solid #e8e2d8;border-radius:14px;padding:24px 20px;flex:1;min-width:160px;max-width:200px;">
-          <div style="font-size:28px;margin-bottom:10px;">💰</div>
-          <div style="font-size:13px;font-weight:700;color:#5a3a7e;">Cost Breakdown</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.4;">Food, beverage, staffing & total event P&L</div>
-        </div>
-      </div>
-      <button onclick="goHome()" style="margin-top:36px;padding:12px 32px;border-radius:10px;border:none;background:linear-gradient(135deg,#5a3a7e,#7a52a3);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;cursor:pointer;box-shadow:0 4px 16px rgba(90,58,126,.3);transition:all .15s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">← Back to Home</button>
+    <span style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;letter-spacing:.04em;margin-right:24px;">📋 EVENT CALCULATOR</span>
+    <div style="display:flex;gap:0;">
+      <button class="maint-tab-btn active" id="ev-t-calc" onclick="evShowTab('calc')">🧮 Calculator</button>
+      <button class="maint-tab-btn" id="ev-t-saved" onclick="evShowTab('saved')">📁 Saved Events</button>
     </div>
   </div>
-</div>
+  <!-- CALCULATOR PANE -->
+  <div id="ev-pane-calc" style="padding:20px 24px 40px;">
+    <!-- Event Info Bar -->
+    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:20px;padding:16px 20px;background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Event Name</label>
+        <input id="ev-name" type="text" placeholder="e.g. Kaseya Center Game Night" style="width:100%;padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;font-weight:600;box-sizing:border-box;">
+      </div>
+      <div style="min-width:160px;">
+        <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Date</label>
+        <input id="ev-date" type="date" style="padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;box-sizing:border-box;width:100%;">
+      </div>
+      <div style="min-width:180px;">
+        <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Location</label>
+        <select id="ev-location" style="padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:14px;box-sizing:border-box;width:100%;background:#fff;">
+          <option value="">Select location...</option>
+          <option value="Wynwood">Wynwood</option><option value="Little Havana">Little Havana</option>
+          <option value="Kaseya Center">Kaseya Center</option><option value="Coral Gables">Coral Gables</option>
+          <option value="West Palm Beach">West Palm Beach</option><option value="Aventura">Aventura</option>
+          <option value="Dania Beach">Dania Beach</option><option value="South Miami">South Miami</option>
+          <option value="NoMad">NoMad</option><option value="West Village">West Village</option>
+          <option value="Catering">Catering / Off-site</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Mode Toggle -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #d1c9bc;width:fit-content;">
+      <button class="yr-pill on" id="ev-btn-revenue" onclick="evSetMode('revenue')" style="border-radius:8px 0 0 8px;padding:10px 22px;">Revenue Target</button>
+      <button class="yr-pill" id="ev-btn-units" onclick="evSetMode('units')" style="border-radius:0 8px 8px 0;padding:10px 22px;">Unit Count</button>
+    </div>
+
+    <!-- Revenue Mode -->
+    <div id="ev-mode-revenue" style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">REVENUE TARGET</div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:4px;">Total Revenue Goal ($)</label>
+        <input type="number" id="ev-rev-target" value="5000" min="0" step="100" oninput="evCalc()" style="padding:10px 14px;border:1.5px solid #d1c9bc;border-radius:8px;font-size:20px;font-weight:800;color:#7e2023;width:200px;">
+      </div>
+      <div style="overflow-x:auto;"><table class="order-table" style="min-width:600px;">
+        <thead><tr>
+          <th>Product</th>
+          <th style="text-align:right;width:90px;">Price ($)</th>
+          <th style="text-align:right;width:80px;">Mix %</th>
+          <th style="text-align:right;width:100px;">Revenue ($)</th>
+          <th style="text-align:right;width:80px;">Units</th>
+        </tr></thead>
+        <tbody id="ev-rev-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- Units Mode -->
+    <div id="ev-mode-units" style="display:none;background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">UNIT COUNT</div>
+      <div style="overflow-x:auto;"><table class="order-table" style="min-width:500px;">
+        <thead><tr>
+          <th>Product</th>
+          <th style="text-align:right;width:90px;">Price ($)</th>
+          <th style="text-align:right;width:100px;">Quantity</th>
+          <th style="text-align:right;width:100px;">Revenue ($)</th>
+        </tr></thead>
+        <tbody id="ev-unit-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- Summary -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;" id="ev-summary-grid"></div>
+
+    <!-- Supplier Order -->
+    <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">SUPPLIER ORDER — WHAT TO BUY</div>
+      <div style="overflow-x:auto;"><table class="order-table">
+        <thead><tr>
+          <th>Ingredient</th>
+          <th style="text-align:right">Total Needed</th>
+          <th style="text-align:right">Units/Case</th>
+          <th style="text-align:center">Cases to Order</th>
+          <th style="text-align:right">Leftover</th>
+        </tr></thead>
+        <tbody id="ev-order-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- Detail Breakdown -->
+    <div style="background:#fff;border:1.5px solid #e8e2d8;border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:14px;letter-spacing:.03em;">INGREDIENT BREAKDOWN BY PRODUCT</div>
+      <div style="overflow-x:auto;"><table class="order-table" id="ev-detail-table">
+        <thead id="ev-detail-thead"></thead>
+        <tbody id="ev-detail-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button onclick="evSaveEvent()" style="padding:12px 28px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:.04em;">SAVE EVENT</button>
+      <button onclick="evGeneratePDF()" style="padding:12px 28px;background:rgba(126,32,35,.1);color:#7e2023;border:1.5px solid rgba(126,32,35,.3);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:.04em;">GENERATE PDF</button>
+    </div>
+  </div>
+
+  <!-- SAVED EVENTS PANE -->
+  <div id="ev-pane-saved" style="display:none;padding:20px 24px 40px;">
+    <div id="ev-saved-list"></div>
+  </div>
+
 
 <!-- ═══ MARKETING PAGE ═══ -->
 <div id="pg-marketing" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;">
