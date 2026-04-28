@@ -13812,6 +13812,17 @@ function pnlBackupData(reason){
 }
 
 // Restore sl_pnl_v1 from the last backup snapshot, then rebuild the upload log.
+function _execRestorePnl(recs,when,reason){
+  try {
+    pnlBackupData('pre-restore');
+    _slSaveRecords('pnl', recs);
+    repairPnLUploadLog();
+    slAlert(`Restored ${recs.length} P&L record(s) from backup (${when}).`,'info');
+    if(typeof renderPnLPage==='function') renderPnLPage();
+    if(typeof renderNavRight==='function') renderNavRight();
+    console.log('[SL] P&L restored from backup:', recs.length, 'records');
+  } catch(e){ slAlert('Restore failed: '+e.message,'error'); console.error('[SL] _execRestorePnl error:',e); }
+}
 function pnlRestoreFromBackup(){
   try{
     const backup   = localStorage.getItem('sl_pnl_backup_v1');
@@ -13822,17 +13833,6 @@ function pnlRestoreFromBackup(){
     if(!recs.length){ slAlert('Backup exists but is empty — nothing to restore.','error'); return; }
     const when = new Date(backupAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     _slConfirm({title:'Restore P&L Backup',message:'Restore <b>'+recs.length+'</b> P&L record(s) from backup taken at <b>'+when+'</b>'+(reason?' (reason: '+reason+')':'')+'?<br><br>This will overwrite the current P&L data. Your current data will be saved as the new backup before restoring.',confirmText:'Restore Backup',confirmColor:'#1e3a5f',onConfirm:function(){ _execRestorePnl(recs,when,reason); }});
-    return;
-  }
-  function _execRestorePnl(recs,when,reason){
-    // Save current as new backup before overwriting
-    pnlBackupData('pre-restore');
-    _slSaveRecords('pnl', recs); // normalise + dedup through gateway — never raw localStorage
-    repairPnLUploadLog();
-    slAlert(`Restored ${recs.length} P&L record(s) from backup (${when}).`,'info');
-    if(typeof renderPnLPage==='function') renderPnLPage();
-    if(typeof renderNavRight==='function') renderNavRight();
-    console.log('[SL] P&L restored from backup:', recs.length, 'records');
   } catch(e){ slAlert('Restore failed: '+e.message,'error'); console.error('[SL] pnlRestoreFromBackup error:',e); }
 }
 
