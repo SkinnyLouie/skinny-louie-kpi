@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v94</title>
-<!-- BUILD: 2026-04-28-v94 -->
+<title>Skinny Louie · Performance Hub v95</title>
+<!-- BUILD: 2026-04-28-v95 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -6650,7 +6650,7 @@ async function _adminSelectUser(userId, displayName, role, state){
   if(lnameEl) lnameEl.value = nameParts.slice(1).join(' ') || '';
 
   // Load permissions, scope, and store locations in parallel
-  _admCtx = { userId, displayName, role, state, scope: 'ALL', locations: new Set(), perms: new Set() };
+  _admCtx = { userId, displayName, role, state, scope: 'ALL', locations: new Set(), perms: new Set(), emailSubs: null, emailSelReport: null };
   _admSetActionMsg('');
   _renderAdmPermGrid(null);
   _renderAdmScopeRow('ALL');
