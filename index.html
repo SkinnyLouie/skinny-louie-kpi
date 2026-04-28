@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v93</title>
-<!-- BUILD: 2026-04-28-v93 -->
+<title>Skinny Louie · Performance Hub v94</title>
+<!-- BUILD: 2026-04-28-v94 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -6431,6 +6431,12 @@ function goAdmin(){
   if(!_hasPermission('admin')){ _showAccessDenied('User Management'); return; }
   S.page = 'admin';
   render();
+  // v94 fix: force admin page container visible after render
+  var pgAdm = document.getElementById('pg-admin');
+  if(pgAdm){
+    pgAdm.style.display = 'flex';
+    pgAdm.style.flexDirection = 'column';
+  }
   renderAdminPage();
 }
 function goPortfolio(){
@@ -6546,6 +6552,20 @@ function _admSetScope(scope){
 //     );
 async function renderAdminPage(){
   if(!_hasPermission('admin')) return;
+  console.log('[Admin] renderAdminPage() called');
+
+  // v94 fix: force admin page + all children visible
+  var pgAdm = document.getElementById('pg-admin');
+  if(pgAdm){ pgAdm.style.display='flex'; pgAdm.style.flexDirection='column'; }
+  var hdr = document.querySelector('.adm-hdr');
+  if(hdr) hdr.style.display='flex';
+  var layout = document.querySelector('.adm-layout');
+  if(layout){ layout.style.display='flex'; layout.style.flex='1'; layout.style.minHeight='0'; }
+  var userList = document.querySelector('.adm-user-list');
+  if(userList) userList.style.display='flex';
+  var permPanel = document.getElementById('adm-perm-panel');
+  if(permPanel) permPanel.style.display='flex';
+
   var scroll = document.getElementById('adm-user-scroll');
   if(!scroll){ console.error('[Admin] adm-user-scroll not found'); return; }
 
@@ -7144,7 +7164,7 @@ function render(){
   else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
   else if(S.page==='maint'){ try{ if(typeof renderMaintPage!=='undefined') renderMaintPage(); }catch(e){ console.error('renderMaintPage',e); } }
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
-  else if(S.page==='admin'){ try{ renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
+  else if(S.page==='admin'){ try{ var _pgA=document.getElementById('pg-admin'); if(_pgA){_pgA.style.display='flex';_pgA.style.flexDirection='column';} renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
   else if(S.page==='portfolio'){ try{ renderPortfolioPage(); }catch(e){ console.error('renderPortfolioPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
@@ -21391,7 +21411,7 @@ migrate();
 </div>
 
 <!-- ═══ ADMIN PAGE ═══ -->
-<div id="pg-admin">
+<div id="pg-admin" style="flex-direction:column;">
   <div class="adm-hdr">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
     <span class="adm-hdr-title">👥 USER MANAGEMENT</span>
