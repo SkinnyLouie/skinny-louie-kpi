@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v95</title>
-<!-- BUILD: 2026-04-28-v95 -->
+<title>Skinny Louie · Performance Hub v96</title>
+<!-- BUILD: 2026-04-28-v96 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -6431,19 +6431,26 @@ function goAdmin(){
   if(!_hasPermission('admin')){ _showAccessDenied('User Management'); return; }
   S.page = 'admin';
   render();
-  // v94 fix: force admin page container visible after render
-  var pgAdm = document.getElementById('pg-admin');
-  if(pgAdm){
-    pgAdm.style.display = 'flex';
-    pgAdm.style.flexDirection = 'column';
-  }
+  _forceAdminVisible();
   renderAdminPage();
+}
+function _forceAdminVisible(){
+  var pg = document.getElementById('pg-admin');
+  if(pg){ pg.style.display='flex'; pg.style.flexDirection='column'; }
+  var h = pg && pg.querySelector('.adm-hdr');
+  if(h) h.style.display='flex';
+  var ly = pg && pg.querySelector('.adm-layout');
+  if(ly){ ly.style.display='flex'; ly.style.flex='1'; ly.style.minHeight='0'; ly.style.overflow='auto'; }
+  var ul = pg && pg.querySelector('.adm-user-list');
+  if(ul){ ul.style.display='flex'; ul.style.flexDirection='column'; }
+  var pp = document.getElementById('adm-perm-panel');
+  if(pp){ pp.style.display='flex'; pp.style.flexDirection='column'; }
 }
 function goPortfolio(){
   if(!_hasPermission('portfolio')){ _showAccessDenied('Store Intelligence'); return; }
   S.page = 'portfolio';
   render();
-  renderPortfolioPage();
+  _renderPortfolioSafe();
 }
 
 // ══════════════════════════════════════════════════
@@ -6551,24 +6558,40 @@ function _admSetScope(scope){
 //               WHERE user_id = auth.uid() AND permission = 'admin')
 //     );
 async function renderAdminPage(){
-  if(!_hasPermission('admin')) return;
-  console.log('[Admin] renderAdminPage() called');
+  var diag = []; // diagnostic log
+  function diagAdd(msg){ diag.push('[' + new Date().toISOString().slice(11,23) + '] ' + msg); console.log('[Admin] ' + msg); }
 
-  // v94 fix: force admin page + all children visible
+  diagAdd('renderAdminPage() called');
+  diagAdd('S.page = ' + S.page);
+  diagAdd('_slRole = ' + _slRole);
+  diagAdd('_hasPermission(admin) = ' + _hasPermission('admin'));
+
+  if(!_hasPermission('admin')){ diagAdd('EXIT: no admin permission'); return; }
+
+  _forceAdminVisible();
+  diagAdd('_forceAdminVisible() done');
+
   var pgAdm = document.getElementById('pg-admin');
-  if(pgAdm){ pgAdm.style.display='flex'; pgAdm.style.flexDirection='column'; }
-  var hdr = document.querySelector('.adm-hdr');
-  if(hdr) hdr.style.display='flex';
-  var layout = document.querySelector('.adm-layout');
-  if(layout){ layout.style.display='flex'; layout.style.flex='1'; layout.style.minHeight='0'; }
-  var userList = document.querySelector('.adm-user-list');
-  if(userList) userList.style.display='flex';
-  var permPanel = document.getElementById('adm-perm-panel');
-  if(permPanel) permPanel.style.display='flex';
+  diagAdd('pg-admin element: ' + (pgAdm ? 'FOUND (display=' + pgAdm.style.display + ', offsetHeight=' + pgAdm.offsetHeight + ')' : 'NOT FOUND'));
 
   var scroll = document.getElementById('adm-user-scroll');
-  if(!scroll){ console.error('[Admin] adm-user-scroll not found'); return; }
+  diagAdd('adm-user-scroll: ' + (scroll ? 'FOUND' : 'NOT FOUND'));
 
+  if(!scroll){
+    diagAdd('Waiting 500ms for DOM...');
+    await new Promise(function(r){ setTimeout(r, 500); });
+    scroll = document.getElementById('adm-user-scroll');
+    diagAdd('After wait, adm-user-scroll: ' + (scroll ? 'FOUND' : 'STILL NOT FOUND'));
+    if(!scroll){
+      // Last resort: inject diagnostic into pg-admin directly
+      if(pgAdm){
+        pgAdm.innerHTML = '<div style="padding:40px;font-family:monospace;font-size:12px;color:#991b1b;background:#fef2f2;margin:20px;border-radius:10px;border:1px solid #fecaca;"><strong>ADMIN DEBUG — adm-user-scroll not found</strong><br><br>' + diag.join('<br>') + '<br><br>pg-admin children: ' + pgAdm.children.length + '<br>pg-admin innerHTML length: ' + pgAdm.innerHTML.length + '</div>';
+      }
+      return;
+    }
+  }
+
+  // Show loading state immediately
   scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#1e3a5f;font-size:13px;font-weight:600;">Loading users…</div>';
   var empty  = document.getElementById('adm-perm-empty');
   var editor = document.getElementById('adm-perm-editor');
@@ -6576,30 +6599,37 @@ async function renderAdminPage(){
   if(editor) editor.style.display = 'none';
   _admCtx = { userId: null, displayName: null, role: null, state: null, scope: 'ALL', locations: new Set(), perms: new Set(), emailSubs: null, emailSelReport: null };
 
+  diagAdd('_supa exists: ' + (!!_supa));
   if(!_supa){
-    scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#b91c1c;font-size:13px;">Supabase not connected. Refresh the page.</div>';
+    scroll.innerHTML = '<div style="padding:20px;"><div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px;">Supabase not connected</div><div style="font-family:monospace;font-size:11px;color:#64748b;background:#f8f8f8;padding:10px;border-radius:6px;white-space:pre-wrap;">' + diag.join('\n') + '</div></div>';
     return;
   }
 
   try {
+    diagAdd('Querying profiles table...');
     var result = await _supa
       .from('profiles')
       .select('id, name, role, state')
       .order('name', { ascending: true });
 
+    diagAdd('Query complete. error=' + JSON.stringify(result.error) + ', data=' + (result.data ? result.data.length + ' rows' : 'null'));
+
     var profiles = result.data;
     var error = result.error;
 
     if(error){
-      console.error('[Admin] profiles query error:', error);
-      scroll.innerHTML = '<div style="padding:20px;font-size:13px;color:#b91c1c;"><strong>Query error:</strong> ' + (error.message||JSON.stringify(error)) + '</div>';
+      diagAdd('QUERY ERROR: ' + (error.message || JSON.stringify(error)));
+      scroll.innerHTML = '<div style="padding:20px;"><div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px;">Admin loaded — permission/query error</div><div style="font-size:12px;color:#64748b;margin-bottom:12px;">' + (error.message||JSON.stringify(error)) + '</div><div style="font-family:monospace;font-size:10px;color:#94a3b8;background:#f8f8f8;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:200px;overflow:auto;">' + diag.join('\n') + '</div></div>';
       return;
     }
 
     if(!profiles || !profiles.length){
-      scroll.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;font-size:13px;">No users found in profiles table.</div>';
+      diagAdd('No profiles returned');
+      scroll.innerHTML = '<div style="padding:20px;text-align:center;"><div style="font-size:28px;margin-bottom:8px;">👤</div><div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:6px;">Admin loaded — no users found</div><div style="font-size:12px;color:#64748b;">The profiles table returned 0 rows. Users need to be invited via Supabase Dashboard → Auth.</div></div>';
       return;
     }
+
+    diagAdd('Building user list for ' + profiles.length + ' profiles');
 
     var rows = profiles.map(function(p){
       var display = p.name || '(no name)';
@@ -6613,11 +6643,12 @@ async function renderAdminPage(){
     }).join('');
 
     scroll.innerHTML = rows;
-    console.log('[Admin] Loaded ' + profiles.length + ' profile(s).');
+    diagAdd('SUCCESS: rendered ' + profiles.length + ' user(s)');
 
   } catch(e){
-    console.error('[Admin] renderAdminPage error:', e);
-    scroll.innerHTML = '<div style="padding:20px;font-size:13px;color:#b91c1c;"><strong>Error:</strong> ' + (e.message||String(e)) + '</div>';
+    diagAdd('EXCEPTION: ' + (e.message||String(e)));
+    diagAdd('Stack: ' + (e.stack||'N/A'));
+    scroll.innerHTML = '<div style="padding:20px;"><div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px;">Admin loaded — data failed to load</div><div style="font-size:12px;color:#64748b;margin-bottom:8px;">' + (e.message||String(e)) + '</div><div style="font-family:monospace;font-size:10px;color:#94a3b8;background:#f8f8f8;padding:10px;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow:auto;">' + diag.join('\n') + (e.stack ? '\n\nStack:\n' + e.stack : '') + '</div><button onclick="renderAdminPage()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid #d1c9bc;background:#fff;font-size:12px;font-weight:700;color:#1e3a5f;cursor:pointer;">↺ Retry</button></div>';
   }
 }
 
@@ -7164,8 +7195,8 @@ function render(){
   else if(S.page==='pnl'){ try{ if(typeof renderPnLPage!=='undefined') renderPnLPage(); }catch(e){ console.error('renderPnLPage',e); } }
   else if(S.page==='maint'){ try{ if(typeof renderMaintPage!=='undefined') renderMaintPage(); }catch(e){ console.error('renderMaintPage',e); } }
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
-  else if(S.page==='admin'){ try{ var _pgA=document.getElementById('pg-admin'); if(_pgA){_pgA.style.display='flex';_pgA.style.flexDirection='column';} renderAdminPage(); }catch(e){ console.error('renderAdminPage',e); } }
-  else if(S.page==='portfolio'){ try{ renderPortfolioPage(); }catch(e){ console.error('renderPortfolioPage',e); } }
+  else if(S.page==='admin'){ _forceAdminVisible(); renderAdminPage(); }
+  else if(S.page==='portfolio'){ _renderPortfolioSafe(); }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -18274,12 +18305,42 @@ function _pfBuildData(){
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
+function _renderPortfolioSafe(){
+  var wrap = document.getElementById('pf-body');
+  if(!wrap){ console.error('[Portfolio] pf-body not found'); return; }
+  var diag = [];
+  function d(msg){ diag.push(msg); console.log('[Portfolio] ' + msg); }
+  d('S.page=' + S.page);
+  d('_pfYear=' + _pfYear);
+  d('_slRole=' + _slRole);
+  d('_slState=' + _slState);
+  try{
+    var allLocs = _allowedLocs();
+    d('_allowedLocs() = ' + allLocs.length + ' [' + allLocs.join(', ') + ']');
+    d('S.year=' + S.year + ', S.state=' + S.state);
+    d('DB keys: ' + Object.keys(DB).join(', '));
+    var yearData = DB[_pfYear];
+    d('DB[' + _pfYear + '] exists: ' + (!!yearData) + (yearData ? ' keys=' + Object.keys(yearData).join(',') : ''));
+  }catch(e){ d('Diag error: ' + e.message); }
+  try{
+    renderPortfolioPage();
+  }catch(e){
+    d('RENDER ERROR: ' + e.message);
+    d('Stack: ' + (e.stack||'N/A'));
+    wrap.innerHTML = '<div style="padding:40px;"><div style="font-size:28px;margin-bottom:10px;">⚠️</div><div style="font-size:14px;font-weight:700;color:#991b1b;margin-bottom:10px;">Store Intelligence — Error</div><div style="font-size:12px;color:#64748b;margin-bottom:16px;">' + (e.message||'Unknown error') + '</div><div style="font-family:monospace;font-size:10px;color:#94a3b8;background:#f8f8f8;padding:12px;border-radius:6px;white-space:pre-wrap;max-height:300px;overflow:auto;">' + diag.join('\n') + (e.stack ? '\n\nStack:\n' + e.stack : '') + '</div><button onclick="_renderPortfolioSafe()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid #d1c9bc;background:#fff;font-size:12px;font-weight:700;color:#1e3a5f;cursor:pointer;">↺ Retry</button></div>';
+  }
+}
 function renderPortfolioPage(){
   const wrap=document.getElementById('pf-body');
-  if(!wrap)return;
-  const stores=_pfBuildData();
-  if(!stores.length){
-    wrap.innerHTML=_slStateHtml('empty',{icon:'\u{1F4CA}',title:'No KPI data available for '+_pfYear,msg:'Make sure store data is entered in the KPI dashboard for your allowed stores.'});
+  if(!wrap){ console.error('[Portfolio] pf-body not found'); return; }
+  let stores;
+  try{ stores=_pfBuildData(); }catch(e){
+    console.error('[Portfolio] _pfBuildData error:', e);
+    wrap.innerHTML=_slStateHtml('error',{title:'Error Loading Store Data',msg:e.message||'Unknown error. Try refreshing.'});
+    return;
+  }
+  if(!stores||!stores.length){
+    wrap.innerHTML=_slStateHtml('empty',{icon:'\u{1F4CA}',title:'No KPI data available for '+_pfYear,msg:'Make sure store data is entered in the KPI dashboard for your allowed stores.<br><br>Your allowed locations: '+ (_allowedLocs().join(', ')||'none') +'<br>Current year filter: '+_pfYear, actionFn:'goHome()', actionLabel:'← Back to Home'});
     return;
   }
 
