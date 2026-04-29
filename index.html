@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v104</title>
-<!-- BUILD: 2026-04-29-v104 -->
+<title>Skinny Louie · Performance Hub v106</title>
+<!-- BUILD: 2026-04-29-v106 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2592,7 +2592,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 
   /* ── Assessment items ── */
   .ea-item-row { flex-direction:column; gap:4px; padding:8px 0; }
-  .ea-score-btn { width:30px; height:24px; font-size:11px; }
+  .ea-score-btn { min-width:44px; min-height:44px; font-size:13px; }
 
   /* ── Event Calculator ── */
   .order-table { font-size:11px; }
@@ -2842,7 +2842,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .inv-selectors .yr-pill { color:#555; background:#f0eeea; border-color:#ddd; }
 .inv-selectors .yr-pill:hover { background:#e4e0da; color:#212320; border-color:#bbb; }
 .inv-selectors .yr-pill.on { background:#7e2023; color:#fff; border-color:#7e2023; }
-/* ── Inventory Period Toggle (v104) ── */
+/* ── Inventory Period Toggle (v106) ── */
 .inv-period-toggle{display:inline-flex;border-radius:10px;border:1.5px solid #d1c9bc;overflow:hidden;background:#f0ece4;}
 .inv-period-btn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 22px;border:none;cursor:pointer;color:#8b7e6f;background:transparent;transition:all .2s;white-space:nowrap;}
 .inv-period-btn:hover{color:#1e3a5f;background:rgba(30,58,95,.06);}
@@ -3530,17 +3530,18 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .hr-empty-title{font-size:14px;font-weight:700;color:#374151;margin-bottom:6px;}
 .hr-empty-sub{font-size:12px;}
 .hr-audit-line{font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic;}
-.ea-score-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:28px;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b;}
+.ea-score-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:28px;border-radius:6px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;position:relative;z-index:2;}
 .ea-score-btn:hover{border-color:#94a3b8;}
+.ea-score-btn:active{transform:scale(0.92);opacity:0.85;}
 .ea-score-btn.sel-2{background:#16a34a;color:#fff;border-color:#16a34a;}
 .ea-score-btn.sel-1{background:#ca8a04;color:#fff;border-color:#ca8a04;}
 .ea-score-btn.sel-0{background:#dc2626;color:#fff;border-color:#dc2626;}
 .ea-score-btn.sel-na{background:#94a3b8;color:#fff;border-color:#94a3b8;}
 .ea-crit-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;margin-left:6px;}
 .ea-sub-hdr{font-size:11px;font-weight:700;color:#1e3a5f;padding:8px 0 4px;margin-top:8px;border-bottom:1px solid #f1ece3;text-transform:uppercase;letter-spacing:.04em;}
-.ea-item-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f8f6f2;}
+.ea-item-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f8f6f2;position:relative;z-index:1;}
 .ea-item-std{flex:1;font-size:12px;color:#374151;line-height:1.5;}
-.ea-item-btns{display:flex;gap:4px;flex-shrink:0;}
+.ea-item-btns{display:flex;gap:6px;flex-shrink:0;}
 .ea-section-card{background:#fff;border:1px solid #e8e2d8;border-radius:14px;margin-bottom:16px;overflow:hidden;}
 .ea-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;transition:background .15s;}
 .ea-section-hdr:hover{background:#faf9f7;}
@@ -3551,17 +3552,88 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   #ea-form-summary{width:100% !important;border-left:none !important;border-top:1px solid #e8e2d8;max-height:none !important;}
   .ea-section-hdr{padding:12px 14px;}
   .ea-section-body{padding:0 14px 12px;}
-  .ea-score-btn{min-width:34px;min-height:34px;}
+  .ea-score-btn{min-width:44px;min-height:44px;font-size:13px;}
 }
 @media(max-width:480px){
-  .ea-item-btns{gap:2px;}
-  .ea-score-btn{width:32px;height:32px;font-size:11px;min-width:32px;min-height:32px;}
+  .ea-item-btns{gap:6px;}
+  .ea-score-btn{width:44px;height:44px;font-size:13px;min-width:44px;min-height:44px;}
 }
 .ea-pct-bar{height:6px;border-radius:3px;background:#f1ece3;overflow:hidden;flex:1;}
 .ea-pct-fill{height:100%;border-radius:3px;transition:width .3s;}
 .ea-summary-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1ece3;font-size:12px;}
 @keyframes slFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slScaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+/* ═══ GOOGLE & YELP REVIEWS MODULE ═══ */
+#pg-reviews .rv-container{max-width:1200px;margin:0 auto;padding:24px 20px 60px;}
+#pg-reviews .rv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+#pg-reviews .rv-title{font-family:'Oswald',sans-serif;font-size:26px;font-weight:800;color:#1e3a5f;letter-spacing:.04em;text-transform:uppercase;}
+#pg-reviews .rv-last-sync{font-size:10px;color:#94a3b8;}
+#pg-reviews .rv-tabs{display:flex;gap:4px;background:rgba(30,58,95,.06);border-radius:10px;padding:3px;margin-bottom:18px;flex-wrap:wrap;}
+#pg-reviews .rv-tab{padding:8px 18px;border-radius:8px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b;cursor:pointer;transition:all .2s;border:none;background:transparent;}
+#pg-reviews .rv-tab.on{background:#1e3a5f;color:#fff;box-shadow:0 2px 8px rgba(30,58,95,.25);}
+#pg-reviews .rv-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+#pg-reviews .rv-filter-group{display:flex;gap:3px;background:rgba(30,58,95,.04);border-radius:8px;padding:2px;flex-wrap:wrap;}
+#pg-reviews .rv-filter-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;color:#64748b;cursor:pointer;border:none;background:transparent;transition:all .15s;}
+#pg-reviews .rv-filter-btn.on{background:#fff;color:#1e3a5f;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+#pg-reviews .rv-filter-btn:hover{color:#1e3a5f;}
+#pg-reviews .rv-filter-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-right:4px;align-self:center;}
+#pg-reviews .rv-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+#pg-reviews .rv-card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(30,58,95,.06);border:1px solid rgba(30,58,95,.06);}
+#pg-reviews .rv-card-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+#pg-reviews .rv-card-value{font-family:'Oswald',sans-serif;font-size:28px;font-weight:800;color:#1e3a5f;line-height:1;}
+#pg-reviews .rv-card-sub{font-size:11px;color:#64748b;margin-top:4px;}
+#pg-reviews .rv-card-delta{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-top:6px;}
+#pg-reviews .rv-card-delta.up{background:rgba(22,163,74,.1);color:#16a34a;}
+#pg-reviews .rv-card-delta.down{background:rgba(220,38,38,.1);color:#dc2626;}
+#pg-reviews .rv-card-delta.flat{background:rgba(148,163,184,.1);color:#94a3b8;}
+#pg-reviews .rv-card-stars{display:flex;gap:2px;margin-top:6px;}
+#pg-reviews .rv-star{font-size:14px;color:#f59e0b;}
+#pg-reviews .rv-star.off{color:#e2e8f0;}
+#pg-reviews .rv-table-wrap{overflow-x:auto;border-radius:14px;background:#fff;box-shadow:0 2px 12px rgba(30,58,95,.06);border:1px solid rgba(30,58,95,.06);margin-bottom:24px;}
+#pg-reviews .rv-table{width:100%;border-collapse:collapse;font-size:12px;}
+#pg-reviews .rv-table th{background:#faf9f7;font-family:'Oswald',sans-serif;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.06em;font-size:10px;padding:10px 14px;text-align:left;border-bottom:2px solid #e8e2d8;white-space:nowrap;}
+#pg-reviews .rv-table td{padding:10px 14px;border-bottom:1px solid #f1ece3;color:#475569;vertical-align:middle;}
+#pg-reviews .rv-table tr:hover td{background:rgba(30,58,95,.02);}
+#pg-reviews .rv-table .rv-store-name{font-weight:700;color:#1e3a5f;}
+#pg-reviews .rv-platform-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;}
+#pg-reviews .rv-platform-badge.google{background:rgba(66,133,244,.1);color:#4285f4;}
+#pg-reviews .rv-platform-badge.yelp{background:rgba(211,35,35,.1);color:#d32323;}
+#pg-reviews .rv-rating-bar{display:flex;align-items:center;gap:6px;}
+#pg-reviews .rv-rating-num{font-family:'Oswald',sans-serif;font-weight:800;font-size:14px;}
+#pg-reviews .rv-trend-up{color:#16a34a;}
+#pg-reviews .rv-trend-down{color:#dc2626;}
+#pg-reviews .rv-review-item{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 6px rgba(30,58,95,.05);border:1px solid rgba(30,58,95,.06);margin-bottom:10px;}
+#pg-reviews .rv-review-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+#pg-reviews .rv-review-text{font-size:12px;color:#475569;line-height:1.55;margin-top:8px;}
+#pg-reviews .rv-alert-item{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 6px rgba(30,58,95,.05);border-left:4px solid #dc2626;margin-bottom:10px;}
+#pg-reviews .rv-empty{text-align:center;padding:60px 20px;color:#94a3b8;font-size:13px;}
+#pg-reviews .rv-empty-icon{font-size:48px;margin-bottom:12px;display:block;}
+#pg-reviews .rv-section-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;margin-top:6px;}
+#pg-reviews .rv-insights{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:24px;}
+#pg-reviews .rv-insight{background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 6px rgba(30,58,95,.05);border:1px solid rgba(30,58,95,.06);font-size:12px;color:#475569;display:flex;align-items:center;gap:10px;}
+#pg-reviews .rv-insight-icon{font-size:20px;flex-shrink:0;}
+#pg-reviews .rv-config-section{background:#fff;border-radius:14px;padding:20px 24px;box-shadow:0 2px 12px rgba(30,58,95,.06);border:1px solid rgba(30,58,95,.06);margin-bottom:18px;}
+#pg-reviews .rv-config-row{display:grid;grid-template-columns:140px 1fr 1fr 80px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #f1ece3;font-size:12px;}
+#pg-reviews .rv-config-row:last-child{border-bottom:none;}
+#pg-reviews .rv-config-input{padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#475569;width:100%;box-sizing:border-box;}
+#pg-reviews .rv-config-toggle{width:36px;height:20px;border-radius:10px;background:#e2e8f0;position:relative;cursor:pointer;transition:background .2s;}
+#pg-reviews .rv-config-toggle.on{background:#16a34a;}
+#pg-reviews .rv-config-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:transform .2s;}
+#pg-reviews .rv-config-toggle.on::after{transform:translateX(16px);}
+@media(max-width:768px){
+  #pg-reviews .rv-container{padding:16px 12px 40px;}
+  #pg-reviews .rv-title{font-size:20px;}
+  #pg-reviews .rv-cards{grid-template-columns:1fr 1fr;gap:10px;}
+  #pg-reviews .rv-card{padding:14px 16px;}
+  #pg-reviews .rv-card-value{font-size:22px;}
+  #pg-reviews .rv-config-row{grid-template-columns:1fr;gap:6px;}
+  #pg-reviews .rv-tabs{overflow-x:auto;flex-wrap:nowrap;}
+  #pg-reviews .rv-tab{white-space:nowrap;font-size:11px;padding:7px 14px;}
+}
+@media(max-width:480px){
+  #pg-reviews .rv-cards{grid-template-columns:1fr;}
+}
+
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -3764,6 +3836,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
       <div class="hcard-title">Louie Spots</div>
       <div class="hcard-desc">Live visual map of all current and future Skinny Louie locations. Track expansion across Florida and New York with real-time status pins.</div>
       <div class="hcard-tag">Expansion Map</div>
+    </div>
+    <div id="hcard-reviews" class="hcard c8" onclick="goReviews()" style="position:relative;cursor:pointer;">
+      <span class="hcard-icon">⭐</span>
+      <div class="hcard-title">Google & Yelp Reviews</div>
+      <div class="hcard-desc">Track review counts, ratings, monthly growth, and daily activity across Google and Yelp for every location.</div>
+      <div class="hcard-tag">Review Tracker</div>
     </div>
     <div id="hcard-portfolio" class="hcard c1" onclick="goPortfolio()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
       <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">🏪</span>
@@ -4370,7 +4448,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_email_subs_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_email_subs_v1','sl_review_snapshots_v1','sl_reviews_v1','sl_review_config_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4588,7 +4666,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -4745,6 +4823,7 @@ function _applyPermissionsUI(){
     marketing:   'hcard-marketing',
     assess:      'hcard-assess',
     stores:      'hcard-stores',
+    reviews:     'hcard-reviews',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -6593,6 +6672,7 @@ const _ADM_MODULES = [
   { id:'marketing',    label:'Marketing',          icon:'📣', desc:'Campaigns, content & brand initiatives' },
   { id:'assess',        label:'Excellence Assessment', icon:'📋', desc:'Quarterly inspection scoring by location' },
   { id:'stores',        label:'Louie Spots', icon:'🗺️', desc:'Expansion map & location tracker' },
+  { id:'reviews',      label:'Google & Yelp Reviews', icon:'⭐', desc:'Review tracking across Google & Yelp' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -7306,7 +7386,7 @@ function render(){
   if(!_slUser) return; // wait for auth
   // v81h: scroll after paint so browser has rendered new page content
   requestAnimationFrame(function(){ window.scrollTo(0, 0); });
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   var _pgEl=document.getElementById('pg-'+S.page); if(_pgEl){ _pgEl.style.display=(S.page==='home'||S.page==='admin')?'flex':'block'; if(S.page==='admin'){_pgEl.style.flexDirection='column';} }
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -7317,6 +7397,7 @@ function render(){
   else if(S.page==='inv'){ try{ if(typeof invRenderCount!=='undefined'){ invPopulateStores(); } }catch(e){ console.error('invRender',e); } }
   else if(S.page==='admin'){ _forceAdminVisible(); renderAdminPage(); }
   else if(S.page==='portfolio'){ _renderPortfolioSafe(); }
+  else if(S.page==='reviews'){ try{ renderReviewsPage(); }catch(e){ console.error('renderReviewsPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -7342,7 +7423,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',portfolio:'Store Intelligence',newstores:'New Stores',hr:'HR Dashboard',marketing:'Marketing',events:'Event Calculator',stores:'Louie Spots',assess:'Excellence Assessment',dm_report:'DM Report'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',portfolio:'Store Intelligence',newstores:'New Stores',hr:'HR Dashboard',marketing:'Marketing',events:'Event Calculator',stores:'Louie Spots',assess:'Excellence Assessment',dm_report:'DM Report',reviews:'Google & Yelp Reviews'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -19713,7 +19794,7 @@ function eaRenderFormSections(){
         h += '<div class="ea-sub-hdr">'+_eaEsc(item.sub)+'</div>';
         lastSub = item.sub;
       }
-      h += '<div class="ea-item-row">';
+      h += '<div class="ea-item-row" data-si="'+si+'" data-ii="'+ii+'">';
       h += '<div class="ea-item-std">'+_eaEsc(item.std);
       if(item.critical) h += '<span class="ea-crit-badge">CRITICAL</span>';
       if(item.w > 1) h += '<span style="font-size:9px;color:#94a3b8;margin-left:4px;">(x'+item.w+')</span>';
@@ -19737,7 +19818,7 @@ function eaRenderFormSections(){
       h += '</div></div>';
       // Comment/Action fields for admin
       if(isAdmin){
-        h += '<div style="display:flex;gap:8px;padding:0 0 6px;margin-top:-4px;">';
+        h += '<div style="display:flex;gap:8px;padding:0 0 6px;margin-top:2px;">';
         h += '<input placeholder="Comment / Evidence" value="'+_eaEsc(sc.comment||'')+'" onchange="eaComment('+si+','+ii+',this.value,\'comment\')" style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid #f1ece3;font-size:10px;color:#64748b;">';
         h += '<input placeholder="Action / Follow-up" value="'+_eaEsc(sc.action||'')+'" onchange="eaComment('+si+','+ii+',this.value,\'action\')" style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid #f1ece3;font-size:10px;color:#64748b;">';
         h += '</div>';
@@ -19758,40 +19839,24 @@ function eaScore(si, ii, val){
   var key = si+'_'+ii;
   if(!_eaCurrent.scores[key]) _eaCurrent.scores[key] = {};
   _eaCurrent.scores[key].score = val;
-  eaAutoSave();
-  // v104: Update only the specific item buttons + section header in-place
-  // Do NOT call eaRenderFormSections() — it destroys expanded state
+  // v107: Visual updates FIRST for instant feedback
   _eaUpdateItemButtons(si, ii, val);
   _eaUpdateSectionHeader(si);
   eaRenderFormSummary();
+  // Save LAST — wrapped in try-catch so full localStorage never blocks UI
+  try { eaAutoSave(); } catch(e) { console.error("EA autosave error:", e); }
 }
 
 function _eaUpdateItemButtons(si, ii, selectedVal){
-  // Find all score buttons for this item and update their classes
-  var row = document.querySelector('#ea-sec-body-'+si+' .ea-item-row:nth-of-type('+(ii+1)+')');
-  if(!row){
-    // Fallback: find by iterating all items in section
-    var body = document.getElementById('ea-sec-body-'+si);
-    if(!body) return;
-    var items = body.querySelectorAll('.ea-item-row');
-    // Account for sub-headers: count actual item rows
-    var itemIdx = 0;
-    var allChildren = body.children;
-    for(var c=0; c<allChildren.length; c++){
-      if(allChildren[c].classList.contains('ea-item-row')){
-        if(itemIdx === ii){ row = allChildren[c]; break; }
-        itemIdx++;
-      }
-    }
-  }
+  // v106: Use data attributes for bulletproof row lookup
+  // nth-of-type was broken because sub-headers and comment divs are sibling divs
+  var row = document.querySelector('.ea-item-row[data-si="'+si+'"][data-ii="'+ii+'"]');
   if(!row) return;
   var btns = row.querySelectorAll('.ea-score-btn');
   btns.forEach(function(btn){
     var btnText = btn.textContent.trim();
     var btnVal = btnText === 'N/A' ? -1 : parseInt(btnText, 10);
-    // Remove all sel-* classes
     btn.classList.remove('sel-0','sel-1','sel-2','sel-na');
-    // Add the correct one if this is the selected value
     if(btnVal === selectedVal){
       if(selectedVal === -1) btn.classList.add('sel-na');
       else btn.classList.add('sel-'+selectedVal);
@@ -21338,6 +21403,327 @@ function hrDelete(id){
 load();
 migrate();
 // render() is called by _initApp() after Supabase auth
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  GOOGLE & YELP REVIEWS MODULE — v106
+// ══════════════════════════════════════════════════════════════════════════════
+
+var RV = {
+  tab: 'overview',
+  platform: 'all',
+  rating: 'all',
+  location: 'all',
+  month: null,
+  snapshots: [],
+  reviews: [],
+  config: [],
+};
+
+var RV_LOCATIONS = [
+  { name:'Wynwood',         state:'FL', city:'Miami' },
+  { name:'Little Havana',   state:'FL', city:'Miami' },
+  { name:'Kaseya Center',   state:'FL', city:'Miami' },
+  { name:'Coral Gables',    state:'FL', city:'Coral Gables' },
+  { name:'West Palm Beach', state:'FL', city:'West Palm Beach' },
+  { name:'Aventura',        state:'FL', city:'Aventura' },
+  { name:'Dania Beach',     state:'FL', city:'Dania Beach' },
+  { name:'South Miami',     state:'FL', city:'South Miami' },
+  { name:'NoMad',           state:'NY', city:'New York' },
+  { name:'West Village',    state:'NY', city:'New York' },
+];
+
+function _rvGenerateSampleData(){
+  var snaps = [];
+  var reviews = [];
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  RV_LOCATIONS.forEach(function(loc){
+    var gBase = 800 + Math.floor(Math.random()*600);
+    var yBase = 200 + Math.floor(Math.random()*300);
+    var gRating = +(4.2 + Math.random()*0.6).toFixed(1);
+    var yRating = +(3.8 + Math.random()*0.8).toFixed(1);
+    for(var d=1; d<=Math.min(now.getDate(), 28); d++){
+      var mm = (month+1<10?'0':'')+(month+1);
+      var dd = (d<10?'0':'')+d;
+      var dateStr = year+'-'+mm+'-'+dd;
+      var gGrow = Math.floor(Math.random()*4);
+      var yGrow = Math.floor(Math.random()*2);
+      gBase += gGrow; yBase += yGrow;
+      snaps.push({date:dateStr,loc:loc.name,platform:'google',total_reviews:gBase,average_rating:gRating});
+      snaps.push({date:dateStr,loc:loc.name,platform:'yelp',total_reviews:yBase,average_rating:yRating});
+      if(Math.random()>0.6){
+        var stars=[5,5,5,4,4,3,2,1][Math.floor(Math.random()*8)];
+        var names=['Sarah M.','John D.','Maria G.','Alex T.','Chris L.','Pat R.','Jordan K.','Casey W.','Sam B.','Taylor N.'];
+        var texts=['Amazing food and great service! Will definitely come back.','The burgers here are incredible. Best in the city.','Good food but the wait was a bit long.','Loved the atmosphere and the staff was super friendly.','Disappointing experience. Food was cold and service was slow.','Perfect spot for a quick lunch. Great value.','The fries are to die for! Everything was fresh.','Not bad but nothing special either. Average experience.','Terrible. Found a hair in my food. Never coming back.','Best restaurant in the area. The double burger is a must-try!'];
+        reviews.push({id:'rv_'+dateStr+'_'+Math.random().toString(36).substr(2,6),date:dateStr,loc:loc.name,platform:Math.random()>0.4?'google':'yelp',rating:stars,reviewer_name:names[Math.floor(Math.random()*names.length)],review_text:texts[Math.floor(Math.random()*texts.length)],created_at:dateStr+'T'+Math.floor(8+Math.random()*14)+':'+String(Math.floor(Math.random()*60)).padStart(2,'0')+':00Z'});
+      }
+    }
+  });
+  RV.snapshots=snaps; RV.reviews=reviews;
+}
+
+function _rvLoadConfig(){
+  var raw=localStorage.getItem('sl_review_config_v1');
+  if(raw){ try{RV.config=JSON.parse(raw);return;}catch(e){} }
+  RV.config=RV_LOCATIONS.map(function(loc){return{name:loc.name,state:loc.state,google_place_id:'',yelp_biz_id:'',active:true,google_enabled:true,yelp_enabled:true};});
+}
+
+function _rvSaveConfig(){
+  localStorage.setItem('sl_review_config_v1',JSON.stringify(RV.config));
+  if(typeof _slSaveJSON==='function') _slSaveJSON('sl_review_config_v1',RV.config);
+}
+
+function goReviews(){
+  if(!_hasPermission('reviews')){_showAccessDenied('Google & Yelp Reviews');return;}
+  S.page='reviews';
+  if(RV.snapshots.length===0) _rvGenerateSampleData();
+  if(RV.config.length===0) _rvLoadConfig();
+  render();
+}
+
+function rvSetTab(t){RV.tab=t;renderReviewsPage();}
+function rvSetPlatform(p){RV.platform=p;renderReviewsPage();}
+function rvSetRating(r){RV.rating=r;renderReviewsPage();}
+function rvSetLocation(l){RV.location=l;renderReviewsPage();}
+
+function _rvFilterReviews(){
+  var r=RV.reviews;
+  if(RV.platform!=='all') r=r.filter(function(x){return x.platform===RV.platform;});
+  if(RV.location!=='all') r=r.filter(function(x){return x.loc===RV.location;});
+  if(RV.rating!=='all') r=r.filter(function(x){return x.rating===parseInt(RV.rating);});
+  return r.sort(function(a,b){return b.date.localeCompare(a.date)||b.created_at.localeCompare(a.created_at);});
+}
+
+function _rvStarHTML(rating,max){
+  max=max||5;var h='';
+  for(var i=1;i<=max;i++) h+='<span class="rv-star'+(i<=Math.round(rating)?'':' off')+'">★</span>';
+  return h;
+}
+
+function _rvDelta(val){
+  if(val>0) return '<span class="rv-card-delta up">▲ +'+val+'</span>';
+  if(val<0) return '<span class="rv-card-delta down">▼ '+val+'</span>';
+  return '<span class="rv-card-delta flat">— 0</span>';
+}
+
+function _rvGetLatestSnapshot(loc,platform){
+  var snaps=RV.snapshots.filter(function(s){return s.loc===loc&&s.platform===platform;}).sort(function(a,b){return b.date.localeCompare(a.date);});
+  return snaps.length>0?snaps[0]:null;
+}
+
+function _rvGetFirstSnapshot(loc,platform){
+  var snaps=RV.snapshots.filter(function(s){return s.loc===loc&&s.platform===platform;}).sort(function(a,b){return a.date.localeCompare(b.date);});
+  return snaps.length>0?snaps[0]:null;
+}
+
+function _rvGetOverviewStats(){
+  var totalGoogle=0,totalYelp=0,newThisMonth=0;
+  var gRatings=[],yRatings=[];
+  var bestGrowth={loc:'N/A',count:0},lowestRated={loc:'N/A',rating:5.1};
+  RV_LOCATIONS.forEach(function(loc){
+    var gL=_rvGetLatestSnapshot(loc.name,'google');
+    var yL=_rvGetLatestSnapshot(loc.name,'yelp');
+    var gF=_rvGetFirstSnapshot(loc.name,'google');
+    var yF=_rvGetFirstSnapshot(loc.name,'yelp');
+    if(gL){totalGoogle+=gL.total_reviews;gRatings.push(gL.average_rating);}
+    if(yL){totalYelp+=yL.total_reviews;yRatings.push(yL.average_rating);}
+    var locNew=0;
+    if(gL&&gF) locNew+=gL.total_reviews-gF.total_reviews;
+    if(yL&&yF) locNew+=yL.total_reviews-yF.total_reviews;
+    newThisMonth+=locNew;
+    if(locNew>bestGrowth.count) bestGrowth={loc:loc.name,count:locNew};
+    var avgAll=[];
+    if(gL) avgAll.push(gL.average_rating);
+    if(yL) avgAll.push(yL.average_rating);
+    var locAvg=avgAll.length>0?avgAll.reduce(function(a,b){return a+b;},0)/avgAll.length:5;
+    if(locAvg<lowestRated.rating) lowestRated={loc:loc.name,rating:locAvg};
+  });
+  var avgG=gRatings.length>0?(gRatings.reduce(function(a,b){return a+b;},0)/gRatings.length).toFixed(1):'--';
+  var avgY=yRatings.length>0?(yRatings.reduce(function(a,b){return a+b;},0)/yRatings.length).toFixed(1):'--';
+  return{totalGoogle:totalGoogle,totalYelp:totalYelp,total:totalGoogle+totalYelp,newThisMonth:newThisMonth,avgGoogle:avgG,avgYelp:avgY,bestGrowth:bestGrowth,lowestRated:lowestRated};
+}
+
+function renderReviewsPage(){
+  var pg=document.getElementById('pg-reviews');
+  if(!pg) return;
+  var h='<div class="rv-container">';
+  h+='<div class="rv-header"><div class="rv-title">Google & Yelp Reviews</div><div class="rv-last-sync">Last synced: Sample data (API not connected)</div></div>';
+  var tabs=[{id:'overview',label:'Overview'},{id:'locations',label:'By Location'},{id:'growth',label:'Monthly Growth'},{id:'daily',label:'Daily Reviews'},{id:'alerts',label:'Low Rating Alerts'},{id:'config',label:'Config'}];
+  h+='<div class="rv-tabs">';
+  tabs.forEach(function(t){
+    if(t.id==='config'&&_slRole!=='admin') return;
+    h+='<button class="rv-tab'+(RV.tab===t.id?' on':'')+'" onclick="rvSetTab(\''+t.id+'\')">'+t.label+'</button>';
+  });
+  h+='</div>';
+  if(RV.tab!=='config'){
+    h+='<div class="rv-filters">';
+    h+='<span class="rv-filter-label">Location:</span><div class="rv-filter-group">';
+    h+='<button class="rv-filter-btn'+(RV.location==='all'?' on':'')+'" onclick="rvSetLocation(\'all\')">All</button>';
+    RV_LOCATIONS.forEach(function(loc){
+      if(_slLocations&&_slLocations.size>0&&!_slLocations.has(loc.name)&&_slRole!=='admin') return;
+      h+='<button class="rv-filter-btn'+(RV.location===loc.name?' on':'')+'" onclick="rvSetLocation(\''+loc.name+'\')">'+loc.name+'</button>';
+    });
+    h+='</div>';
+    h+='<span class="rv-filter-label" style="margin-left:8px;">Platform:</span><div class="rv-filter-group">';
+    ['all','google','yelp'].forEach(function(p){
+      var label=p==='all'?'All':p.charAt(0).toUpperCase()+p.slice(1);
+      h+='<button class="rv-filter-btn'+(RV.platform===p?' on':'')+'" onclick="rvSetPlatform(\''+p+'\')">'+label+'</button>';
+    });
+    h+='</div>';
+    if(RV.tab==='daily'||RV.tab==='alerts'){
+      h+='<span class="rv-filter-label" style="margin-left:8px;">Rating:</span><div class="rv-filter-group">';
+      h+='<button class="rv-filter-btn'+(RV.rating==='all'?' on':'')+'" onclick="rvSetRating(\'all\')">All</button>';
+      [5,4,3,2,1].forEach(function(r){
+        h+='<button class="rv-filter-btn'+(RV.rating===String(r)?' on':'')+'" onclick="rvSetRating(\''+r+'\')">'+ r+'★</button>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+  if(RV.tab==='overview') h+=_rvRenderOverview();
+  else if(RV.tab==='locations') h+=_rvRenderLocations();
+  else if(RV.tab==='growth') h+=_rvRenderGrowth();
+  else if(RV.tab==='daily') h+=_rvRenderDaily();
+  else if(RV.tab==='alerts') h+=_rvRenderAlerts();
+  else if(RV.tab==='config') h+=_rvRenderConfig();
+  h+='</div>';
+  pg.innerHTML=h;
+}
+
+function _rvRenderOverview(){
+  var s=_rvGetOverviewStats();
+  var h='<div class="rv-cards">';
+  h+='<div class="rv-card"><div class="rv-card-label">Total Google Reviews</div><div class="rv-card-value">'+s.totalGoogle.toLocaleString()+'</div><div class="rv-card-sub">Across all locations</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgGoogle)||0)+'</div><div class="rv-card-sub">Avg: '+s.avgGoogle+'</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Total Yelp Reviews</div><div class="rv-card-value">'+s.totalYelp.toLocaleString()+'</div><div class="rv-card-sub">Across all locations</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgYelp)||0)+'</div><div class="rv-card-sub">Avg: '+s.avgYelp+'</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Total Reviews</div><div class="rv-card-value">'+s.total.toLocaleString()+'</div><div class="rv-card-sub">Google + Yelp combined</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">New This Month</div><div class="rv-card-value">+'+s.newThisMonth+'</div>'+_rvDelta(s.newThisMonth)+'</div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Avg Google Rating</div><div class="rv-card-value">'+s.avgGoogle+'</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgGoogle)||0)+'</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Avg Yelp Rating</div><div class="rv-card-value">'+s.avgYelp+'</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgYelp)||0)+'</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Best Growth</div><div class="rv-card-value">'+s.bestGrowth.loc+'</div><div class="rv-card-sub">+'+s.bestGrowth.count+' reviews this month</div></div>';
+  h+='<div class="rv-card"><div class="rv-card-label">Lowest Rated</div><div class="rv-card-value">'+s.lowestRated.loc+'</div><div class="rv-card-sub">'+s.lowestRated.rating.toFixed(1)+' avg rating</div></div>';
+  h+='</div>';
+  h+='<div class="rv-section-title">Insights</div><div class="rv-insights">';
+  var lowR=RV.reviews.filter(function(r){return r.rating<=2;});
+  var todayStr=new Date().toISOString().slice(0,10);
+  var todayR=RV.reviews.filter(function(r){return r.date===todayStr;});
+  h+='<div class="rv-insight"><span class="rv-insight-icon">⚠️</span><div><strong>'+lowR.length+' low-rating reviews</strong> (1-2 stars) this month need attention</div></div>';
+  h+='<div class="rv-insight"><span class="rv-insight-icon">📈</span><div><strong>'+s.bestGrowth.loc+'</strong> gained the most reviews (+'+s.bestGrowth.count+')</div></div>';
+  h+='<div class="rv-insight"><span class="rv-insight-icon">📊</span><div><strong>'+todayR.length+' new reviews</strong> received today</div></div>';
+  if(s.lowestRated.rating<4.0) h+='<div class="rv-insight"><span class="rv-insight-icon">🔴</span><div><strong>'+s.lowestRated.loc+'</strong> has lowest rating ('+s.lowestRated.rating.toFixed(1)+')</div></div>';
+  h+='</div>';
+  return h;
+}
+
+function _rvRenderLocations(){
+  var h='<div class="rv-table-wrap"><table class="rv-table"><thead><tr><th>Store</th><th>Google Reviews</th><th>Google Rating</th><th>Yelp Reviews</th><th>Yelp Rating</th><th>Total</th><th>New This Month</th><th>Rating Trend</th></tr></thead><tbody>';
+  RV_LOCATIONS.forEach(function(loc){
+    if(RV.location!=='all'&&RV.location!==loc.name) return;
+    if(_slLocations&&_slLocations.size>0&&!_slLocations.has(loc.name)&&_slRole!=='admin') return;
+    var gL=_rvGetLatestSnapshot(loc.name,'google'),yL=_rvGetLatestSnapshot(loc.name,'yelp');
+    var gF=_rvGetFirstSnapshot(loc.name,'google'),yF=_rvGetFirstSnapshot(loc.name,'yelp');
+    var gR=gL?gL.total_reviews:0,gRt=gL?gL.average_rating:0;
+    var yR=yL?yL.total_reviews:0,yRt=yL?yL.average_rating:0;
+    var total=gR+yR;
+    var newG=(gL&&gF)?gL.total_reviews-gF.total_reviews:0;
+    var newY=(yL&&yF)?yL.total_reviews-yF.total_reviews:0;
+    var newT=newG+newY;
+    var avgRt=((gRt+yRt)/2).toFixed(1);
+    var tc=avgRt>=4.5?'rv-trend-up':(avgRt<4.0?'rv-trend-down':'');
+    h+='<tr><td class="rv-store-name">'+loc.name+'<br><span style="font-size:10px;color:#94a3b8;font-weight:400;">'+loc.city+', '+loc.state+'</span></td>';
+    h+='<td>'+gR.toLocaleString()+'</td><td><div class="rv-rating-bar"><span class="rv-rating-num">'+gRt.toFixed(1)+'</span>'+_rvStarHTML(gRt)+'</div></td>';
+    h+='<td>'+yR.toLocaleString()+'</td><td><div class="rv-rating-bar"><span class="rv-rating-num">'+yRt.toFixed(1)+'</span>'+_rvStarHTML(yRt)+'</div></td>';
+    h+='<td><strong>'+total.toLocaleString()+'</strong></td><td>'+_rvDelta(newT)+'</td>';
+    h+='<td class="'+tc+'"><strong>'+avgRt+'</strong> avg</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+function _rvRenderGrowth(){
+  var h='<div class="rv-table-wrap"><table class="rv-table"><thead><tr><th>Store</th><th>Start of Month</th><th>Current</th><th>New Reviews</th><th>Growth %</th><th>Google</th><th>Yelp</th></tr></thead><tbody>';
+  RV_LOCATIONS.forEach(function(loc){
+    if(RV.location!=='all'&&RV.location!==loc.name) return;
+    if(_slLocations&&_slLocations.size>0&&!_slLocations.has(loc.name)&&_slRole!=='admin') return;
+    var gL=_rvGetLatestSnapshot(loc.name,'google'),yL=_rvGetLatestSnapshot(loc.name,'yelp');
+    var gF=_rvGetFirstSnapshot(loc.name,'google'),yF=_rvGetFirstSnapshot(loc.name,'yelp');
+    var startT=(gF?gF.total_reviews:0)+(yF?yF.total_reviews:0);
+    var curT=(gL?gL.total_reviews:0)+(yL?yL.total_reviews:0);
+    var newR=curT-startT;
+    var gPct=startT>0?((newR/startT)*100).toFixed(1):'0.0';
+    var newG=(gL&&gF)?gL.total_reviews-gF.total_reviews:0;
+    var newY=(yL&&yF)?yL.total_reviews-yF.total_reviews:0;
+    h+='<tr><td class="rv-store-name">'+loc.name+'</td><td>'+startT.toLocaleString()+'</td><td>'+curT.toLocaleString()+'</td><td>'+_rvDelta(newR)+'</td><td><strong>'+gPct+'%</strong></td>';
+    h+='<td><span class="rv-platform-badge google">G +'+newG+'</span></td><td><span class="rv-platform-badge yelp">Y +'+newY+'</span></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+function _rvRenderDaily(){
+  var filtered=_rvFilterReviews();
+  if(filtered.length===0) return '<div class="rv-empty"><span class="rv-empty-icon">📭</span>No reviews match your filters.</div>';
+  var h='<div class="rv-section-title">'+filtered.length+' Reviews</div>';
+  filtered.slice(0,50).forEach(function(rv){
+    h+='<div class="rv-review-item"><div class="rv-review-meta">';
+    h+='<span class="rv-platform-badge '+rv.platform+'">'+(rv.platform==='google'?'Google':'Yelp')+'</span>';
+    h+='<strong>'+rv.reviewer_name+'</strong> '+_rvStarHTML(rv.rating);
+    h+=' <span style="color:#94a3b8;font-size:11px;">'+rv.date+' — '+rv.loc+'</span></div>';
+    if(rv.review_text) h+='<div class="rv-review-text">'+rv.review_text+'</div>';
+    h+='</div>';
+  });
+  if(filtered.length>50) h+='<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">Showing 50 of '+filtered.length+'</div>';
+  return h;
+}
+
+function _rvRenderAlerts(){
+  var low=_rvFilterReviews().filter(function(r){return r.rating<=2;});
+  if(low.length===0) return '<div class="rv-empty"><span class="rv-empty-icon">✅</span>No low-rating reviews. Great job!</div>';
+  var h='<div class="rv-section-title">'+low.length+' Low-Rating Reviews (1-2 Stars)</div>';
+  low.forEach(function(rv){
+    h+='<div class="rv-alert-item"><div class="rv-review-meta">';
+    h+='<span class="rv-platform-badge '+rv.platform+'">'+(rv.platform==='google'?'Google':'Yelp')+'</span>';
+    h+='<strong>'+rv.reviewer_name+'</strong> '+_rvStarHTML(rv.rating);
+    h+=' <span style="color:#94a3b8;font-size:11px;">'+rv.date+'</span>';
+    h+=' <span style="font-weight:700;color:#1e3a5f;">'+rv.loc+'</span></div>';
+    if(rv.review_text) h+='<div class="rv-review-text">'+rv.review_text+'</div>';
+    h+='<div style="margin-top:8px;font-size:10px;color:#94a3b8;">Response status: <span style="color:#f59e0b;font-weight:700;">Pending</span></div></div>';
+  });
+  return h;
+}
+
+function _rvRenderConfig(){
+  if(_slRole!=='admin') return '<div class="rv-empty"><span class="rv-empty-icon">🔒</span>Admin access required.</div>';
+  _rvLoadConfig();
+  var h='<div class="rv-section-title">Review Source Configuration</div>';
+  h+='<div style="font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.55;">Configure the Google Place ID and Yelp Business ID for each location. These IDs are required for automated review sync.</div>';
+  h+='<div class="rv-config-section">';
+  h+='<div class="rv-config-row" style="font-weight:700;color:#1e3a5f;border-bottom:2px solid #e8e2d8;"><div>Store</div><div>Google Place ID</div><div>Yelp Business ID</div><div>Active</div></div>';
+  RV.config.forEach(function(cfg,idx){
+    h+='<div class="rv-config-row">';
+    h+='<div style="font-weight:700;color:#1e3a5f;">'+cfg.name+'<br><span style="font-size:10px;color:#94a3b8;font-weight:400;">'+cfg.state+'</span></div>';
+    h+='<div><input class="rv-config-input" placeholder="e.g. ChIJ..." value="'+(cfg.google_place_id||'')+'" onchange="rvUpdateConfig('+idx+',\'google_place_id\',this.value)"></div>';
+    h+='<div><input class="rv-config-input" placeholder="e.g. skinny-louies-miami" value="'+(cfg.yelp_biz_id||'')+'" onchange="rvUpdateConfig('+idx+',\'yelp_biz_id\',this.value)"></div>';
+    h+='<div><div class="rv-config-toggle'+(cfg.active?' on':'')+'" onclick="rvToggleConfig('+idx+')"></div></div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<div style="margin-top:16px;"><button class="btn" onclick="rvSaveConfig()" style="background:#1e3a5f;color:#fff;padding:10px 24px;border-radius:8px;font-family:Oswald,sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:none;cursor:pointer;">Save Configuration</button></div>';
+  h+='<div class="rv-config-section" style="margin-top:24px;"><div class="rv-section-title">API Status</div>';
+  h+='<div style="font-size:12px;color:#64748b;line-height:1.8;">';
+  h+='<strong>Google Business Profile API:</strong> <span style="color:#f59e0b;font-weight:700;">Not Connected</span><br>';
+  h+='<strong>Yelp Fusion API:</strong> <span style="color:#f59e0b;font-weight:700;">Not Connected</span><br>';
+  h+='<strong>Sync Schedule:</strong> Daily at 6:00 AM EST<br>';
+  h+='<strong>Data Storage:</strong> Supabase (sl_review_snapshots_v1, sl_reviews_v1)';
+  h+='</div></div>';
+  return h;
+}
+
+function rvUpdateConfig(idx,field,value){if(RV.config[idx]) RV.config[idx][field]=value;}
+function rvToggleConfig(idx){if(RV.config[idx]){RV.config[idx].active=!RV.config[idx].active;renderReviewsPage();}}
+function rvSaveConfig(){_rvSaveConfig();slAlert('Review configuration saved.','info');}
+
 </script>
 
 <!-- ═══ MAINTENANCE PAGE ═══ -->
@@ -21643,6 +22029,7 @@ migrate();
 </div>
 
 <!-- ═══ PORTFOLIO PAGE ═══ -->
+<div id="pg-reviews" style="display:none;min-height:calc(100vh - 62px);background:#faf9f7;"></div>
 <div id="pg-portfolio" style="display:none;">
   <div class="pf-topbar">
     <button onclick="goHome()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;font-weight:700;padding:0 16px 0 0;display:flex;align-items:center;gap:4px;">← Back</button>
