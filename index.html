@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v103</title>
-<!-- BUILD: 2026-04-28-v103 -->
+<title>Skinny Louie · Performance Hub v104</title>
+<!-- BUILD: 2026-04-29-v104 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2640,14 +2640,14 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
   .pnl-tbl thead th{ top:56px !important; }
   .cov-table thead th{ top:56px !important; }
   .pf-topbar{ top:56px !important; }
-  .pf-tbl th{ top:94px !important; }
+  
 }
 @media(max-width:480px){
   thead th{ top:52px !important; }
   .pnl-tbl thead th{ top:52px !important; }
   .cov-table thead th{ top:52px !important; }
   .pf-topbar{ top:52px !important; }
-  .pf-tbl th{ top:90px !important; }
+  
 }
 
 /* ══ MOBILE — Event & Filter refinements ═══════════ */
@@ -2842,6 +2842,12 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .inv-selectors .yr-pill { color:#555; background:#f0eeea; border-color:#ddd; }
 .inv-selectors .yr-pill:hover { background:#e4e0da; color:#212320; border-color:#bbb; }
 .inv-selectors .yr-pill.on { background:#7e2023; color:#fff; border-color:#7e2023; }
+/* ── Inventory Period Toggle (v104) ── */
+.inv-period-toggle{display:inline-flex;border-radius:10px;border:1.5px solid #d1c9bc;overflow:hidden;background:#f0ece4;}
+.inv-period-btn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 22px;border:none;cursor:pointer;color:#8b7e6f;background:transparent;transition:all .2s;white-space:nowrap;}
+.inv-period-btn:hover{color:#1e3a5f;background:rgba(30,58,95,.06);}
+.inv-period-btn.on{background:linear-gradient(135deg,#7e2023,#a03030);color:#fff;box-shadow:0 2px 8px rgba(126,32,35,.25);}
+
 @media(max-width:768px){
   .inv-topbar { padding:12px 14px; }
   .inv-tabs { margin-left:0; }
@@ -3341,7 +3347,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .pf-performer.worst .pf-performer-name{color:#9a3412;}
 .pf-tbl-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid #e8e2d8;background:#fff;}
 .pf-tbl{width:100%;border-collapse:collapse;font-size:13px;}
-.pf-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:12px 16px;text-align:right;border-bottom:1.5px solid #e8e2d8;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:113px;z-index:10;background:#fff;}
+.pf-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:12px 16px;text-align:right;border-bottom:1.5px solid #e8e2d8;white-space:nowrap;cursor:pointer;user-select:none;background:#fff;}
 .pf-tbl th:first-child{text-align:left;}
 .pf-tbl th:hover{color:#1e3a5f;}
 .pf-tbl th.sort-on{color:#7e2023;}
@@ -4143,9 +4149,9 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         <div id="inv-period-title" style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;">MONTHLY INVENTORY</div>
         <div id="inv-period-desc" style="font-size:11px;color:#64748b;">End-of-month full count for all items.</div>
       </div>
-      <div id="inv-period-pills" style="margin-left:auto;display:flex;gap:6px;">
-        <button class="yr-pill on" id="inv-pp-monthly" onclick="INV.period='monthly';invUpdatePeriodPills();">Monthly</button>
-        <button class="yr-pill" id="inv-pp-daily" onclick="INV.period='daily';invUpdatePeriodPills();">Daily</button>
+      <div id="inv-period-pills" class="inv-period-toggle" style="margin-left:auto;">
+        <button class="inv-period-btn on" id="inv-pp-monthly" onclick="INV.period='monthly';invUpdatePeriodPills();invRenderCount();">📅 Monthly</button>
+        <button class="inv-period-btn" id="inv-pp-daily" onclick="INV.period='daily';invUpdatePeriodPills();invRenderCount();">📝 Daily</button>
       </div>
     </div>
     <div class="inv-selectors">
@@ -5518,8 +5524,8 @@ function invUpdatePeriodPills(){
   var ic = document.getElementById('inv-period-icon');
   var tm = document.getElementById('inv-t-count');
   var td = document.getElementById('inv-t-daily');
-  if(pm) pm.classList.toggle('on', INV.period==='monthly');
-  if(pd) pd.classList.toggle('on', INV.period==='daily');
+  if(pm){ pm.classList.remove('on'); if(INV.period==='monthly') pm.classList.add('on'); }
+  if(pd){ pd.classList.remove('on'); if(INV.period==='daily') pd.classList.add('on'); }
   if(tm) tm.classList.toggle('active', INV.period==='monthly');
   if(td) td.classList.toggle('active', INV.period==='daily');
   if(INV.period==='daily'){
@@ -19752,10 +19758,69 @@ function eaScore(si, ii, val){
   var key = si+'_'+ii;
   if(!_eaCurrent.scores[key]) _eaCurrent.scores[key] = {};
   _eaCurrent.scores[key].score = val;
-  // Update button visuals immediately
   eaAutoSave();
-  eaRenderFormSections();
+  // v104: Update only the specific item buttons + section header in-place
+  // Do NOT call eaRenderFormSections() — it destroys expanded state
+  _eaUpdateItemButtons(si, ii, val);
+  _eaUpdateSectionHeader(si);
   eaRenderFormSummary();
+}
+
+function _eaUpdateItemButtons(si, ii, selectedVal){
+  // Find all score buttons for this item and update their classes
+  var row = document.querySelector('#ea-sec-body-'+si+' .ea-item-row:nth-of-type('+(ii+1)+')');
+  if(!row){
+    // Fallback: find by iterating all items in section
+    var body = document.getElementById('ea-sec-body-'+si);
+    if(!body) return;
+    var items = body.querySelectorAll('.ea-item-row');
+    // Account for sub-headers: count actual item rows
+    var itemIdx = 0;
+    var allChildren = body.children;
+    for(var c=0; c<allChildren.length; c++){
+      if(allChildren[c].classList.contains('ea-item-row')){
+        if(itemIdx === ii){ row = allChildren[c]; break; }
+        itemIdx++;
+      }
+    }
+  }
+  if(!row) return;
+  var btns = row.querySelectorAll('.ea-score-btn');
+  btns.forEach(function(btn){
+    var btnText = btn.textContent.trim();
+    var btnVal = btnText === 'N/A' ? -1 : parseInt(btnText, 10);
+    // Remove all sel-* classes
+    btn.classList.remove('sel-0','sel-1','sel-2','sel-na');
+    // Add the correct one if this is the selected value
+    if(btnVal === selectedVal){
+      if(selectedVal === -1) btn.classList.add('sel-na');
+      else btn.classList.add('sel-'+selectedVal);
+    }
+  });
+}
+
+function _eaUpdateSectionHeader(si){
+  var secScore = eaCalcSection(si);
+  var sec = _EA_SECTIONS[si];
+  var pctColor = secScore.pct >= 90 ? '#16a34a' : secScore.pct >= 75 ? '#ca8a04' : '#dc2626';
+  var card = document.getElementById('ea-sec-'+si);
+  if(!card) return;
+  var hdr = card.querySelector('.ea-section-hdr');
+  if(!hdr) return;
+  // Update the percentage bar and text
+  var barFill = hdr.querySelector('.ea-pct-fill');
+  if(barFill){ barFill.style.width = secScore.pct.toFixed(0)+'%'; barFill.style.background = pctColor; }
+  // Update the percentage text (last span in the header)
+  var pctSpan = hdr.querySelector('span[style*="min-width:44px"]');
+  if(pctSpan){ pctSpan.textContent = secScore.pct.toFixed(0)+'%'; pctSpan.style.color = pctColor; }
+  // Update critical badge
+  var existingBadge = hdr.querySelector('.ea-crit-badge');
+  if(secScore.critFails > 0 && !existingBadge){
+    var nameSpan = hdr.querySelector('div[style*="flex:1"] span');
+    if(nameSpan){ var badge = document.createElement('span'); badge.className='ea-crit-badge'; badge.textContent='CRITICAL FAIL'; nameSpan.parentNode.appendChild(badge); }
+  } else if(secScore.critFails === 0 && existingBadge){
+    existingBadge.remove();
+  }
 }
 
 function eaComment(si, ii, val, field){
