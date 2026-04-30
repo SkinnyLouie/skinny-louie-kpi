@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v107</title>
-<!-- BUILD: 2026-04-29-v107 -->
+<title>Skinny Louie · Performance Hub v108</title>
+<!-- BUILD: 2026-04-30-v108 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -19846,7 +19846,7 @@ function eaScore(si, ii, val){
   var key = si+'_'+ii;
   if(!_eaCurrent.scores[key]) _eaCurrent.scores[key] = {};
   _eaCurrent.scores[key].score = val;
-  // v107: Visual updates FIRST for instant feedback
+  // Visual updates FIRST for instant feedback
   _eaUpdateItemButtons(si, ii, val);
   _eaUpdateSectionHeader(si);
   eaRenderFormSummary();
@@ -20516,7 +20516,7 @@ var EV_CASES = {
   'Smoked Gouda':    { perCase:252,  unit:'slices',  label:'Smoked Gouda' },
   'Bacon':           { perCase:150,  unit:'slices',  label:'Bacon' },
   'Pickles':         { perCase:900,  unit:'slices',  label:'Pickles' },
-  'Fries (oz)':      { perCase:72.4, unit:'oz/bag',  label:'Fries (frozen bags)' },
+  'Fries (oz)':      { perCase:270,  unit:'oz',      label:'Fries (6 bags/case, 10 servings/bag)' },
   'Tomato':          { perCase:855,  unit:'slices',  label:'Tomato (95/case x 9 slices)' },
   'Lettuce':         { perCase:160,  unit:'oz',      label:'Lettuce' },
   'Grilled Onions':  { perCase:160,  unit:'oz',      label:'Grilled Onions' },
@@ -21413,7 +21413,7 @@ migrate();
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  GOOGLE & YELP REVIEWS MODULE — v107
+//  GOOGLE & YELP REVIEWS MODULE — v108
 // ══════════════════════════════════════════════════════════════════════════════
 
 var RV = {
