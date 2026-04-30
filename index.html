@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v106</title>
-<!-- BUILD: 2026-04-29-v106 -->
+<title>Skinny Louie · Performance Hub v107</title>
+<!-- BUILD: 2026-04-29-v107 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2842,7 +2842,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
 .inv-selectors .yr-pill { color:#555; background:#f0eeea; border-color:#ddd; }
 .inv-selectors .yr-pill:hover { background:#e4e0da; color:#212320; border-color:#bbb; }
 .inv-selectors .yr-pill.on { background:#7e2023; color:#fff; border-color:#7e2023; }
-/* ── Inventory Period Toggle (v106) ── */
+/* ── Inventory Period Toggle ── */
 .inv-period-toggle{display:inline-flex;border-radius:10px;border:1.5px solid #d1c9bc;overflow:hidden;background:#f0ece4;}
 .inv-period-btn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 22px;border:none;cursor:pointer;color:#8b7e6f;background:transparent;transition:all .2s;white-space:nowrap;}
 .inv-period-btn:hover{color:#1e3a5f;background:rgba(30,58,95,.06);}
@@ -6521,6 +6521,9 @@ function goAdmin(){
   _forceAdminVisible();
   renderAdminPage();
 }
+// ACTIVE HELPER — ensures Admin panel display:flex layout is applied.
+// Required because render() sets display via style, and Admin needs flex layout.
+// This is NOT emergency code — it is part of the normal Admin render pipeline.
 function _forceAdminVisible(){
   var pg = document.getElementById('pg-admin');
   if(pg){ pg.style.display='flex'; pg.style.flexDirection='column'; }
@@ -6533,7 +6536,9 @@ function _forceAdminVisible(){
   var pp = document.getElementById('adm-perm-panel');
   if(pp){ pp.style.display='flex'; pp.style.flexDirection='column'; }
 }
-// v100 Primary Admin Overlay — creates its own DOM, zero CSS dependency
+// ── DORMANT LEGACY (v98-v100) ── Admin Emergency Overlay
+// This function is NOT called anywhere. Kept for rollback safety.
+// Safe to remove once Admin panel is confirmed stable in production.
 async function _adminEmergencyOverlay(){
   // Remove any existing emergency overlay
   var existing = document.getElementById('_adm_emergency');
@@ -6608,7 +6613,9 @@ function goPortfolio(){
   render();
   _renderPortfolioSafe();
 }
-// v98 Emergency Portfolio Overlay
+// ── DORMANT LEGACY (v98) ── Portfolio Emergency Overlay
+// This function is NOT called anywhere. Kept for rollback safety.
+// Safe to remove once Store Intelligence is confirmed stable in production.
 function _portfolioEmergencyOverlay(){
   var existing = document.getElementById('_pf_emergency');
   if(existing) existing.remove();
@@ -19848,7 +19855,7 @@ function eaScore(si, ii, val){
 }
 
 function _eaUpdateItemButtons(si, ii, selectedVal){
-  // v106: Use data attributes for bulletproof row lookup
+  // Use data attributes for bulletproof row lookup
   // nth-of-type was broken because sub-headers and comment divs are sibling divs
   var row = document.querySelector('.ea-item-row[data-si="'+si+'"][data-ii="'+ii+'"]');
   if(!row) return;
@@ -21406,7 +21413,7 @@ migrate();
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  GOOGLE & YELP REVIEWS MODULE — v106
+//  GOOGLE & YELP REVIEWS MODULE — v107
 // ══════════════════════════════════════════════════════════════════════════════
 
 var RV = {
@@ -21472,7 +21479,7 @@ function _rvLoadConfig(){
 
 function _rvSaveConfig(){
   localStorage.setItem('sl_review_config_v1',JSON.stringify(RV.config));
-  if(typeof _slSaveJSON==='function') _slSaveJSON('sl_review_config_v1',RV.config);
+  // Cloud sync handled automatically by localStorage interceptor (SL_SYNC_KEYS)
 }
 
 function goReviews(){
@@ -21549,7 +21556,7 @@ function renderReviewsPage(){
   var pg=document.getElementById('pg-reviews');
   if(!pg) return;
   var h='<div class="rv-container">';
-  h+='<div class="rv-header"><div class="rv-title">Google & Yelp Reviews</div><div class="rv-last-sync">Last synced: Sample data (API not connected)</div></div>';
+  h+='<div class="rv-header"><div class="rv-title">Google & Yelp Reviews</div><div class="rv-last-sync" style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:6px;font-weight:700;font-size:11px;">⚠ SAMPLE DATA — API not connected</div></div>';
   var tabs=[{id:'overview',label:'Overview'},{id:'locations',label:'By Location'},{id:'growth',label:'Monthly Growth'},{id:'daily',label:'Daily Reviews'},{id:'alerts',label:'Low Rating Alerts'},{id:'config',label:'Config'}];
   h+='<div class="rv-tabs">';
   tabs.forEach(function(t){
@@ -21594,7 +21601,8 @@ function renderReviewsPage(){
 
 function _rvRenderOverview(){
   var s=_rvGetOverviewStats();
-  var h='<div class="rv-cards">';
+  var h='<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">⚠️</span><span style="font-size:12px;color:#92400e;font-weight:700;">DEMO DATA — These numbers are sample data for layout preview. Connect Google & Yelp APIs in Config to see real reviews.</span></div>';
+  h+='<div class="rv-cards">';
   h+='<div class="rv-card"><div class="rv-card-label">Total Google Reviews</div><div class="rv-card-value">'+s.totalGoogle.toLocaleString()+'</div><div class="rv-card-sub">Across all locations</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgGoogle)||0)+'</div><div class="rv-card-sub">Avg: '+s.avgGoogle+'</div></div>';
   h+='<div class="rv-card"><div class="rv-card-label">Total Yelp Reviews</div><div class="rv-card-value">'+s.totalYelp.toLocaleString()+'</div><div class="rv-card-sub">Across all locations</div><div class="rv-card-stars">'+_rvStarHTML(parseFloat(s.avgYelp)||0)+'</div><div class="rv-card-sub">Avg: '+s.avgYelp+'</div></div>';
   h+='<div class="rv-card"><div class="rv-card-label">Total Reviews</div><div class="rv-card-value">'+s.total.toLocaleString()+'</div><div class="rv-card-sub">Google + Yelp combined</div></div>';
@@ -21715,7 +21723,8 @@ function _rvRenderConfig(){
   h+='<strong>Google Business Profile API:</strong> <span style="color:#f59e0b;font-weight:700;">Not Connected</span><br>';
   h+='<strong>Yelp Fusion API:</strong> <span style="color:#f59e0b;font-weight:700;">Not Connected</span><br>';
   h+='<strong>Sync Schedule:</strong> Daily at 6:00 AM EST<br>';
-  h+='<strong>Data Storage:</strong> Supabase (sl_review_snapshots_v1, sl_reviews_v1)';
+  h+='<strong>Data Storage:</strong> Supabase (sl_review_snapshots_v1, sl_reviews_v1)<br>';
+  h+='<strong>Config Persistence:</strong> <span style="color:#16a34a;font-weight:700;">Auto-synced</span> — saved to localStorage + Supabase via cloud sync interceptor';
   h+='</div></div>';
   return h;
 }
