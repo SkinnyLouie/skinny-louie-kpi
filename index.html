@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v109</title>
-<!-- BUILD: 2026-04-30-v109 -->
+<title>Skinny Louie · Performance Hub v110</title>
+<!-- BUILD: 2026-04-30-v110 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -3942,7 +3942,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
   <!-- Version Indicator -->
-  <div class="sl-version-bar"><span>Performance Hub v109 · Build 2026-04-30 · Skinny Louie</span></div>
+  <div class="sl-version-bar"><span>Performance Hub v110 · Build 2026-04-30 · Skinny Louie</span></div>
 </div>
 
 <!-- ═══ KPI PAGE ═══ -->
@@ -12035,15 +12035,81 @@ function loadToastJson(input){
         }
       }
 
-      // Merge monthly — dedup by year+month+loc, keep new over old
-      var newKeys = new Set(monthly.map(function(n){ return n.state+'|'+n.loc+'|'+String(n.year)+'|'+n.month; }));
+      // ── v110 FIX: Aggregate per-service-mode records before saving ──
+      // Toast JSON may contain multiple records per location/month (one per serviceMode).
+      // We SUM numeric fields instead of letting dedup keep only the last record.
+      var _aggMergeArr = function(target, source, nameField){
+        (source||[]).forEach(function(s){
+          var existing = target.find(function(t){ return t[nameField||'name'] === s[nameField||'name']; });
+          if(existing){
+            Object.keys(s).forEach(function(k){
+              if(k === (nameField||'name')) return;
+              if(typeof s[k] === 'number') existing[k] = +(((existing[k]||0) + s[k]).toFixed(2));
+            });
+          } else { target.push(Object.assign({}, s)); }
+        });
+      };
+      var aggMap = {};
+      monthly.forEach(function(r){
+        var k = r.state+'|'+r.loc+'|'+String(r.year)+'|'+r.month;
+        if(!aggMap[k]){
+          aggMap[k] = Object.assign({}, r, { serviceMode:'', categories:[], channels:[], dayparts:[], itemDiscounts:[], checkDiscounts:[] });
+          _aggMergeArr(aggMap[k].categories, r.categories, 'name');
+          _aggMergeArr(aggMap[k].channels, r.channels, 'name');
+          _aggMergeArr(aggMap[k].dayparts, r.dayparts, 'name');
+          _aggMergeArr(aggMap[k].itemDiscounts, r.itemDiscounts, 'name');
+          _aggMergeArr(aggMap[k].checkDiscounts, r.checkDiscounts, 'name');
+        } else {
+          var agg = aggMap[k];
+          // Sum all numeric top-level fields
+          ['grossSales','netSales','discounts','refunds','totalOrders','totalGuests',
+           'totalPayments','totalItems','voidAmount','voidOrders','voidItems'].forEach(function(f){
+            if(typeof r[f] === 'number') agg[f] = +((agg[f]||0) + r[f]).toFixed(2);
+          });
+          // Merge array fields by name (sum numeric sub-fields)
+          _aggMergeArr(agg.categories, r.categories, 'name');
+          _aggMergeArr(agg.channels, r.channels, 'name');
+          _aggMergeArr(agg.dayparts, r.dayparts, 'name');
+          _aggMergeArr(agg.itemDiscounts, r.itemDiscounts, 'name');
+          _aggMergeArr(agg.checkDiscounts, r.checkDiscounts, 'name');
+        }
+      });
+      // Recalculate averages from aggregated totals
+      var aggregated = Object.keys(aggMap).map(function(k){
+        var a = aggMap[k];
+        a.avgPerGuest   = a.totalGuests   ? +(a.netSales / a.totalGuests).toFixed(2)   : 0;
+        a.avgPerOrder   = a.totalOrders   ? +(a.netSales / a.totalOrders).toFixed(2)   : 0;
+        a.avgPerPayment = a.totalPayments ? +(a.netSales / a.totalPayments).toFixed(2) : 0;
+        a.voidPct       = a.grossSales    ? +((a.voidAmount||0) / a.grossSales * 100).toFixed(2) : 0;
+        return a;
+      });
+      if(aggregated.length !== monthly.length)
+        console.log('[Toast JSON] Aggregated ' + monthly.length + ' service-mode records → ' + aggregated.length + ' location-months');
+      var newKeys = new Set(aggregated.map(function(n){ return n.state+'|'+n.loc+'|'+String(n.year)+'|'+n.month; }));
       var ex = getSalesRecords().filter(function(r){ return !newKeys.has((r.state||'FL')+'|'+r.loc+'|'+String(r.year)+'|'+r.month); });
-      _slSaveRecords('sales', ex.concat(monthly));
-      // Merge daily — date-level upsert
+      _slSaveRecords('sales', ex.concat(aggregated));
+      // ── v110 FIX: Aggregate per-service-mode daily records before saving ──
       {
-        var newDailyKeys=new Set(daily.map(function(d){ return (d.state||'FL')+'|'+d.loc+'|'+d.date; }));
+        var dailyAgg = {};
+        daily.forEach(function(d){
+          var k = (d.state||'FL')+'|'+d.loc+'|'+d.date;
+          if(!dailyAgg[k]){
+            dailyAgg[k] = Object.assign({}, d);
+          } else {
+            dailyAgg[k].netSales = +((dailyAgg[k].netSales||0) + (d.netSales||0)).toFixed(2);
+            dailyAgg[k].totalOrders = (dailyAgg[k].totalOrders||0) + (d.totalOrders||0);
+          }
+        });
+        var aggDaily = Object.keys(dailyAgg).map(function(k){
+          var a = dailyAgg[k];
+          a.avgCheck = a.totalOrders ? +(a.netSales / a.totalOrders).toFixed(2) : 0;
+          return a;
+        });
+        if(aggDaily.length !== daily.length)
+          console.log('[Toast JSON] Aggregated ' + daily.length + ' daily service-mode records → ' + aggDaily.length + ' daily entries');
+        var newDailyKeys=new Set(aggDaily.map(function(d){ return (d.state||'FL')+'|'+d.loc+'|'+d.date; }));
         var exD=getSalesDailyRecords().filter(function(r){ return !newDailyKeys.has((r.state||'FL')+'|'+r.loc+'|'+r.date); });
-        localStorage.setItem('sl_sales_daily_v1',JSON.stringify(exD.concat(daily)));
+        localStorage.setItem('sl_sales_daily_v1',JSON.stringify(exD.concat(aggDaily)));
       }
       // Update upload log
       var uploads=getUploads();
@@ -12054,8 +12120,8 @@ function loadToastJson(input){
       });
       saveUploads(uploads);
 
-      if(status){ status.style.color='#15803d'; status.textContent='✅ Loaded '+monthly.length+' location-months · '+daily.length+' daily records — reloading…'; }
-      setTimeout(function(){ SX.state=monthly[0].state; SX.loc=monthly[0].loc; SX.year=monthly[0].year; SX.month=monthly[0].month; SX.activeTab='overview'; navigate('sales'); renderSalesPage(); renderNavRight(); },900);
+      if(status){ status.style.color='#15803d'; status.textContent='✅ Loaded '+aggregated.length+' location-months'+(aggregated.length!==monthly.length?' (aggregated from '+monthly.length+' service-mode records)':'')+' · '+aggDaily.length+' daily records — reloading…'; }
+      setTimeout(function(){ SX.state=aggregated[0].state; SX.loc=aggregated[0].loc; SX.year=aggregated[0].year; SX.month=aggregated[0].month; SX.activeTab='overview'; navigate('sales'); renderSalesPage(); renderNavRight(); },900);
     } catch(err){
       if(status){ status.style.color='#b91c1c'; status.textContent='❌ Error: '+err.message; }
       console.error('[Toast JSON]', err);
@@ -21339,7 +21405,7 @@ migrate();
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  GOOGLE & YELP REVIEWS MODULE — v109
+//  GOOGLE & YELP REVIEWS MODULE — v110
 // ══════════════════════════════════════════════════════════════════════════════
 
 var RV = {
