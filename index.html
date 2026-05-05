@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v110</title>
-<!-- BUILD: 2026-04-30-v110 -->
+<title>Skinny Louie · Performance Hub v111</title>
+<!-- BUILD: 2026-05-04-v111 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -181,6 +181,9 @@ function _slSaveRecords(pg, arr){
       return;
     }
     const clean = _slDedupRecords(arr.map(_slNormalizeRecord));
+    // v111: Log checksum for data integrity tracking
+    var _pgKeyMap = {sales:'sl_sales_v1',mix:'sl_pmix_v1',pnl:'sl_pnl_v1'};
+    if(_pgKeyMap[pg]) console.log('[SL Data] Saving '+pg+': '+clean.length+' records, checksum: '+_slDataChecksum(_pgKeyMap[pg]||'',clean));
     localStorage.setItem(_SL_KEY[pg], JSON.stringify(clean));
   }
   catch(e){ console.error('[SL] _slSaveRecords('+pg+') error:', e); }
@@ -3942,7 +3945,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
   <!-- Version Indicator -->
-  <div class="sl-version-bar"><span>Performance Hub v110 · Build 2026-04-30 · Skinny Louie</span></div>
+  <div class="sl-version-bar"><span>Performance Hub v111 · Build 2026-04-30 · Skinny Louie</span></div>
 </div>
 
 <!-- ═══ KPI PAGE ═══ -->
@@ -4531,44 +4534,151 @@ let _slPerms = null;
 // Schema confirmed: user_permissions(user_id, permission)
 const _PERM_COL = 'permission';
 
+// ── v111: Sync Hardening Infrastructure ──────────────────────────────────────
+// Per-key timestamp tracking for conflict resolution
+function _slGetSyncMeta(){
+  try{ return JSON.parse(localStorage.getItem('_sl_sync_meta')||'{}'); }catch(e){ return {}; }
+}
+function _slSetSyncMeta(meta){
+  var _origSet = localStorage.setItem.bind ? localStorage.setItem.bind(localStorage) : _origLS;
+  try{ _origSet('_sl_sync_meta', JSON.stringify(meta)); }catch(e){}
+}
+
+// Sync lock — prevents concurrent cloud operations
+var _slSyncLock = false;
+
+// Retry queue for failed cloud writes
+var _slSyncRetryQueue = [];
+var _slSyncRetryTimer = null;
+function _slScheduleRetry(){
+  if(_slSyncRetryTimer) return;
+  _slSyncRetryTimer = setTimeout(function(){
+    _slSyncRetryTimer = null;
+    if(!_slSyncRetryQueue.length || _slSyncLock) return;
+    var item = _slSyncRetryQueue.shift();
+    console.log('[SL Sync] Retrying cloud write:', item.key);
+    // Re-trigger through interceptor
+    var val = localStorage.getItem(item.key);
+    if(val != null) localStorage.setItem(item.key, val);
+    // Schedule next retry if queue not empty
+    if(_slSyncRetryQueue.length) _slScheduleRetry();
+  }, 5000);
+}
+
+// Validate sync data before cloud write
+function _slValidateSyncData(key, parsed){
+  var ARRAY_KEYS = ['sl_sales_v1','sl_pmix_v1','sl_pnl_v1','sl_sales_daily_v1'];
+  if(ARRAY_KEYS.indexOf(key) > -1){
+    if(!Array.isArray(parsed)){
+      console.error('[SL Sync] BLOCKED write: '+key+' is not an array (type: '+(typeof parsed)+')');
+      return false;
+    }
+    if(parsed.length > 0){
+      var r = parsed[0];
+      if(!r.loc || r.year === undefined){
+        console.error('[SL Sync] BLOCKED write: '+key+' first record missing identity fields');
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Build merge key for record-level conflict resolution
+function _slMergeKey(storeKey, r){
+  if(storeKey === 'sl_sales_daily_v1'){
+    return (String(r.state||'FL').toUpperCase())+'|'+r.loc+'|'+r.date;
+  }
+  if(typeof _slRecordKey === 'function') return _slRecordKey(r);
+  return (String(r.state||'FL').toUpperCase())+'|'+r.loc+'|'+String(r.year)+'|'+Number(r.month);
+}
+
+// Data checksum — lightweight integrity check (record count + first/last key)
+function _slDataChecksum(key, arr){
+  if(!Array.isArray(arr) || !arr.length) return 'empty';
+  var first = _slMergeKey(key, arr[0]);
+  var last  = _slMergeKey(key, arr[arr.length-1]);
+  return arr.length+'|'+first+'|'+last;
+}
+
 // Intercept localStorage.setItem — auto-sync SL keys to Supabase
+// v111: Added sync lock check, validation, retry queue, timestamp tracking
 const _origLS = localStorage.setItem.bind(localStorage);
 localStorage.setItem = function(key, value){
   _origLS(key, value);
   if(SL_SYNC_KEYS.includes(key) && _slUser){
-    let parsed; try{ parsed = JSON.parse(value); }catch(e){ parsed = value; }
+    // v111: Skip cloud write while loading from cloud (prevents echo-back race)
+    if(_slSyncLock){
+      console.log('[SL Sync] Write skipped during cloud load:', key);
+      return;
+    }
+    var parsed; try{ parsed = JSON.parse(value); }catch(e){ parsed = value; }
+    // v111: Validate before sending to cloud
+    if(!_slValidateSyncData(key, parsed)){
+      console.error('[SL Sync] Validation failed, not syncing:', key);
+      return;
+    }
+    var ts = new Date().toISOString();
     _supa.from('app_data').upsert({
-      key, value: parsed,
-      updated_at: new Date().toISOString(),
+      key: key, value: parsed,
+      updated_at: ts,
       updated_by: _slUser.id
-    }, { onConflict: 'key' }).then(({error}) => {
-      if(error) console.warn('Cloud sync error:', error.message);
-      else _showSyncBadge();
+    }, { onConflict: 'key' }).then(function(res){
+      if(res.error){
+        console.warn('[SL Sync] Cloud write FAILED:', key, res.error.message);
+        // v111: Queue for retry instead of silently failing
+        _slSyncRetryQueue.push({key: key, value: value});
+        _slScheduleRetry();
+      } else {
+        // v111: Track timestamp for conflict resolution
+        var meta = _slGetSyncMeta(); meta[key] = ts; _slSetSyncMeta(meta);
+        _showSyncBadge();
+      }
+    }).catch(function(err){
+      console.error('[SL Sync] Cloud write exception:', key, err);
+      _slSyncRetryQueue.push({key: key, value: value});
+      _slScheduleRetry();
     });
   }
 };
 
 async function _forceSyncToCloud(showAlert){
   if(!_supa || !_slUser){ if(showAlert) _slAlert({ title:'Not Logged In', message:'You must be logged in to sync data.', type:'warning' }); return; }
+  // v111: Prevent concurrent force-sync
+  if(_slSyncLock){ if(showAlert) _slAlert({ title:'Sync In Progress', message:'A sync operation is already running. Please wait.', type:'warning' }); return; }
+  _slSyncLock = true;
   const btn = document.getElementById('force-sync-btn');
   if(btn){ btn.textContent = '☁ Syncing…'; btn.disabled = true; }
-  let synced = 0, failed = 0, lastError = '';
+  let synced = 0, failed = 0, skipped = 0, lastError = '';
+  var meta = _slGetSyncMeta();
   for(const key of SL_SYNC_KEYS){
     const val = localStorage.getItem(key);
     if(val == null) continue;
-    let parsed; try{ parsed = JSON.parse(val); }catch(e){ parsed = val; }
+    var parsed; try{ parsed = JSON.parse(val); }catch(e){ parsed = val; }
+    // v111: Validate data before pushing to cloud
+    if(!_slValidateSyncData(key, parsed)){
+      console.warn('[SL Sync] Force sync skipped invalid data:', key);
+      skipped++; continue;
+    }
+    var ts = new Date().toISOString();
+    // v111: Log checksum for array data
+    if(Array.isArray(parsed)) console.log('[SL Sync] Force push', key, 'checksum:', _slDataChecksum(key, parsed));
     const { error } = await _supa.from('app_data').upsert({
-      key, value: parsed,
-      updated_at: new Date().toISOString(),
+      key: key, value: parsed,
+      updated_at: ts,
       updated_by: _slUser.id
     }, { onConflict: 'key' });
-    if(error){ console.error('Force sync error for', key, error.message); failed++; lastError = error.message; }
-    else synced++;
+    if(error){ console.error('[SL Sync] Force sync error for', key, error.message); failed++; lastError = error.message; }
+    else { synced++; meta[key] = ts; }
   }
+  _slSetSyncMeta(meta);
+  _slSyncLock = false;
   if(btn){ btn.textContent = '☁ Sync Data'; btn.disabled = false; }
   if(showAlert){
-    if(failed === 0) _slAlert({ title:'Sync Complete', message:'Data synced to cloud successfully!\nAll users will now see the data.', type:'success' });
-    else _slAlert({ title:'Sync Warning', message:'Synced ' + synced + ' keys. ' + failed + ' failed.\n\n' + lastError, type:'warning' });
+    var msg = 'Synced ' + synced + ' keys to cloud.';
+    if(skipped) msg += '\n' + skipped + ' skipped (validation).';
+    if(failed === 0) _slAlert({ title:'Sync Complete', message:msg + '\nAll users will now see the data.', type:'success' });
+    else _slAlert({ title:'Sync Warning', message:msg + '\n' + failed + ' failed.\n\n' + lastError, type:'warning' });
   }
   _showSyncBadge();
 }
@@ -4584,15 +4694,87 @@ function _showSyncBadge(){
 }
 
 async function _loadFromCloud(){
-  const { data, error } = await _supa.from('app_data').select('key,value,updated_at');
-  if(error || !data || !data.length) return;
-  let latestTs = null;
-  data.forEach(row => {
-    const val = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
-    _origLS(row.key, val);
-    if(row.updated_at && (!latestTs || row.updated_at > latestTs)) latestTs = row.updated_at;
-  });
-  if(latestTs) _setLastSyncLabel(new Date(latestTs));
+  // v111: Timestamp-aware merge with race protection
+  if(_slSyncLock){ console.warn('[SL Sync] Cloud load blocked — sync already in progress'); return; }
+  _slSyncLock = true;
+  try {
+    var { data, error } = await _supa.from('app_data').select('key,value,updated_at');
+    if(error || !data || !data.length){ _slSyncLock = false; return; }
+
+    var meta = _slGetSyncMeta();
+    var latestTs = null;
+    var merged = 0, skipped = 0, conflicts = 0;
+
+    // Keys that hold arrays of records — need record-level merge
+    var MERGE_ARRAY_KEYS = ['sl_sales_v1','sl_pmix_v1','sl_pnl_v1','sl_sales_daily_v1'];
+
+    data.forEach(function(row){
+      var cloudTs = row.updated_at || '';
+      var localTs = meta[row.key] || '';
+
+      if(MERGE_ARRAY_KEYS.indexOf(row.key) > -1){
+        // ── Record-level merge for array data ──
+        var cloudVal = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
+        var cloudArr, localArr;
+        try{ cloudArr = JSON.parse(cloudVal); }catch(e){ cloudArr = []; }
+        var localRaw = localStorage.getItem(row.key);
+        try{ localArr = localRaw ? JSON.parse(localRaw) : []; }catch(e){ localArr = []; }
+        if(!Array.isArray(cloudArr)) cloudArr = [];
+        if(!Array.isArray(localArr)) localArr = [];
+
+        // Build merged map: start with local records, overlay cloud
+        var mergedMap = {};
+        var localCount = 0, cloudWins = 0, localWins = 0, added = 0;
+        localArr.forEach(function(r){
+          try{ var k = _slMergeKey(row.key, r); mergedMap[k] = r; localCount++; }catch(e){}
+        });
+
+        cloudArr.forEach(function(r){
+          try{
+            var k = _slMergeKey(row.key, r);
+            if(mergedMap[k] !== undefined){
+              // Conflict: same record exists locally and in cloud
+              if(cloudTs >= localTs){ mergedMap[k] = r; cloudWins++; }
+              else localWins++;
+            } else {
+              mergedMap[k] = r; added++;
+            }
+          }catch(e){}
+        });
+
+        var mergedArr = Object.keys(mergedMap).map(function(k){ return mergedMap[k]; });
+        _origLS(row.key, JSON.stringify(mergedArr));
+        meta[row.key] = cloudTs > localTs ? cloudTs : localTs;
+
+        if(mergedArr.length !== localCount || cloudWins > 0 || added > 0)
+          console.log('[SL Sync] Merged ' + row.key + ': local=' + localCount + ' cloud=' + cloudArr.length +
+            ' → result=' + mergedArr.length + ' (cloudWins=' + cloudWins + ' localWins=' + localWins + ' added=' + added + ')');
+        merged++;
+        if(localWins > 0) conflicts += localWins;
+      } else {
+        // ── Scalar data: cloud wins if newer or no local timestamp ──
+        if(!localTs || cloudTs >= localTs){
+          var val = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
+          _origLS(row.key, val);
+          meta[row.key] = cloudTs;
+          merged++;
+        } else {
+          skipped++;
+          console.log('[SL Sync] Kept local ' + row.key + ' (local:' + localTs.substring(0,19) + ' > cloud:' + cloudTs.substring(0,19) + ')');
+        }
+      }
+
+      if(row.updated_at && (!latestTs || row.updated_at > latestTs)) latestTs = row.updated_at;
+    });
+
+    _slSetSyncMeta(meta);
+    console.log('[SL Sync] Cloud load complete: merged=' + merged + ' skipped=' + skipped + ' conflicts=' + conflicts);
+    if(latestTs) _setLastSyncLabel(new Date(latestTs));
+  } catch(e) {
+    console.error('[SL Sync] Cloud load error:', e);
+  } finally {
+    _slSyncLock = false;
+  }
 }
 
 function _setLastSyncLabel(date){
@@ -4764,7 +4946,7 @@ async function _initApp(user){
     if(loginEl) loginEl.style.display = 'none';
   }
   // Load cloud data — fail gracefully, fallback to localStorage
-  try { await _loadFromCloud(); } catch(e){ console.error('Cloud load failed:', e); }
+  try { await _loadFromCloud(); try{ var _audit=_slAuditSST(); if(!_audit.ok) console.warn('[SL] Post-sync audit FAILED — see above'); }catch(ae){ console.error('[SL] Post-sync audit error:', ae); } } catch(e){ console.error('Cloud load failed:', e); }
   try{ const d = localStorage.getItem('sl_v2'); if(d) _mergeDB(JSON.parse(d)); }catch(e){}
   // Normalise stored data — runs once per migration version, then skips on every subsequent init
   try{ _slRunMigrationIfNeeded(); } catch(e){ console.error('[SL] Migration error:', e); }
@@ -10127,7 +10309,7 @@ function loadMixJson(input){
 
       // Merge: replace existing records for same year+month+loc, keep everything else
       const existing = getPMixRecords().filter(r =>
-        !(String(r.year)===year && r.month===month && records.some(n=>n.loc===r.loc))
+        !(String(r.year)===year && r.month===month && records.some(n=>n.loc===r.loc && n.state===r.state)) // v111: added state to dedup
       );
       _slSaveRecords('mix', existing.concat(records));
 
@@ -15079,7 +15261,7 @@ function doImportPnl(){
         // Merge into stored records
         let stored=getPnLRecords();
         for(const record of validRecs){
-          const idx=stored.findIndex(r=>r.state===record.state&&r.loc===record.loc&&r.year===record.year&&r.month===record.month);
+          const idx=stored.findIndex(r=>_slRecordKey(r)===_slRecordKey(record)); // v111: use canonical key
           if(idx>-1) stored[idx]=record; else stored.push(record);
         }
         savePnLRecords(stored);
@@ -21405,7 +21587,7 @@ migrate();
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  GOOGLE & YELP REVIEWS MODULE — v110
+//  GOOGLE & YELP REVIEWS MODULE — v111
 // ══════════════════════════════════════════════════════════════════════════════
 
 var RV = {
