@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v114</title>
-<!-- BUILD: 2026-05-20-v114 -->
+<title>Skinny Louie · Performance Hub v115</title>
+<!-- BUILD: 2026-05-20-v115 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -3945,7 +3945,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
   <!-- Version Indicator -->
-  <div class="sl-version-bar"><span>Performance Hub v114 · Build 2026-05-20 · Skinny Louie</span></div>
+  <div class="sl-version-bar"><span>Performance Hub v115 · Build 2026-05-20 · Skinny Louie</span></div>
 </div>
 
 <!-- ═══ KPI PAGE ═══ -->
@@ -4495,7 +4495,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_email_subs_v1','sl_review_snapshots_v1','sl_reviews_v1','sl_review_config_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_subscriptions_v1','sl_review_snapshots_v1','sl_reviews_v1','sl_review_config_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -7331,7 +7331,7 @@ function _admDefaultEmailSubs(){
 // Load email subs for a user from the app_data store
 async function _admLoadEmailSubs(userId){
   try {
-    var res = await _supa.from('app_data').select('value').eq('key','sl_email_subs_v1').single();
+    var res = await _supa.from('app_data').select('value').eq('key','sl_subscriptions_v1').single();
     if(res.error || !res.data) return _admDefaultEmailSubs();
     var all = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
     if(all && all[userId]) return all[userId];
@@ -7345,13 +7345,13 @@ async function _admLoadEmailSubs(userId){
 // Save email subs for a user back to app_data
 async function _admSaveEmailSubs(userId, subs){
   try {
-    var res = await _supa.from('app_data').select('value').eq('key','sl_email_subs_v1').single();
+    var res = await _supa.from('app_data').select('value').eq('key','sl_subscriptions_v1').single();
     var all = {};
     if(!res.error && res.data){
       all = typeof res.data.value === 'string' ? JSON.parse(res.data.value) : res.data.value;
     }
     all[userId] = subs;
-    await _supa.from('app_data').upsert({ key: 'sl_email_subs_v1', value: all, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    await _supa.from('app_data').upsert({ key: 'sl_subscriptions_v1', value: all, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     return true;
   } catch(e){
     console.error('[EmailSubs] save error:', e);
