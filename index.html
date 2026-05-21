@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v116</title>
-<!-- BUILD: 2026-05-20-v116 -->
+<title>Skinny Louie · Performance Hub v118</title>
+<!-- BUILD: 2026-05-22-v118 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -224,6 +224,12 @@ function _slRecordKey(rec){
 // Used for sorting and nearest-record distance calculations.
 function _slChronIndex(rec){
   return Number(rec.year) * 12 + Number(rec.month);
+}
+
+// ── 5b. HTML entity escaper (XSS prevention for innerHTML templates) ─────────
+function _escHtml(s){
+  if(typeof s !== 'string') return s == null ? '' : String(s);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 }
 
 // ── 6. Chronological sort (ascending — earliest first) ───────────────────────
@@ -3945,7 +3951,7 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
   <!-- Version Indicator -->
-  <div class="sl-version-bar"><span>Performance Hub v116 · Build 2026-05-20 · Skinny Louie</span></div>
+  <div class="sl-version-bar"><span>Performance Hub v118 · Build 2026-05-22 · Skinny Louie</span></div>
 </div>
 
 <!-- ═══ KPI PAGE ═══ -->
@@ -10744,7 +10750,7 @@ let _mxDailyFetching = false;
 
 async function mxLoadDailyFromSupa(){
   if(_mxDailyCache !== null) return _mxDailyCache;
-  if(_mxDailyFetching) return null; // in flight
+  if(_mxDailyFetching) return Promise.resolve(null); // in flight — return thenable
   _mxDailyFetching = true;
   try {
     if(!_supa){ _mxDailyCache=[]; return []; }
@@ -10753,7 +10759,9 @@ async function mxLoadDailyFromSupa(){
     _mxDailyCache = (!error && data && Array.isArray(data.value)) ? data.value : [];
   } catch(e) {
     console.warn('[MX Daily] Supabase fetch failed:', e);
-    _mxDailyCache = [];
+    _mxDailyCache = null; // leave as null so retry is possible
+    _mxDailyFetching = false;
+    return [];
   }
   _mxDailyFetching = false;
   return _mxDailyCache;
@@ -11166,7 +11174,7 @@ function renderMixDayView(){
       return;
     }
     el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
-      <div style="font-size:14px;font-weight:700;">No daily data for ${MX.loc||'selected store'}</div>
+      <div style="font-size:14px;font-weight:700;">No daily data for ${_escHtml(MX.loc)||'selected store'}</div>
       <div style="font-size:12px;margin-top:6px;">Check back after the next sync (7am ET).</div>
     </div>`;
     return;
@@ -11193,11 +11201,49 @@ function renderMixDayView(){
   const dayLabel = dObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const fmt$     = v => '$'+Math.round(v).toLocaleString('en-US');
 
+  // ── Auto-classify items when Toast API returns all "Other" categories ────
+  const _ITEM_CAT_RULES = [
+    { cat: 'Smashed Burgers', kw: ['BURGER','CHEESEBURGER','IMPOSSIBLE','SMASH','PATTY MELT','LOUIE MELT','SINGLE','DOUBLE','TRIPLE'] },
+    { cat: 'Sides',           kw: ['FRIES','FRY','ONION RINGS','TOTS','SIDE','COLESLAW','CORN','MAC','CHEESE FRIES','LOADED','PICKLES','JALAPENO','CHIPS','PRETZEL'] },
+    { cat: 'Milkshakes',      kw: ['SHAKE','MILKSHAKE','MALT','SUNDAE','FLOAT','ICE CREAM','BROWNIE','COOKIE','DESSERT','CARAMEL','OREO','NUTELLA'] },
+    { cat: 'Drinks',          kw: ['DRINK','SODA','WATER','LEMONADE','TEA','JUICE','COFFEE','BEER','WINE','MARGARITA','BEVERAGE','COKE','SPRITE','GINGER','ARNOLD','ICED','BREW','ALE','IPA','LAGER'] },
+    { cat: 'Hot Dogs',        kw: ['HOT DOG','HOTDOG','DOG','FRANK','SAUSAGE'] },
+    { cat: 'Chicken',         kw: ['CHICKEN','TENDER','NUGGET','WING'] },
+  ];
+  function _classifyItem(name){
+    const u = (name||'').toUpperCase();
+    for(const r of _ITEM_CAT_RULES){
+      if(r.kw.some(k => u.includes(k))) return r.cat;
+    }
+    return 'Other';
+  }
+
+  let items = (dayRec.items||[]).filter(i=>i.qty>0||i.net>0);
+  const topItem = items.length ? items.reduce((a,b)=>b.net>a.net?b:a) : null;
+
+  // Check if categories are effectively useless (all "Other" or single bucket)
+  const rawCats = (dayRec.categories||[]).filter(c=>c.qty>0||c.net>0);
   const EXCLUDED_CATS = ['Open Food','OPEN FOOD'];
-  const cats     = (dayRec.categories||[]).filter(c=>!EXCLUDED_CATS.includes(c.name)&&(c.qty>0||c.net>0));
-  const topCat   = cats.length ? cats.reduce((a,b)=>b.net>a.net?b:a) : null;
-  const items    = (dayRec.items||[]).filter(i=>i.qty>0||i.net>0);
-  const topItem  = items.length ? items.reduce((a,b)=>b.net>a.net?b:a) : null;
+  const meaningfulCats = rawCats.filter(c => c.name !== 'Other' && !EXCLUDED_CATS.includes(c.name));
+  const otherCat = rawCats.find(c => c.name === 'Other');
+  const otherDominates = otherCat && meaningfulCats.length > 0 && otherCat.net > meaningfulCats.reduce((s,c)=>s+c.net,0);
+  const needsReclassify = rawCats.length <= 1 || rawCats.every(c => c.name === 'Other' || EXCLUDED_CATS.includes(c.name)) || otherDominates;
+
+  let cats;
+  if(needsReclassify && items.length > 0){
+    // Reclassify items by name and rebuild categories
+    items = items.map(it => ({ ...it, cat: _classifyItem(it.name) }));
+    const catMap = {};
+    items.forEach(it => {
+      if(!catMap[it.cat]) catMap[it.cat] = { name: it.cat, qty: 0, net: 0 };
+      catMap[it.cat].qty += it.qty;
+      catMap[it.cat].net += it.net;
+    });
+    cats = Object.values(catMap).filter(c => !EXCLUDED_CATS.includes(c.name) && (c.qty>0||c.net>0)).sort((a,b) => b.net - a.net);
+  } else {
+    cats = rawCats.filter(c => !EXCLUDED_CATS.includes(c.name));
+  }
+  const topCat = cats.length ? cats.reduce((a,b)=>b.net>a.net?b:a) : null;
   const mods     = dayRec.modifiers || {single:0,double:0,triple:0};
   const totalMod = mods.single + mods.double + mods.triple;
 
@@ -11214,12 +11260,12 @@ function renderMixDayView(){
     </div>
     <div class="mx-day-kpi">
       <div class="kpi-lbl">Top Category</div>
-      <div class="kpi-val" style="font-size:14px;font-weight:800;">${topCat?topCat.name:'—'}</div>
+      <div class="kpi-val" style="font-size:14px;font-weight:800;">${topCat?_escHtml(topCat.name):'—'}</div>
       <div class="kpi-sub">${topCat?fmt$(topCat.net):''}</div>
     </div>
     <div class="mx-day-kpi">
       <div class="kpi-lbl">Top Item</div>
-      <div class="kpi-val" style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${topItem?topItem.name:'—'}</div>
+      <div class="kpi-val" style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${topItem?_escHtml(topItem.name):'—'}</div>
       <div class="kpi-sub">${topItem?'qty '+topItem.qty+' · '+fmt$(topItem.net):''}</div>
     </div>
   </div>`;
@@ -11233,14 +11279,14 @@ function renderMixDayView(){
   }).join('');
 
   const dayNav = `<div class="mx-day-nav">
-    <button class="mx-day-nav-btn" ${prevDay?`onclick="MX.selectedDay='${prevDay}';renderMixDayView()"`:' disabled'}>
+    <button class="mx-day-nav-btn" ${prevDay?`onclick="MX.selectedDay='${prevDay}';window._mxDayCatFilter='ALL';renderMixDayView()"`:' disabled'}>
       ← ${prevDay ? new Date(prevDay+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '–'}
     </button>
     <div class="mx-day-nav-center">
       <div class="mx-day-nav-title">${dayLabel}</div>
       <div class="mx-day-nav-sub">${fmt$(dayRec.totalNet||0)} · ${(dayRec.totalQty||0).toLocaleString('en-US')} items sold</div>
     </div>
-    <button class="mx-day-nav-btn" ${nextDay?`onclick="MX.selectedDay='${nextDay}';renderMixDayView()"`:' disabled'}>
+    <button class="mx-day-nav-btn" ${nextDay?`onclick="MX.selectedDay='${nextDay}';window._mxDayCatFilter='ALL';renderMixDayView()"`:' disabled'}>
       ${nextDay ? new Date(nextDay+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '–'} →
     </button>
   </div>
@@ -11251,7 +11297,7 @@ function renderMixDayView(){
   const activeCat = window._mxDayCatFilter;
   const catChips = `<div class="mx-day-cat-chips">
     <button class="mx-day-cat-chip ${activeCat==='ALL'?'on':''}" onclick="window._mxDayCatFilter='ALL';renderMixDayView()">All</button>
-    ${cats.map(c=>`<button class="mx-day-cat-chip ${activeCat===c.name?'on':''}" onclick="window._mxDayCatFilter='${c.name.replace(/'/g,"\\'")}';renderMixDayView()">${c.name}</button>`).join('')}
+    ${cats.map(c=>`<button class="mx-day-cat-chip ${activeCat===c.name?'on':''}" onclick="window._mxDayCatFilter='${c.name.replace(/'/g,"\\'")}';renderMixDayView()">${_escHtml(c.name)}</button>`).join('')}
   </div>`;
 
   // ── Categories summary table ───────────────────────────────────────────────
@@ -11259,7 +11305,7 @@ function renderMixDayView(){
   const catRows  = cats.map(c=>{
     const pct = totalNet>0 ? (c.net/totalNet*100) : 0;
     return `<tr>
-      <td style="font-weight:600;">${c.name}</td>
+      <td style="font-weight:600;">${_escHtml(c.name)}</td>
       <td class="num">${c.qty.toLocaleString('en-US')}</td>
       <td class="num" style="font-weight:700;">${fmt$(c.net)}</td>
       <td class="num">
@@ -11287,8 +11333,8 @@ function renderMixDayView(){
   const itemRows = sortedItems.map((it,idx)=>{
     const pct = totalNet>0 ? (it.net/totalNet*100) : 0;
     return `<tr>
-      <td style="font-weight:500;">${idx+1}. ${it.name}</td>
-      <td style="font-size:11px;color:var(--muted);">${it.cat}</td>
+      <td style="font-weight:500;">${idx+1}. ${_escHtml(it.name)}</td>
+      <td style="font-size:11px;color:var(--muted);">${_escHtml(it.cat)}</td>
       <td class="num">${it.qty.toLocaleString('en-US')}</td>
       <td class="num" style="font-weight:700;">${fmt$(it.net)}</td>
       <td class="num">
@@ -11300,7 +11346,7 @@ function renderMixDayView(){
     </tr>`;
   }).join('');
 
-  const itemCount = activeCat==='ALL' ? `${sortedItems.length} items` : `${sortedItems.length} in ${activeCat}`;
+  const itemCount = activeCat==='ALL' ? `${sortedItems.length} items` : `${sortedItems.length} in ${_escHtml(activeCat)}`;
   const itemTable = `<div class="mx-day-items-wrap">
     <div class="mx-sec-title">Items · ${itemCount}</div>
     <table class="mx-table">
@@ -11433,7 +11479,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
       const prev = prevRec.items.find(i=>i.name===item.name);
       if(!prev || prev.qty<=0) continue;
       const drop = (prev.qty - item.qty)/prev.qty;
-      if(drop>=0.15) shiftAlerts.push({name:item.name, drop, prevQty:prev.qty, currQty:item.qty, pct:item.net/totalNet*100});
+      if(drop>=0.15) shiftAlerts.push({name:item.name, escapedName:_escHtml(item.name), drop, prevQty:prev.qty, currQty:item.qty, pct:item.net/totalNet*100});
     }
   }
   const shiftAlertHTML = shiftAlerts.length>0 ? (
@@ -11441,7 +11487,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
     +'<div class="mx-shift-alert-hdr">⚠️ Mix Shift Alert — '
     +shiftAlerts.length+' high-revenue item'+(shiftAlerts.length>1?'s':'')+' dropped ≥15% in qty vs last month</div>'
     +'<div class="mx-shift-chips">'
-    +shiftAlerts.map(a=>'<div class="mx-shift-chip"><strong>'+a.name+'</strong> &nbsp;↓ '+(a.drop*100).toFixed(0)+'% qty &nbsp;·&nbsp; '+(a.pct.toFixed(1))+'% of revenue</div>').join('')
+    +shiftAlerts.map(a=>'<div class="mx-shift-chip"><strong>'+a.escapedName+'</strong> &nbsp;↓ '+(a.drop*100).toFixed(0)+'% qty &nbsp;·&nbsp; '+(a.pct.toFixed(1))+'% of revenue</div>').join('')
     +'</div></div>'
   ) : '';
 
@@ -11621,7 +11667,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
         return `<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name} <span style="color:var(--text);font-weight:600;">${iPct}%</span></div>`;
       }).join('');
       return `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${cat.name}</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${_escHtml(cat.name)}</div>
         <div style="font-size:20px;font-weight:800;font-family:'Oswald',sans-serif;">${catPct.toFixed(1)}%</div>
         <div style="font-size:11px;color:var(--muted);">${fmtAmt(catNetDisplay)}</div>
         ${deltaHTML}
@@ -11771,7 +11817,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
     const storeRecs=allRecs.filter(r=>r.state===MX.state&&r.year===MX.year&&r.month===MX.month);
     const storeData=storeRecs.map(r=>{
       const item=r.items.find(i=>i.name===selected);
-      return {loc:r.loc, qty:item?item.qty:0, net:item?item.net:0, unitPrice:item&&item.qty>0?item.net/item.qty:0, hasData:!!item&&item.qty>0};
+      return {loc:r.loc, qty:item?item.qty:0, net:item?item.net:0, unitPrice:item&&item.qty>0?item.net/item.qty:0, hasData:!!item&&item.qty>0, storeTotalNet:r.totalNet||0};
     }).sort((a,b)=>b.net-a.net);
 
     const maxNet=storeData.reduce((m,d)=>Math.max(m,d.net),1);
@@ -11782,15 +11828,15 @@ function renderMixDashboard(rec, locRecs, allRecs){
       <td class="num">${d.hasData?Math.round(d.qty).toLocaleString('en-US'):'—'}</td>
       <td class="num">${d.hasData&&d.unitPrice>0?'$'+d.unitPrice.toFixed(2):'—'}</td>
       <td class="num" style="min-width:120px;">
-        ${d.hasData?`<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:7px;"><div style="width:${Math.min(d.net/maxNet*100,100).toFixed(1)}%;height:100%;background:${i===0?'#15803d':'#1e3a5f'};border-radius:99px;"></div></div><span style="font-size:11px;font-weight:700;">${totalNet>0?(d.net/rec.totalNet*100).toFixed(1):'—'}%</span></div>`:'<span style="color:var(--muted);font-size:12px;">not sold</span>'}
+        ${d.hasData?`<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:7px;"><div style="width:${Math.min(d.net/maxNet*100,100).toFixed(1)}%;height:100%;background:${i===0?'#15803d':'#1e3a5f'};border-radius:99px;"></div></div><span style="font-size:11px;font-weight:700;">${d.storeTotalNet>0?(d.net/d.storeTotalNet*100).toFixed(1):'—'}%</span></div>`:'<span style="color:var(--muted);font-size:12px;">not sold</span>'}
       </td>
     </tr>`).join('');
 
     // Month-over-month trend for selected item at current location
-    const trendRecs=[...locRecs].sort((a,b)=>a.month-b.month);
+    const trendRecs=[...locRecs].sort((a,b)=>(Number(a.year)*12+a.month)-(Number(b.year)*12+b.month));
     const trendData=trendRecs.map(r=>{const it=r.items.find(i=>i.name===selected);return{m:r.month,net:it?it.net:0,qty:it?it.qty:0};});
     const trendChartHTML=trendData.some(d=>d.net>0)?`<div class="sx-chart-panel" style="margin-top:16px;">
-      <div class="sx-panel-title">${selected} — Revenue & Qty Trend at ${rec.loc}</div>
+      <div class="sx-panel-title">${_escHtml(selected)} — Revenue &amp; Qty Trend at ${_escHtml(rec.loc)}</div>
       <div style="position:relative;height:180px;"><canvas id="mx-xstore-trend-chart"></canvas></div>
     </div>`:'';
 
@@ -11845,7 +11891,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
     const validCatNames2 = mapKey ? (MENU_TO_ITEM_CAT[mapKey]||[]) : [];
     // Direct catKey match first (Toast items store the menu group name as-is),
     // then MENU_TO_ITEM_CAT display-name match as fallback for legacy data
-    displayItems = _items.filter(it=>{
+    let displayItems = _items.filter(it=>{
       const itCat = it.cat||'';
       const itCatUp = itCat.toUpperCase();
       if(itCatUp===catKey) return true;
@@ -11910,8 +11956,9 @@ function renderMixDashboard(rec, locRecs, allRecs){
         const barPct  = cat.net>0 ? Math.min(Math.round(item.net/cat.net*100),100) : 0;
         const abc = abcMap[item.name]||'C';
         const abcBadge = '<span class="abc-badge abc-'+abc.toLowerCase()+'">'+abc+'</span>';
+        const escapedItemName = _escHtml(item.name);
         return `<tr>
-          <td class="item-name">${item.name}${abcBadge}</td>
+          <td class="item-name">${escapedItemName}${abcBadge}</td>
           <td class="num">${Math.round(item.qty).toLocaleString('en-US')}</td>
           <td class="num">$${Math.round(item.net).toLocaleString('en-US')}</td>
           <td class="num">
@@ -11931,7 +11978,7 @@ function renderMixDashboard(rec, locRecs, allRecs){
         ${modPanelHTML}
         <div class="mx-cat-hdr">
           <div>
-            <div class="mx-cat-name">${cat.name}</div>
+            <div class="mx-cat-name">${_escHtml(cat.name)}</div>
             <div class="mx-cat-pct-bar" style="width:120px;margin-top:6px;">
               <div class="mx-cat-pct-fill" style="width:${catPct.toFixed(1)}%"></div>
             </div>
