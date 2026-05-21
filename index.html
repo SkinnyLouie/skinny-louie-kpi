@@ -7596,7 +7596,9 @@ function renderNavRight(){
     } else { r.innerHTML=crumb; }
   } else if(S.page==='mix'){
     const recs=getPMixRecords();
-    if(recs.length>0){
+    const hasMonthly = recs.length > 0;
+    const hasDaily = _mxDailyCache && _mxDailyCache.length > 0;
+    if(hasMonthly || hasDaily){
       r.innerHTML=crumb+`
         <div class="yr-pills">
           <button class="yr-pill ${MX.year==='2025'?'on':''}" onclick="mxSetYear('2025')">2025</button>
@@ -7606,7 +7608,7 @@ function renderNavRight(){
           <button class="yr-pill ${MX.state==='FL'?'on':''}" onclick="mxSetState('FL')">🌴 Florida</button>
           <button class="yr-pill ${MX.state==='NY'?'on':''}" onclick="mxSetState('NY')">🗽 New York</button>
         </div>
-        <button class="btn ${MX.cmpMode?'act':''}" onclick="mxToggleCmp()">⇄ Compare</button>
+        ${MX.viewMode!=='day'?'<button class="btn '+(MX.cmpMode?'act':'')+'" onclick="mxToggleCmp()">⇄ Compare</button>':''}
         <button class="btn" onclick="mxShowUpload()" style="font-size:11px;">+ Upload</button>`;
     } else {
       r.innerHTML=crumb;
@@ -10998,7 +11000,33 @@ function renderMixPage(){
     uploadView.style.display='none';
     dashboardView.style.display='block';
     if(locBar) locBar.style.display='flex';
-    renderMixLocBar(getPMixRecords().filter(r=>r.state===MX.state && r.year===MX.year));
+
+    // Day view: auto-detect state/loc from daily cache if current selection has no match
+    if(_mxDailyCache && _mxDailyCache.length > 0){
+      const hasDailyForState = _mxDailyCache.some(r => r.state === MX.state);
+      if(!hasDailyForState){
+        const firstDaily = _mxDailyCache[0];
+        if(firstDaily && firstDaily.state) MX.state = firstDaily.state;
+      }
+      const hasDailyForLoc = _mxDailyCache.some(r => r.state === MX.state && r.loc === MX.loc);
+      if(!hasDailyForLoc){
+        const firstLocRec = _mxDailyCache.find(r => r.state === MX.state);
+        if(firstLocRec) MX.loc = firstLocRec.loc;
+      }
+    }
+
+    // Build loc bar from daily cache (not monthly records) so day view is self-sufficient
+    const dailyLocsForBar = (_mxDailyCache||[]).filter(r => r.state === MX.state);
+    // Create synthetic records with just state/loc/year for the loc bar renderer
+    const dailyLocSet = new Set(dailyLocsForBar.map(r => r.loc));
+    const syntheticRecs = [...dailyLocSet].map(loc => ({state: MX.state, loc, year: MX.year}));
+    // Merge with monthly records so the loc bar shows all known locations
+    const monthlyRecs = getPMixRecords().filter(r => r.state === MX.state && r.year === MX.year);
+    const allLocsForBar = [...monthlyRecs];
+    syntheticRecs.forEach(sr => {
+      if(!allLocsForBar.some(r => r.loc === sr.loc)) allLocsForBar.push(sr);
+    });
+    renderMixLocBar(allLocsForBar);
     renderMixDayView();
     return;
   }
@@ -11166,11 +11194,20 @@ function renderMixDayView(){
 
   // If no loc selected or loc has no data, try to auto-select
   if(!locRecs.length){
+    // First: try another loc in the same state
     const anyLoc = _mxDailyCache.find(r=>r.state===MX.state);
     if(anyLoc && anyLoc.loc !== MX.loc){
       MX.loc = anyLoc.loc;
-      renderMixLocBar(getPMixRecords().filter(r=>r.state===MX.state&&r.year===MX.year));
-      renderMixDayView();
+      renderMixPage(); // re-render with corrected loc
+      return;
+    }
+    // Second: try any state that has daily data
+    const anyRec = _mxDailyCache.find(r=>r.state && r.loc);
+    if(anyRec && anyRec.state !== MX.state){
+      MX.state = anyRec.state;
+      MX.loc = anyRec.loc;
+      renderMixPage(); // re-render with corrected state+loc
+      renderNavRight();
       return;
     }
     el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
