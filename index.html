@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Skinny Louie · Performance Hub v118</title>
-<!-- BUILD: 2026-05-22-v118 -->
+<title>Skinny Louie · Performance Hub v119</title>
+<!-- BUILD: 2026-05-22-v119 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1724,6 +1724,76 @@ button{font-family:inherit;cursor:pointer;}
 /* ══════════════════════════════════════
    KPI PAGE
 ══════════════════════════════════════ */
+
+/* ── KPI BONUS TRACKER ─────────────────────── */
+.bn-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.bn-title { font-family:'Oswald',sans-serif; font-size:22px; font-weight:700; color:var(--navy); letter-spacing:.03em; }
+.bn-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.bn-tab { padding:8px 18px; border-radius:8px; border:1.5px solid var(--border); background:white; font-size:12px; font-weight:700; cursor:pointer; color:var(--muted); transition:all .15s; font-family:'Oswald',sans-serif; letter-spacing:.04em; }
+.bn-tab.act { background:var(--navy); color:white; border-color:var(--navy); }
+.bn-tab:hover:not(.act) { background:#f8f6f1; }
+.bn-state-pills { display:flex; gap:6px; margin-bottom:16px; }
+.bn-state-pill { padding:6px 16px; border-radius:8px; border:1.5px solid var(--border); background:white; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; }
+.bn-state-pill.act { background:var(--navy); color:white; border-color:var(--navy); }
+.bn-month-sel { display:flex; gap:6px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.bn-month-btn { padding:5px 12px; border-radius:6px; border:1.5px solid var(--border); background:white; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; }
+.bn-month-btn.act { background:var(--maroon); color:white; border-color:var(--maroon); }
+.bn-year-btn { padding:5px 12px; border-radius:6px; border:1.5px solid var(--border); background:white; font-size:11px; font-weight:700; cursor:pointer; }
+.bn-year-btn.act { background:var(--navy); color:white; border-color:var(--navy); }
+.bn-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:20px; }
+.bn-kpi-card { background:white; border-radius:14px; padding:18px; border:1.5px solid var(--border); text-align:center; }
+.bn-kpi-card.pass { border-color:#22c55e; background:rgba(34,197,94,.04); }
+.bn-kpi-card.fail { border-color:#ef4444; background:rgba(239,68,68,.04); }
+.bn-kpi-label { font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
+.bn-kpi-value { font-family:'Oswald',sans-serif; font-size:22px; font-weight:700; }
+.bn-kpi-goal { font-size:10px; color:var(--muted); margin-top:2px; }
+.bn-kpi-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:800; letter-spacing:.05em; margin-top:6px; }
+.bn-kpi-badge.pass { background:#dcfce7; color:#166534; }
+.bn-kpi-badge.fail { background:#fef2f2; color:#991b1b; }
+.bn-gate-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-radius:12px; margin-bottom:16px; font-weight:700; }
+.bn-gate-bar.pass { background:linear-gradient(135deg,#dcfce7,#bbf7d0); border:2px solid #22c55e; color:#166534; }
+.bn-gate-bar.fail { background:linear-gradient(135deg,#fef2f2,#fecaca); border:2px solid #ef4444; color:#991b1b; }
+.bn-gate-icon { font-size:28px; }
+.bn-bonus-card { background:linear-gradient(135deg,#1e3a5f,#2d5a8e); border-radius:14px; padding:24px 28px; color:white; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+.bn-bonus-amount { font-family:'Oswald',sans-serif; font-size:36px; font-weight:700; }
+.bn-bonus-label { font-size:11px; opacity:.75; letter-spacing:.05em; text-transform:uppercase; }
+.bn-bonus-doubleup { background:linear-gradient(135deg,#c4a035,#e8c870); color:#1e3a5f; padding:6px 16px; border-radius:20px; font-size:12px; font-weight:800; letter-spacing:.05em; }
+.bn-table-wrap { overflow-x:auto; margin-bottom:20px; border-radius:12px; border:1.5px solid var(--border); }
+.bn-table { width:100%; border-collapse:collapse; font-size:12px; }
+.bn-table th { background:#f8f6f1; padding:10px 14px; text-align:left; font-weight:700; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+.bn-table td { padding:10px 14px; border-bottom:1px solid #f0ece4; white-space:nowrap; }
+.bn-table tr:hover td { background:#faf8f4; }
+.bn-table .bn-state-divider td { background:var(--navy); color:white; font-family:'Oswald',sans-serif; font-size:13px; font-weight:700; letter-spacing:.05em; padding:8px 14px; }
+.bn-table .bn-subtotal td { background:#f0ece4; font-weight:700; }
+.bn-table .bn-grand-total td { background:var(--navy); color:white; font-weight:700; font-family:'Oswald',sans-serif; font-size:13px; }
+.bn-pass-chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:800; }
+.bn-pass-chip.pass { background:#dcfce7; color:#166534; }
+.bn-pass-chip.fail { background:#fef2f2; color:#991b1b; }
+.bn-doubleup-chip { background:linear-gradient(135deg,#fef3c7,#fde68a); color:#92400e; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:800; }
+.bn-section-title { font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin:24px 0 12px; display:flex; align-items:center; gap:8px; }
+.bn-empty { text-align:center; padding:60px 20px; color:var(--muted); }
+.bn-empty-icon { font-size:56px; margin-bottom:12px; }
+.bn-empty-title { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; color:var(--navy); margin-bottom:6px; }
+.bn-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.bn-form-field { display:flex; flex-direction:column; gap:4px; }
+.bn-form-field label { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.bn-form-field input, .bn-form-field select { padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; }
+.bn-form-field input:focus { border-color:var(--navy); outline:none; }
+.bn-save-btn { background:var(--navy); color:white; border:none; padding:10px 28px; border-radius:8px; font-family:'Oswald',sans-serif; font-size:14px; font-weight:700; letter-spacing:.05em; cursor:pointer; transition:all .15s; }
+.bn-save-btn:hover { background:#2d5a8e; }
+.bn-config-card { background:white; border-radius:14px; border:1.5px solid var(--border); padding:18px; margin-bottom:12px; }
+.bn-config-card h3 { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin:0 0 10px; }
+.bn-payment-header { background:linear-gradient(135deg,#7e2023,#b03030); color:white; border-radius:14px; padding:28px; text-align:center; margin-bottom:20px; }
+.bn-payment-header h2 { font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; letter-spacing:.04em; margin:0 0 4px; }
+.bn-payment-total { font-family:'Oswald',sans-serif; font-size:42px; font-weight:700; margin:12px 0 4px; }
+.bn-donut-wrap { display:flex; justify-content:center; margin-bottom:20px; }
+.bn-donut-canvas { max-width:280px; max-height:280px; }
+@media(max-width:700px){
+  .bn-form-grid { grid-template-columns:1fr; }
+  .bn-kpi-grid { grid-template-columns:1fr 1fr; }
+  .bn-bonus-card { flex-direction:column; text-align:center; }
+  .bn-header { flex-direction:column; align-items:flex-start; }
+}
 #pg-kpi,#pg-sales,#pg-mix,#pg-pnl,#pg-inv{display:none;}
 .loc-bar{background:#fcfaf4;border-bottom:1px solid var(--border);padding:0 28px;display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-items:center;gap:0;}
 .loc-bar::-webkit-scrollbar{display:none;}
@@ -2095,6 +2165,10 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
                     cursor:pointer; transition:all .15s; }
 .mx-day-cat-chip:hover { background:var(--mustard); border-color:var(--mustard); color:#5a4c2e; }
 .mx-day-cat-chip.on    { background:var(--accent); border-color:var(--accent); color:#fcfaf4; }
+
+/* Day PMix table: ensure header is not sticky (prevents overlap glitch) */
+.mx-page .mx-table-wrap .mx-table thead th { position:static; }
+.mx-page .mx-table-wrap .mx-table thead { position:static; }
 
 /* ABC Analysis badges */
 .abc-badge { display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:800;
@@ -3929,6 +4003,23 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
         <div style="color:rgba(126,32,35,.55);font-size:10px;margin-top:8px;">Requires data imported</div>
       </div>
     </div>
+    <div id="hcard-bonus" class="hcard c1" onclick="goBonus()" style="grid-column:1/-1;display:flex;align-items:center;gap:28px;text-align:left;padding:28px 36px;">
+      <span class="hcard-icon" style="font-size:56px;margin-bottom:0;flex-shrink:0;">🏆</span>
+      <div style="flex:1;">
+        <div class="hcard-title" style="font-size:22px;margin-bottom:6px;">KPI Bonus Tracker</div>
+        <div class="hcard-desc">Track store manager bonuses across all locations. Enter monthly KPI results, see gate status, calculate bonus payouts, and generate payment reports for accounting.</div>
+        <div class="dm-rpt-meta">
+          <span class="dm-rpt-chip">🚪 Google Review Gate</span>
+          <span class="dm-rpt-chip">📊 4 KPIs Weighted</span>
+          <span class="dm-rpt-chip">💰 Auto Bonus Calc</span>
+          <span class="dm-rpt-chip">📄 Payment Report</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;text-align:center;">
+        <div style="background:linear-gradient(135deg,#1e5a3f,#2d8e5a);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:14px 28px;border-radius:12px;text-transform:uppercase;box-shadow:0 4px 16px rgba(30,95,58,.3);">View Bonuses →</div>
+        <div style="color:rgba(30,95,58,.55);font-size:10px;margin-top:8px;">15 stores · FL &amp; NYC</div>
+      </div>
+    </div>
     <div class="hcard c5" style="grid-column:1/-1;text-align:left;">
       <div style="display:flex;align-items:flex-start;gap:16px;">
         <span class="hcard-icon" style="font-size:40px;margin-bottom:0;flex-shrink:0;">🤖</span>
@@ -3951,7 +4042,14 @@ tr.ttl td:first-child{background:#212320 !important;color:#fcfaf4 !important;}
     <button onclick="goAdmin()" style="background:none;border:1px solid #c8b89a;border-radius:7px;color:#7e6a52;font-size:11px;font-weight:700;letter-spacing:.05em;padding:6px 16px;cursor:pointer;transition:all .15s;" onmouseenter="this.style.background='#f5ede0'" onmouseleave="this.style.background='none'">⚙ User Management</button>
   </div>
   <!-- Version Indicator -->
-  <div class="sl-version-bar"><span>Performance Hub v118 · Build 2026-05-22 · Skinny Louie</span></div>
+  <div class="sl-version-bar"><span>Performance Hub v119 · Build 2026-05-23 · Skinny Louie</span></div>
+</div>
+
+<!-- ═══ KPI BONUS TRACKER PAGE ═══ -->
+<div id="pg-bonus" style="display:none;">
+  <div class="main" id="bonus-main" style="max-width:1100px;margin:0 auto;padding:20px;">
+    <div id="bonus-content"></div>
+  </div>
 </div>
 
 <!-- ═══ KPI PAGE ═══ -->
@@ -4501,7 +4599,7 @@ try {
     if(errEl) errEl.textContent = 'Connection error — please refresh the page.';
   });
 }
-const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_subscriptions_v1','sl_review_snapshots_v1','sl_reviews_v1','sl_review_config_v1'];
+const SL_SYNC_KEYS = ['sl_v2','sl_uploads_v1','sl_pmix_v1','sl_sales_v1','sl_sales_daily_v1','sl_pnl_v1','sl_pnl_tgts_v1','sl_alerts_rules_v1','sl_inv_items_v1','sl_inv_prices_v1','sl_inv_counts_v1','sl_inv_par_v1','sl_maintenance_v1','sl_datacenter_v1','sl_events_v1','sl_louie_stores_v1','sl_hr_v1','sl_assess_v1','sl_newstores','sl_subscriptions_v1','sl_review_snapshots_v1','sl_reviews_v1','sl_review_config_v1','sl_bonus_v1'];
 
 let _slUser        = null;
 let _slDisplayName = null; // display name of logged-in user — set in _initApp, used by maintenance for accountability
@@ -4898,7 +4996,7 @@ async function doLogout(){
   const loginEl = document.getElementById('pg-login');
   if(loginEl){ loginEl.style.display = 'flex'; }
   // Hide all pages so login overlay is the only visible element
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews'].forEach(p=>{
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews','bonus'].forEach(p=>{
     const el = document.getElementById('pg-'+p);
     if(el) el.style.display = 'none';
   });
@@ -5056,6 +5154,7 @@ function _applyPermissionsUI(){
     assess:      'hcard-assess',
     stores:      'hcard-stores',
     reviews:     'hcard-reviews',
+    bonus:       'hcard-bonus',
   };
   for(const [module, cardId] of Object.entries(MODULE_CARDS)){
     const card = document.getElementById(cardId);
@@ -6782,6 +6881,10 @@ function _forceAdminVisible(){
   var pp = document.getElementById('adm-perm-panel');
   if(pp){ pp.style.display='flex'; pp.style.flexDirection='column'; }
 }
+function goBonus(){
+  if(!_hasPermission('bonus')){ _showAccessDenied('KPI Bonus Tracker'); return; }
+  S.page='bonus'; render();
+}
 function goPortfolio(){
   if(!_hasPermission('portfolio')){ _showAccessDenied('Store Intelligence'); return; }
   S.page = 'portfolio';
@@ -6809,6 +6912,7 @@ const _ADM_MODULES = [
   { id:'assess',        label:'Excellence Assessment', icon:'📋', desc:'Quarterly inspection scoring by location' },
   { id:'stores',        label:'Louie Spots', icon:'🗺️', desc:'Expansion map & location tracker' },
   { id:'reviews',      label:'Google & Yelp Reviews', icon:'⭐', desc:'Review tracking across Google & Yelp' },
+  { id:'bonus',       label:'KPI Bonus Tracker', icon:'🏆', desc:'Store manager bonus calculation & payment reports' },
   { id:'admin',       label:'Admin Panel',        icon:'👥', desc:'User management & permissions' },
 ];
 
@@ -7526,7 +7630,7 @@ function render(){
   if(!_slUser) return; // wait for auth
   // v81h: scroll after paint so browser has rendered new page content
   requestAnimationFrame(function(){ window.scrollTo(0, 0); });
-  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
+  ['home','kpi','sales','mix','pnl','inv','maint','admin','portfolio','newstores','hr','marketing','events','stores','assess','reviews','bonus'].forEach(p=>{ const el=document.getElementById('pg-'+p); if(el) el.style.display='none'; });
   // admin uses display:flex (flex column layout) — portfolio and other pages use block
   var _pgEl=document.getElementById('pg-'+S.page); if(_pgEl){ _pgEl.style.display=(S.page==='home'||S.page==='admin')?'flex':'block'; if(S.page==='admin'){_pgEl.style.flexDirection='column';} }
   if(S.page==='home'){ setTimeout(updatePnLHomeBadge, 50); setTimeout(updateMaintBadge, 50); }
@@ -7538,6 +7642,7 @@ function render(){
   else if(S.page==='admin'){ _forceAdminVisible(); renderAdminPage(); }
   else if(S.page==='portfolio'){ _renderPortfolioSafe(); }
   else if(S.page==='reviews'){ try{ renderReviewsPage(); }catch(e){ console.error('renderReviewsPage',e); } }
+  else if(S.page==='bonus'){ try{ renderBonusPage(); }catch(e){ console.error('renderBonusPage',e); } }
   renderNavRight();
   if(S.page==='kpi'){
     try{ renderLocBar(); }catch(e){ console.error('renderLocBar',e); }
@@ -7563,7 +7668,7 @@ function renderNavRight(){
     r.innerHTML='';
     return;
   }
-  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',portfolio:'Store Intelligence',newstores:'New Stores',hr:'HR Dashboard',marketing:'Marketing',events:'Event Calculator',stores:'Louie Spots',assess:'Excellence Assessment',dm_report:'DM Report',reviews:'Google & Yelp Reviews'};
+  const pages={kpi:'KPI Dashboard',sales:'Sales Summary',mix:'Product Mix',pnl:'P&L Dashboard',inv:'Inventory',maint:'Store Maintenance',admin:'User Management',portfolio:'Store Intelligence',newstores:'New Stores',hr:'HR Dashboard',marketing:'Marketing',events:'Event Calculator',stores:'Louie Spots',assess:'Excellence Assessment',dm_report:'DM Report',reviews:'Google & Yelp Reviews',bonus:'KPI Bonus Tracker'};
   sub.textContent='';
   const crumb=`<div class="nb-crumb"><a onclick="goHome()">Home</a><span class="nb-sep">›</span><span>${pages[S.page]}</span></div>`;
 
@@ -11240,7 +11345,7 @@ function renderMixDayView(){
 
   // ── Auto-classify items when Toast API returns all "Other" categories ────
   const _ITEM_CAT_RULES = [
-    { cat: 'Smashed Burgers', kw: ['BURGER','CHEESEBURGER','IMPOSSIBLE','SMASH','PATTY MELT','LOUIE MELT','SINGLE','DOUBLE','TRIPLE'] },
+    { cat: 'Smashed Burgers', kw: ['BURGER','CHEESEBURGER','IMPOSSIBLE','SMASH','PATTY MELT','LOUIE MELT'] },
     { cat: 'Sides',           kw: ['FRIES','FRY','ONION RINGS','TOTS','SIDE','COLESLAW','CORN','MAC','CHEESE FRIES','LOADED','PICKLES','JALAPENO','CHIPS','PRETZEL'] },
     { cat: 'Milkshakes',      kw: ['SHAKE','MILKSHAKE','MALT','SUNDAE','FLOAT','ICE CREAM','BROWNIE','COOKIE','DESSERT','CARAMEL','OREO','NUTELLA'] },
     { cat: 'Drinks',          kw: ['DRINK','SODA','WATER','LEMONADE','TEA','JUICE','COFFEE','BEER','WINE','MARGARITA','BEVERAGE','COKE','SPRITE','GINGER','ARNOLD','ICED','BREW','ALE','IPA','LAGER'] },
@@ -11329,6 +11434,39 @@ function renderMixDayView(){
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;">${datePills}</div>`;
 
+  // ── Donut chart for day view (visual parity with monthly) ────────────────
+  const _PIE_CAT_DEFS_DAY = [
+    { label:'Burgers',    color:'#7A1E1E', keys:['SMASHED BURGERS','BURGERS','SMASH BURGERS','BURGER'] },
+    { label:'Sides',      color:'#C65A5A', keys:['SIDES','SIDE'] },
+    { label:'Milkshakes', color:'#D8C9A6', keys:['MILKSHAKES','MILKSHAKE','SHAKES','SHAKE'] },
+    { label:'Drinks',     color:'#4C8FB5', keys:['DRINKS','DRINK','NA BEVERAGES','NA BEVERAGE','BEVERAGES','BEVERAGE'] },
+    { label:'Hot Dogs',   color:'#D4763A', keys:['HOT DOGS','HOTDOG','HOT DOG'] },
+    { label:'Chicken',    color:'#8B6E4E', keys:['CHICKEN','TENDERS','TENDER'] },
+  ];
+  const _PIE_COLOR_MAP_DAY = {};
+  _PIE_CAT_DEFS_DAY.forEach(p => _PIE_COLOR_MAP_DAY[p.label] = p.color);
+  _PIE_COLOR_MAP_DAY['Others'] = '#B0A99F';
+
+  const dayPieData = _PIE_CAT_DEFS_DAY.map(p => {
+    const matchedCat = cats.find(c => p.keys.includes(c.name.toUpperCase()));
+    return { name: p.label, net: matchedCat ? matchedCat.net : 0 };
+  }).filter(d => d.net > 0);
+  const dayPieKnown = dayPieData.reduce((s,d) => s + d.net, 0);
+  const dayOthersNet = Math.max(0, totalNet - dayPieKnown);
+  if(dayOthersNet > 0) dayPieData.push({ name: 'Others', net: dayOthersNet });
+  const dayPieColors = dayPieData.map(d => _PIE_COLOR_MAP_DAY[d.name] || '#CCC');
+
+  const dayCanvasId = 'mx-day-pie-' + Date.now();
+  const dayLegendRows = dayPieData.map((d,i) => {
+    const pct = totalNet > 0 ? (d.net / totalNet * 100).toFixed(1) : '0';
+    return '<div class="mx-legend-row"><div class="mx-legend-dot" style="background:' + dayPieColors[i] + '"></div><span class="mx-legend-name">' + _escHtml(d.name) + '</span><span class="mx-legend-pct">' + pct + '%</span></div>';
+  }).join('');
+
+  const dayDonutHTML = dayPieData.length > 0 ? `<div style="display:flex;gap:24px;align-items:center;margin-bottom:24px;flex-wrap:wrap;">
+    <div style="width:180px;height:180px;flex-shrink:0;"><canvas id="${dayCanvasId}"></canvas></div>
+    <div class="mx-legend">${dayLegendRows}</div>
+  </div>` : '';
+
   // ── Category filter chips ─────────────────────────────────────────────────
   if(!window._mxDayCatFilter) window._mxDayCatFilter = 'ALL';
   const activeCat = window._mxDayCatFilter;
@@ -11392,15 +11530,53 @@ function renderMixDayView(){
     </table>
   </div>`;
 
-  // ── Modifiers panel (if any) ──────────────────────────────────────────────
-  const modPanel = totalMod > 0 ? `<div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
-    <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Burger Patties</span>
-    ${mods.single>0?`<span style="font-size:13px;font-weight:700;">Single <span style="color:var(--accent);">${mods.single.toLocaleString('en-US')}</span></span>`:''}
-    ${mods.double>0?`<span style="font-size:13px;font-weight:700;">Double <span style="color:var(--accent);">${mods.double.toLocaleString('en-US')}</span></span>`:''}
-    ${mods.triple>0?`<span style="font-size:13px;font-weight:700;">Triple <span style="color:var(--accent);">${mods.triple.toLocaleString('en-US')}</span></span>`:''}
-  </div>` : '';
+  // ── Modifiers panel — styled like monthly's big cards ─────────────────────
+  let modPanel = '';
+  if(totalMod > 0){
+    const _fmtModPct = v => (v/totalMod*100).toFixed(1);
+    const _makeModCard = (label, qty) => {
+      if(!qty) return '';
+      return `<div class="mx-mod-card mod-${label.toLowerCase()}">
+        <div class="mx-mod-name">${label}</div>
+        <div class="mx-mod-pct">${_fmtModPct(qty)}%</div>
+        <div class="mx-mod-qty">${Math.round(qty).toLocaleString('en-US')} sold</div>
+      </div>`;
+    };
+    modPanel = `<div class="mx-mod-panel">
+      <div class="mx-mod-title">\ud83c\udf54 Burger Modifier Split \u00b7 ${Math.round(totalMod).toLocaleString('en-US')} total burgers</div>
+      <div class="mx-mod-cards">
+        ${_makeModCard('Single', mods.single)}
+        ${_makeModCard('Double', mods.double)}
+        ${_makeModCard('Triple', mods.triple)}
+      </div>
+    </div>`;
+  }
 
-  el.innerHTML = `<div class="mx-page">${dayNav}${kpiBar}${catTable}${modPanel}${catChips}${itemTable}</div>`;
+  el.innerHTML = `<div class="mx-page">${dayNav}${kpiBar}${dayDonutHTML}${modPanel}${catTable}${catChips}${itemTable}</div>`;
+
+  // ── Init day view donut chart ──────────────────────────────────────────
+  if(dayPieData.length > 0){
+    const dayPieEl = document.getElementById(dayCanvasId);
+    if(dayPieEl && typeof Chart !== 'undefined'){
+      new Chart(dayPieEl, {
+        type: 'doughnut',
+        data: {
+          labels: dayPieData.map(d => d.name),
+          datasets: [{ data: dayPieData.map(d => d.net), backgroundColor: dayPieColors, borderWidth: 2, borderColor: '#fcfaf4', hoverOffset: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true,
+          cutout: '62%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: ctx => ctx.label + ': $' + Math.round(ctx.raw).toLocaleString('en-US') }
+            }
+          }
+        }
+      });
+    }
+  }
 }
 
 function renderMixDashboard(rec, locRecs, allRecs){
@@ -22010,6 +22186,341 @@ function _rvRenderConfig(){
 function rvUpdateConfig(idx,field,value){if(RV.config[idx]) RV.config[idx][field]=value;}
 function rvToggleConfig(idx){if(RV.config[idx]){RV.config[idx].active=!RV.config[idx].active;renderReviewsPage();}}
 function rvSaveConfig(){_rvSaveConfig();slAlert('Review configuration saved.','info');}
+
+
+// ══════════════════════════════════════════════════════════════
+//  KPI BONUS TRACKER MODULE — v119
+// ══════════════════════════════════════════════════════════════
+
+const _BN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const _BN_DEFAULT_CONFIG = {
+  stores: [
+    { name:'Wynwood',          state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Little Havana',    state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Coral Gables',     state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'West Palm Beach',  state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Aventura',         state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'South Miami',      state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Dania Pointe',     state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Fort Lauderdale',  state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'Doral',            state:'FL', manager:'', salary:0, goals:{ labor:17, food:23.5, disp:1.75, uber:4.6, google:0.25 } },
+    { name:'NoMad',            state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+    { name:'West Village',     state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+    { name:'Upper East Side',  state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+    { name:'East Village',     state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+    { name:'Penn',             state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+    { name:'Park Slope',       state:'NY', manager:'', salary:0, goals:{ labor:24, food:23, disp:2.25, uber:4.6, google:0.25 } },
+  ],
+  bonusRate: 0.15,
+  doubleUpRate: 0.30,
+  kpiWeights: { labor:40, food:25, uber:25, disp:10 },
+};
+
+let _BN = { tab:'dashboard', year:'2026', month: new Date().getMonth(), state:'ALL' };
+let _bnChartInstance = null;
+
+function _bnGetData(){
+  try {
+    const raw = localStorage.getItem('sl_bonus_v1');
+    if(raw){
+      const d = JSON.parse(raw);
+      if(!d.config) d.config = JSON.parse(JSON.stringify(_BN_DEFAULT_CONFIG));
+      if(!d.results) d.results = {};
+      return d;
+    }
+  } catch(e){ console.error('[BN] Parse error:', e); }
+  return { config: JSON.parse(JSON.stringify(_BN_DEFAULT_CONFIG)), results: {} };
+}
+
+function _bnSaveData(data){ localStorage.setItem('sl_bonus_v1', JSON.stringify(data)); }
+
+function _bnGetStoreResult(data, year, month, storeName){
+  return data.results?.[year]?.[month]?.[storeName] || null;
+}
+
+function _bnCalcBonus(store, result, data){
+  if(!result) return { gate:false, kpiPct:0, bonus:0, doubleUp:false, kpis:{}, totalSales:0, gateActual:0 };
+  const g = store.goals;
+  const w = data.config.kpiWeights || _BN_DEFAULT_CONFIG.kpiWeights;
+  const gateActual = Number(result.google) || 0;
+  const gatePassed = gateActual >= g.google;
+  const laborHit = result.labor !== undefined && result.labor !== '' && Number(result.labor) <= g.labor;
+  const foodHit = result.food !== undefined && result.food !== '' && Number(result.food) <= g.food;
+  const dispHit = result.disp !== undefined && result.disp !== '' && Number(result.disp) <= g.disp;
+  const uberHit = result.uber !== undefined && result.uber !== '' && Number(result.uber) >= g.uber;
+  const kpis = {
+    labor: { hit:laborHit, actual:result.labor, goal:g.labor, weight:w.labor },
+    food:  { hit:foodHit,  actual:result.food,  goal:g.food,  weight:w.food },
+    uber:  { hit:uberHit,  actual:result.uber,  goal:g.uber,  weight:w.uber },
+    disp:  { hit:dispHit,  actual:result.disp,  goal:g.disp,  weight:w.disp },
+  };
+  const kpiPct = (laborHit?w.labor:0) + (foodHit?w.food:0) + (uberHit?w.uber:0) + (dispHit?w.disp:0);
+  const doubleUp = kpiPct === 100;
+  const totalSales = Number(result.totalSales) || 0;
+  const rate = doubleUp ? (data.config.doubleUpRate||0.30) : (data.config.bonusRate||0.15);
+  let bonus = 0;
+  if(gatePassed && totalSales > 0) bonus = totalSales * (rate/100) * (kpiPct/100);
+  return { gate:gatePassed, kpiPct, bonus, doubleUp, kpis, totalSales, gateActual };
+}
+
+function renderBonusPage(){
+  if(!_hasPermission('bonus')){ _showAccessDenied('KPI Bonus Tracker'); return; }
+  const el = document.getElementById('bonus-content');
+  if(!el) return;
+  const data = _bnGetData();
+  const tabs = '<div class="bn-header">' +
+    '<div class="bn-title">\u{1F3C6} KPI Bonus Tracker</div>' +
+    '<div class="bn-tabs">' +
+    '<button class="bn-tab '+(_BN.tab==='dashboard'?'act':'')+'" onclick="_BN.tab=\'dashboard\';renderBonusPage()">Dashboard</button>' +
+    '<button class="bn-tab '+(_BN.tab==='entry'?'act':'')+'" onclick="_BN.tab=\'entry\';renderBonusPage()">Data Entry</button>' +
+    '<button class="bn-tab '+(_BN.tab==='payment'?'act':'')+'" onclick="_BN.tab=\'payment\';renderBonusPage()">Payment Report</button>' +
+    '<button class="bn-tab '+(_BN.tab==='config'?'act':'')+'" onclick="_BN.tab=\'config\';renderBonusPage()">Configuration</button>' +
+    '</div></div>';
+  const yearPills = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">' +
+    '<button class="bn-year-btn '+(_BN.year==='2025'?'act':'')+'" onclick="_BN.year=\'2025\';renderBonusPage()">2025</button>' +
+    '<button class="bn-year-btn '+(_BN.year==='2026'?'act':'')+'" onclick="_BN.year=\'2026\';renderBonusPage()">2026</button>' +
+    '<span style="width:12px;"></span>' +
+    _BN_MONTHS.map(function(m,i){return '<button class="bn-month-btn '+(_BN.month===i?'act':'')+'" onclick="_BN.month='+i+';renderBonusPage()">'+m+'</button>';}).join('') +
+    '</div>';
+  const statePills = '<div class="bn-state-pills">' +
+    '<button class="bn-state-pill '+(_BN.state==='ALL'?'act':'')+'" onclick="_BN.state=\'ALL\';renderBonusPage()">All Stores</button>' +
+    '<button class="bn-state-pill '+(_BN.state==='FL'?'act':'')+'" onclick="_BN.state=\'FL\';renderBonusPage()">Florida</button>' +
+    '<button class="bn-state-pill '+(_BN.state==='NY'?'act':'')+'" onclick="_BN.state=\'NY\';renderBonusPage()">New York</button>' +
+    '</div>';
+
+  if(_BN.tab === 'dashboard') el.innerHTML = tabs + yearPills + statePills + _bnRenderDashboard(data);
+  else if(_BN.tab === 'entry') el.innerHTML = tabs + yearPills + statePills + _bnRenderEntry(data);
+  else if(_BN.tab === 'payment') el.innerHTML = tabs + yearPills + _bnRenderPayment(data);
+  else if(_BN.tab === 'config') el.innerHTML = tabs + _bnRenderConfig(data);
+  if(_BN.tab === 'dashboard') _bnRenderDonut(data);
+}
+
+function _bnRenderDashboard(data){
+  var stores = data.config.stores.filter(function(s){return _BN.state==='ALL'||s.state===_BN.state;});
+  var flStores = stores.filter(function(s){return s.state==='FL';});
+  var nyStores = stores.filter(function(s){return s.state==='NY';});
+  var yr = _BN.year, mo = String(_BN.month);
+  var totalBonus=0, totalSales=0, gatePassCount=0, doubleUpCount=0, hasDataCount=0;
+  var allCalcs = stores.map(function(s){
+    var r = _bnGetStoreResult(data,yr,mo,s.name);
+    var calc = _bnCalcBonus(s,r,data);
+    if(r) hasDataCount++;
+    if(calc.gate) gatePassCount++;
+    if(calc.doubleUp&&calc.gate) doubleUpCount++;
+    totalBonus += calc.bonus;
+    totalSales += calc.totalSales;
+    return {store:s,result:r,calc:calc};
+  });
+
+  if(hasDataCount===0){
+    return '<div class="bn-empty"><div class="bn-empty-icon">\u{1F4CA}</div><div class="bn-empty-title">No Data for '+_BN_MONTHS[_BN.month]+' '+yr+'</div><div>Switch to <strong>Data Entry</strong> to add KPI results for this month.</div></div>';
+  }
+
+  var kpiCards = '<div class="bn-kpi-grid">' +
+    '<div class="bn-kpi-card"><div class="bn-kpi-label">Total Bonus</div><div class="bn-kpi-value" style="color:#166534;">$'+totalBonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="bn-kpi-goal">'+_BN_MONTHS[_BN.month]+' '+yr+'</div></div>' +
+    '<div class="bn-kpi-card"><div class="bn-kpi-label">Total Sales</div><div class="bn-kpi-value">$'+totalSales.toLocaleString('en-US',{maximumFractionDigits:0})+'</div><div class="bn-kpi-goal">'+hasDataCount+' stores reporting</div></div>' +
+    '<div class="bn-kpi-card"><div class="bn-kpi-label">Gate Pass Rate</div><div class="bn-kpi-value">'+(hasDataCount?Math.round(gatePassCount/hasDataCount*100):0)+'%</div><div class="bn-kpi-goal">'+gatePassCount+' of '+hasDataCount+' stores</div></div>' +
+    '<div class="bn-kpi-card"><div class="bn-kpi-label">Double-Up</div><div class="bn-kpi-value" style="color:#c4a035;">'+doubleUpCount+'</div><div class="bn-kpi-goal">stores at 100% KPI + gate</div></div>' +
+    '</div>';
+
+  var donutHTML = '<div class="bn-donut-wrap"><canvas id="bn-donut-chart" class="bn-donut-canvas" width="280" height="280"></canvas></div>';
+
+  function renderStateSection(stateStores, stateLabel, stateIcon){
+    if(stateStores.length===0) return '';
+    var calcs = stateStores.map(function(s){return allCalcs.find(function(c){return c.store.name===s.name;});});
+    var stateBonus = calcs.reduce(function(sum,c){return sum+c.calc.bonus;},0);
+    var rows = '<tr class="bn-state-divider"><td colspan="8">'+stateIcon+' '+stateLabel+'</td></tr>';
+    calcs.forEach(function(c){
+      var store=c.store, result=c.result, calc=c.calc;
+      if(!result){ rows += '<tr><td>'+_escHtml(store.name)+'</td><td colspan="7" style="color:var(--muted);font-style:italic;">No data entered</td></tr>'; return; }
+      rows += '<tr><td><strong>'+_escHtml(store.name)+'</strong></td>' +
+        '<td>'+_escHtml(store.manager||'\u2014')+'</td>' +
+        '<td>$'+calc.totalSales.toLocaleString('en-US',{maximumFractionDigits:0})+'</td>' +
+        '<td><span class="bn-pass-chip '+(calc.gate?'pass':'fail')+'">'+(calc.gate?'\u2713 PASS':'\u2717 FAIL')+'</span></td>' +
+        '<td>'+calc.kpiPct+'%</td>' +
+        '<td>'+(calc.doubleUp&&calc.gate?'<span class="bn-doubleup-chip">\u26A1 2X</span>':'\u2014')+'</td>' +
+        '<td style="font-weight:700;color:'+(calc.bonus>0?'#166534':'var(--muted)')+';">$'+calc.bonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>' +
+        '<td><button class="bn-tab" style="padding:4px 10px;font-size:10px;" onclick="_bnViewStore(\''+store.name.replace(/'/g,"\\'")+'\')">' + 'View</button></td></tr>';
+    });
+    rows += '<tr class="bn-subtotal"><td colspan="6">Subtotal \u2014 '+stateLabel+'</td><td style="font-weight:700;">$'+stateBonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td></td></tr>';
+    return rows;
+  }
+
+  var tableRows = '';
+  if(_BN.state==='ALL'||_BN.state==='FL') tableRows += renderStateSection(flStores,'FLORIDA','\u{1F334}');
+  if(_BN.state==='ALL'||_BN.state==='NY') tableRows += renderStateSection(nyStores,'NEW YORK CITY','\u{1F5FD}');
+  if(_BN.state==='ALL') tableRows += '<tr class="bn-grand-total"><td colspan="6">GRAND TOTAL \u2014 ALL STORES</td><td>$'+totalBonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td></td></tr>';
+
+  var table = '<div class="bn-table-wrap"><table class="bn-table"><thead><tr><th>Store</th><th>Manager</th><th>Total Sales</th><th>Gate</th><th>KPI %</th><th>Double-Up</th><th>Bonus</th><th></th></tr></thead><tbody>'+tableRows+'</tbody></table></div>';
+  return kpiCards + donutHTML + table;
+}
+
+function _bnRenderDonut(data){
+  var canvas = document.getElementById('bn-donut-chart');
+  if(!canvas) return;
+  if(_bnChartInstance){_bnChartInstance.destroy();_bnChartInstance=null;}
+  var stores = data.config.stores.filter(function(s){return _BN.state==='ALL'||s.state===_BN.state;});
+  var yr=_BN.year, mo=String(_BN.month);
+  var gatePassed=0,gateFailed=0,noData=0;
+  stores.forEach(function(s){
+    var r=_bnGetStoreResult(data,yr,mo,s.name);
+    if(!r){noData++;return;}
+    var calc=_bnCalcBonus(s,r,data);
+    if(calc.gate) gatePassed++; else gateFailed++;
+  });
+  if(gatePassed+gateFailed+noData===0) return;
+  try{
+    _bnChartInstance = new Chart(canvas,{type:'doughnut',data:{labels:['Gate PASS','Gate FAIL','No Data'],datasets:[{data:[gatePassed,gateFailed,noData],backgroundColor:['#22c55e','#ef4444','#e5e7eb'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,font:{size:11,weight:'bold'}}}}}});
+  }catch(e){console.warn('[BN] Chart error:',e);}
+}
+
+function _bnViewStore(name){
+  var data = _bnGetData();
+  var store = data.config.stores.find(function(s){return s.name===name;});
+  if(!store) return;
+  var yr=_BN.year, mo=String(_BN.month);
+  var result=_bnGetStoreResult(data,yr,mo,name);
+  var calc=_bnCalcBonus(store,result,data);
+  var el=document.getElementById('bonus-content');
+  var backBtn='<div style="margin-bottom:16px;"><button class="bn-tab" onclick="_BN.tab=\'dashboard\';renderBonusPage()">\u2190 Back to Dashboard</button></div>';
+  var title='<div class="bn-title" style="margin-bottom:16px;">'+_escHtml(name)+' \u2014 '+_BN_MONTHS[_BN.month]+' '+yr+'</div>';
+  if(!result){el.innerHTML=backBtn+title+'<div class="bn-empty"><div class="bn-empty-icon">\u{1F4CB}</div><div class="bn-empty-title">No Data</div><div>No KPI results entered for this store this month.</div></div>';return;}
+  var gateBar='<div class="bn-gate-bar '+(calc.gate?'pass':'fail')+'"><div class="bn-gate-icon">'+(calc.gate?'\u2705':'\u{1F6AB}')+'</div><div><strong>Google Reviews Gate: '+(calc.gate?'PASSED':'FAILED')+'</strong><br><span style="font-size:12px;">Actual: '+calc.gateActual+'% \u00B7 Goal: \u2265 '+store.goals.google+'% of Dine-In Sales</span></div></div>';
+  var labels={labor:'Labor %',food:'Food Cost %',uber:'Uber Rating',disp:'Disp & Clean %'};
+  var kpiCards='<div class="bn-kpi-grid">';
+  Object.keys(calc.kpis).forEach(function(key){
+    var kpi=calc.kpis[key];
+    var dir=key==='uber'?'\u2265':'\u2264';
+    kpiCards+='<div class="bn-kpi-card '+(kpi.hit?'pass':'fail')+'"><div class="bn-kpi-label">'+labels[key]+' ('+kpi.weight+'%)</div><div class="bn-kpi-value">'+(kpi.actual!==undefined&&kpi.actual!==''?kpi.actual:'\u2014')+'</div><div class="bn-kpi-goal">Goal: '+dir+' '+kpi.goal+'</div><div class="bn-kpi-badge '+(kpi.hit?'pass':'fail')+'">'+(kpi.hit?'\u2713 ACHIEVED':'\u2717 MISSED')+'</div></div>';
+  });
+  kpiCards+='</div>';
+  var bonusCard='<div class="bn-bonus-card"><div><div class="bn-bonus-label">Bonus Earned</div><div class="bn-bonus-amount">$'+calc.bonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="bn-bonus-label">KPI Achievement: '+calc.kpiPct+'% \u00B7 Total Sales: $'+calc.totalSales.toLocaleString('en-US',{maximumFractionDigits:0})+'</div></div>'+(calc.doubleUp&&calc.gate?'<div class="bn-bonus-doubleup">\u26A1 DOUBLE-UP BONUS (0.30%)</div>':'')+'</div>';
+  el.innerHTML = backBtn+title+gateBar+kpiCards+bonusCard;
+}
+
+function _bnRenderEntry(data){
+  var stores = data.config.stores.filter(function(s){return _BN.state==='ALL'||s.state===_BN.state;});
+  var yr=_BN.year, mo=String(_BN.month);
+  var rows='';
+  stores.forEach(function(s){
+    var r=_bnGetStoreResult(data,yr,mo,s.name)||{};
+    var sid=s.name.replace(/[^a-zA-Z0-9]/g,'_');
+    rows+='<tr><td><strong>'+_escHtml(s.name)+'</strong><br><span style="font-size:10px;color:var(--muted);">'+(s.state==='FL'?'\u{1F334}':'\u{1F5FD}')+' '+_escHtml(s.manager||'\u2014')+'</span></td>';
+    rows+='<td><input type="number" id="bn_ts_'+sid+'" value="'+(r.totalSales||'')+'" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="0"></td>';
+    rows+='<td><input type="number" id="bn_di_'+sid+'" value="'+(r.dineIn||'')+'" style="width:80px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="0"></td>';
+    rows+='<td><input type="number" step="0.1" id="bn_lb_'+sid+'" value="'+(r.labor||'')+'" style="width:60px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="'+s.goals.labor+'"></td>';
+    rows+='<td><input type="number" step="0.1" id="bn_fc_'+sid+'" value="'+(r.food||'')+'" style="width:60px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="'+s.goals.food+'"></td>';
+    rows+='<td><input type="number" step="0.1" id="bn_ub_'+sid+'" value="'+(r.uber||'')+'" style="width:55px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="'+s.goals.uber+'"></td>';
+    rows+='<td><input type="number" step="0.01" id="bn_dc_'+sid+'" value="'+(r.disp||'')+'" style="width:55px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="'+s.goals.disp+'"></td>';
+    rows+='<td><input type="number" step="0.01" id="bn_gr_'+sid+'" value="'+(r.google||'')+'" style="width:55px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;" placeholder="'+s.goals.google+'"></td></tr>';
+  });
+  return '<div class="bn-section-title">\u270F\uFE0F Enter KPI Results \u2014 '+_BN_MONTHS[_BN.month]+' '+_BN.year+'</div><div class="bn-table-wrap"><table class="bn-table"><thead><tr><th>Store</th><th>Total Sales ($)</th><th>Dine-In ($)</th><th>Labor %</th><th>Food %</th><th>Uber \u2605</th><th>D&C %</th><th>Google %</th></tr></thead><tbody>'+rows+'</tbody></table></div><div style="text-align:right;"><button class="bn-save-btn" onclick="_bnSaveEntry()">Save All Results</button></div>';
+}
+
+function _bnSaveEntry(){
+  var data=_bnGetData();
+  var yr=_BN.year, mo=String(_BN.month);
+  if(!data.results[yr]) data.results[yr]={};
+  if(!data.results[yr][mo]) data.results[yr][mo]={};
+  var stores=data.config.stores.filter(function(s){return _BN.state==='ALL'||s.state===_BN.state;});
+  stores.forEach(function(s){
+    var sid=s.name.replace(/[^a-zA-Z0-9]/g,'_');
+    var v=function(id){var el=document.getElementById(id);return el?(el.value===''?'':Number(el.value)):'';};
+    data.results[yr][mo][s.name]={totalSales:v('bn_ts_'+sid),dineIn:v('bn_di_'+sid),labor:v('bn_lb_'+sid),food:v('bn_fc_'+sid),uber:v('bn_ub_'+sid),disp:v('bn_dc_'+sid),google:v('bn_gr_'+sid)};
+  });
+  _bnSaveData(data);
+  _slToast('Results saved for '+_BN_MONTHS[_BN.month]+' '+_BN.year);
+  renderBonusPage();
+}
+
+function _bnRenderPayment(data){
+  var yr=_BN.year, mo=String(_BN.month);
+  var monthPills='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">'+
+    '<button class="bn-year-btn '+(_BN.year==='2025'?'act':'')+'" onclick="_BN.year=\'2025\';renderBonusPage()">2025</button>'+
+    '<button class="bn-year-btn '+(_BN.year==='2026'?'act':'')+'" onclick="_BN.year=\'2026\';renderBonusPage()">2026</button>'+
+    '<span style="width:12px;"></span>'+
+    _BN_MONTHS.map(function(m,i){return '<button class="bn-month-btn '+(_BN.month===i?'act':'')+'" onclick="_BN.month='+i+';renderBonusPage()">'+m+'</button>';}).join('')+
+    '</div>';
+  var allStores=data.config.stores;
+  var flStores=allStores.filter(function(s){return s.state==='FL';});
+  var nyStores=allStores.filter(function(s){return s.state==='NY';});
+  var grandTotal=0;
+  function paymentRows(stores,stateLabel,stateIcon){
+    var subtotal=0;
+    var rows='<tr class="bn-state-divider"><td colspan="6">'+stateIcon+' '+stateLabel+'</td></tr>';
+    stores.forEach(function(s){
+      var r=_bnGetStoreResult(data,yr,mo,s.name);
+      var calc=_bnCalcBonus(s,r,data);
+      subtotal+=calc.bonus;
+      rows+='<tr><td>'+_escHtml(s.name)+'</td><td>'+_escHtml(s.manager||'\u2014')+'</td><td>'+(r?'$'+calc.totalSales.toLocaleString('en-US',{maximumFractionDigits:0}):'\u2014')+'</td><td>'+(r?calc.kpiPct+'%':'\u2014')+'</td><td>'+(r?'<span class="bn-pass-chip '+(calc.gate?'pass':'fail')+'">'+(calc.gate?'PASS':'FAIL')+'</span>':'\u2014')+'</td><td style="font-weight:700;">$'+calc.bonus.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+    });
+    rows+='<tr class="bn-subtotal"><td colspan="5">'+stateIcon+' '+stateLabel+' SUBTOTAL</td><td style="font-weight:700;">$'+subtotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+    grandTotal+=subtotal;
+    return rows;
+  }
+  var tableRows=paymentRows(flStores,'FLORIDA','\u{1F334}');
+  tableRows+=paymentRows(nyStores,'NEW YORK CITY','\u{1F5FD}');
+  tableRows+='<tr class="bn-grand-total"><td colspan="5">GRAND TOTAL \u2014 ALL STORES</td><td>$'+grandTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+
+  return monthPills+'<div class="bn-payment-header"><h2>SKINNY LOUIE \u2014 MONTHLY BONUS PAYMENT REPORT</h2><div style="opacity:.8;">'+_BN_MONTHS[_BN.month]+' '+yr+'</div><div class="bn-payment-total">$'+grandTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="opacity:.7;font-size:12px;">TOTAL BONUS TO PAY THIS MONTH</div></div><div class="bn-table-wrap"><table class="bn-table"><thead><tr><th>Store</th><th>Store Manager</th><th>Total Sales</th><th>KPI %</th><th>Gate</th><th>Bonus to Pay</th></tr></thead><tbody>'+tableRows+'</tbody></table></div><div style="display:flex;gap:20px;margin-top:20px;flex-wrap:wrap;"><div class="bn-config-card" style="flex:1;min-width:200px;"><h3>Approval</h3><div class="bn-form-grid" style="grid-template-columns:1fr 1fr;"><div class="bn-form-field"><label>Approved By</label><input type="text" placeholder="Name"></div><div class="bn-form-field"><label>Date Sent to Accounting</label><input type="date"></div></div></div></div>';
+}
+
+function _bnRenderConfig(data){
+  var stores=data.config.stores;
+  var flStores=stores.filter(function(s){return s.state==='FL';});
+  var nyStores=stores.filter(function(s){return s.state==='NY';});
+  function renderStoreCards(stateStores,stateLabel,stateIcon){
+    var html='<div class="bn-section-title">'+stateIcon+' '+stateLabel+'</div>';
+    stateStores.forEach(function(s){
+      var idx=stores.indexOf(s);
+      var sid='bncfg_'+idx;
+      html+='<div class="bn-config-card"><h3>'+_escHtml(s.name)+'</h3><div class="bn-form-grid">'+
+        '<div class="bn-form-field"><label>Store Manager</label><input type="text" id="'+sid+'_mgr" value="'+_escHtml(s.manager||'')+'"></div>'+
+        '<div class="bn-form-field"><label>Monthly Salary ($)</label><input type="number" id="'+sid+'_sal" value="'+(s.salary||0)+'"></div>'+
+        '<div class="bn-form-field"><label>Labor Goal (%)</label><input type="number" step="0.1" id="'+sid+'_labor" value="'+s.goals.labor+'"></div>'+
+        '<div class="bn-form-field"><label>Food Cost Goal (%)</label><input type="number" step="0.1" id="'+sid+'_food" value="'+s.goals.food+'"></div>'+
+        '<div class="bn-form-field"><label>Uber Rating Goal</label><input type="number" step="0.1" id="'+sid+'_uber" value="'+s.goals.uber+'"></div>'+
+        '<div class="bn-form-field"><label>Disp & Clean Goal (%)</label><input type="number" step="0.01" id="'+sid+'_disp" value="'+s.goals.disp+'"></div>'+
+        '<div class="bn-form-field"><label>Google Reviews Goal (%)</label><input type="number" step="0.01" id="'+sid+'_google" value="'+s.goals.google+'"></div>'+
+        '</div></div>';
+    });
+    return html;
+  }
+  var storeCards=renderStoreCards(flStores,'FLORIDA','\u{1F334}');
+  storeCards+=renderStoreCards(nyStores,'NEW YORK CITY','\u{1F5FD}');
+  var globalCfg='<div class="bn-section-title">\u2699\uFE0F Global Bonus Rules</div><div class="bn-config-card"><div class="bn-form-grid">'+
+    '<div class="bn-form-field"><label>Base Bonus Rate (%)</label><input type="number" step="0.01" id="bncfg_rate" value="'+(data.config.bonusRate||0.15)+'"></div>'+
+    '<div class="bn-form-field"><label>Double-Up Rate (%)</label><input type="number" step="0.01" id="bncfg_drate" value="'+(data.config.doubleUpRate||0.30)+'"></div>'+
+    '<div class="bn-form-field"><label>Labor Weight (%)</label><input type="number" id="bncfg_wlabor" value="'+((data.config.kpiWeights||_BN_DEFAULT_CONFIG.kpiWeights).labor)+'"></div>'+
+    '<div class="bn-form-field"><label>Food Cost Weight (%)</label><input type="number" id="bncfg_wfood" value="'+((data.config.kpiWeights||_BN_DEFAULT_CONFIG.kpiWeights).food)+'"></div>'+
+    '<div class="bn-form-field"><label>Uber Rating Weight (%)</label><input type="number" id="bncfg_wuber" value="'+((data.config.kpiWeights||_BN_DEFAULT_CONFIG.kpiWeights).uber)+'"></div>'+
+    '<div class="bn-form-field"><label>Disp & Clean Weight (%)</label><input type="number" id="bncfg_wdisp" value="'+((data.config.kpiWeights||_BN_DEFAULT_CONFIG.kpiWeights).disp)+'"></div>'+
+    '</div></div>';
+  return globalCfg+storeCards+'<div style="text-align:right;margin-top:16px;"><button class="bn-save-btn" onclick="_bnSaveConfig()">Save Configuration</button></div>';
+}
+
+function _bnSaveConfig(){
+  var data=_bnGetData();
+  var v=function(id){var el=document.getElementById(id);return el?Number(el.value):0;};
+  var vt=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  data.config.bonusRate=v('bncfg_rate');
+  data.config.doubleUpRate=v('bncfg_drate');
+  data.config.kpiWeights={labor:v('bncfg_wlabor'),food:v('bncfg_wfood'),uber:v('bncfg_wuber'),disp:v('bncfg_wdisp')};
+  data.config.stores.forEach(function(s,idx){
+    var sid='bncfg_'+idx;
+    s.manager=vt(sid+'_mgr');
+    s.salary=v(sid+'_sal');
+    s.goals.labor=v(sid+'_labor');
+    s.goals.food=v(sid+'_food');
+    s.goals.uber=v(sid+'_uber');
+    s.goals.disp=v(sid+'_disp');
+    s.goals.google=v(sid+'_google');
+  });
+  _bnSaveData(data);
+  _slToast('Configuration saved');
+  renderBonusPage();
+}
 
 </script>
 
